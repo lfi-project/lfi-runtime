@@ -62,7 +62,8 @@ lfi_new(struct LFIOptions opts, size_t reserve)
 
     init_verifier(&engine->verifier, &opts);
 
-    LOG(&engine, "initialized LFI engine: %ld GiB", reserve / 1024 / 1024 / 1024);
+    LOG(&engine, "initialized LFI engine: %ld GiB",
+        reserve / 1024 / 1024 / 1024);
 
     return engine;
 

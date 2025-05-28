@@ -2,8 +2,8 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,7 +44,7 @@ struct LFIOptions {
 struct LFIBoxInfo {
     // Base address of the sandbox in the host address space.
     uintptr_t base;
-    
+
     // Total size of the sandbox.
     size_t size;
 
@@ -77,12 +77,14 @@ lfi_box_info(struct LFIBox *box);
 // failure. May run the verifier for executable pages. Disallows shared
 // mappings to prevent double mapping pages as W and X.
 lfiptr
-lfi_box_mapat(struct LFIBox *box, lfiptr addr, size_t size, int prot, int flags, int fd, off_t off);
+lfi_box_mapat(struct LFIBox *box, lfiptr addr, size_t size, int prot, int flags,
+    int fd, off_t off);
 
 // Creates a new memory mapping in the sandbox at an arbitrary location,
 // similar to mapat.
 lfiptr
-lfi_box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd, off_t off);
+lfi_box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd,
+    off_t off);
 
 // Unmaps a memory mapping in the sandbox. Returns -1 on failure.
 int
@@ -149,9 +151,9 @@ const char *
 lfi_errmsg(void);
 
 enum {
-    LFI_ERR_NONE    = 0,
-    LFI_ERR_ALLOC   = 1,
-    LFI_ERR_BOXMAP  = 2,
+    LFI_ERR_NONE = 0,
+    LFI_ERR_ALLOC = 1,
+    LFI_ERR_BOXMAP = 2,
     LFI_ERR_RESERVE = 3,
 };
 

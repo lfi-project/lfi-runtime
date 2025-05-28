@@ -1,5 +1,5 @@
-#include "lfi_core.h"
 #include "core.h"
+#include "lfi_core.h"
 
 #include <stdlib.h>
 

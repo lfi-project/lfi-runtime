@@ -1,11 +1,11 @@
 #pragma once
 
+#include "boxmap.h"
 #include "lfi_arch.h"
 #include "lfi_core.h"
 #include "lfiv.h"
-#include "boxmap.h"
-#include "mmap.h"
 #include "log.h"
+#include "mmap.h"
 
 #define EXPORT __attribute__((visibility("default")))
 

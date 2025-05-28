@@ -24,7 +24,7 @@ xasprintf(const char *fmt, ...);
 #include <android/log.h>
 
 #define LOG_(...) \
-    ((void)__android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__))
+    ((void) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__))
 
 #else
 
