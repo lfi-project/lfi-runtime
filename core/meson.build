@@ -4,12 +4,14 @@ boxmap = subproject('libboxmap').get_variable('boxmap').as_link_whole()
 
 srcs = files(
   'engine.c',
+  'error.c',
+  'log.c',
 )
 
 liblfi_core = static_library(
   'lfi-core',
   srcs,
-  c_args: c_args_hardened + c_args_warnings,
+  c_args: c_args + c_args_warnings,
   dependencies: [lfiv, mmap, boxmap],
   install: true,
   include_directories: include_directories('include'),
