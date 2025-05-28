@@ -1,0 +1,59 @@
+# Basic .clang-format
+---
+BasedOnStyle: WebKit
+AlignAfterOpenBracket: DontAlign
+AlignConsecutiveMacros: AcrossEmptyLines
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignEscapedNewlines: Left
+AlignOperands: false
+AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: TopLevelDefinitions
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: MultiLine
+BinPackArguments: true
+BinPackParameters: true
+BreakBeforeBinaryOperators: None
+BreakBeforeBraces: WebKit
+BreakBeforeTernaryOperators: false
+# TODO: BreakStringLiterals can cause very strange formatting so turn it off?
+BreakStringLiterals: false
+# Prefer:
+# some_var = function(arg1,
+#    arg2)
+# over:
+# some_var =
+#     function(arg1, arg2)
+PenaltyBreakAssignment: 100
+# Prefer:
+# some_long_function(arg1, arg2
+#     arg3)
+# over:
+# some_long_function(
+#     arg1, arg2, arg3)
+PenaltyBreakBeforeFirstCallParameter: 100
+CompactNamespaces: true
+DerivePointerAlignment: false
+DisableFormat: false
+SpaceBeforeParens: ControlStatementsExceptForEachMacros
+IndentCaseLabels: false
+IndentPPDirectives: None
+Language: Cpp
+NamespaceIndentation: None
+PointerAlignment: Right
+ContinuationIndentWidth: 4
+IndentWidth: 4
+TabWidth: 4
+ColumnLimit: 80
+UseTab: Never
+SpaceAfterCStyleCast: true
+IncludeBlocks: Regroup
+SortIncludes: true
+KeepEmptyLinesAtTheStartOfBlocks: false
