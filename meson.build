@@ -23,6 +23,16 @@ c_args_warnings = [
   '-Wno-gnu-zero-variadic-macro-arguments',
 ]
 
+cpu = target_machine.cpu_family()
+archmap = {
+  'aarch64': 'arm64',
+  'x86_64': 'x64',
+}
+if not archmap.has_key(cpu)
+  warning('unsupported architecture: ' + cpu)
+  subdir_done()
+endif
+
 subdir('core')
 subdir('linux')
 subdir('tools')

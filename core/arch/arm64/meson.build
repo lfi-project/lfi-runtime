@@ -1,0 +1,3 @@
+srcs += files(
+  'runtime.S'
+)

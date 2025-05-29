@@ -1,5 +1,6 @@
 tests = [
   'init.c',
+  'box.c',
 ]
 
 foreach t : tests

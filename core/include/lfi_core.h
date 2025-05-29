@@ -130,6 +130,17 @@ lfi_box_copyfm(struct LFIBox *box, void *dst, lfiptr src, size_t size);
 lfiptr
 lfi_box_copyto(struct LFIBox *box, lfiptr dst, void *src, size_t size);
 
+// Use of the following two functions assumes that the sandbox and host share
+// an address space.
+//
+// Converts a sandbox pointer to a host pointer. Assumes l is valid.
+uintptr_t
+lfi_box_l2p(struct LFIBox *box, lfiptr l);
+
+// Converts a host pointer to a sandbox pointer.
+uintptr_t
+lfi_box_p2l(struct LFIBox *box, uintptr_t p);
+
 // Frees all resources associated with box and deallocates its reservation in
 // the LFIEngine in which it was allocated.
 void
@@ -145,7 +156,7 @@ int
 lfi_ctx_run(struct LFIContext *ctx);
 
 // Frees the sandbox context.
-void *
+void
 lfi_ctx_free(struct LFIContext *ctx);
 
 // Returns a pointer to the sandbox context's registers, which can be read and

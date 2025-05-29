@@ -6,7 +6,10 @@ srcs = files(
   'engine.c',
   'error.c',
   'log.c',
+  'box.c',
 )
+
+subdir('arch/' + archmap[cpu])
 
 liblfi_core = static_library(
   'lfi-core',

@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 
 // Use of the following two functions assumes that the sandbox and host share
@@ -251,4 +252,46 @@ lfi_box_free(struct LFIBox *box)
     assert(p == (void *) box->base);
     boxmap_rmspace(box->engine->bm, box->base, box->size);
     free(box);
+}
+
+EXPORT bool
+lfi_box_ptrvalid(struct LFIBox *box, lfiptr addr)
+{
+    lfiptr lp = l2p(box, addr);
+    return lp >= box->min && lp < box->max;
+}
+
+EXPORT bool
+lfi_box_bufvalid(struct LFIBox *box, lfiptr addr, size_t size)
+{
+    lfiptr lp = l2p(box, addr);
+    return lp >= box->min && lp + size <= box->max;
+}
+
+EXPORT void *
+lfi_box_copyfm(struct LFIBox *box, void *dst, lfiptr src, size_t size)
+{
+    assert(lfi_box_bufvalid(box, src, size));
+    memcpy(dst, (void *) l2p(box, src), size);
+    return dst;
+}
+
+EXPORT lfiptr
+lfi_box_copyto(struct LFIBox *box, lfiptr dst, void *src, size_t size)
+{
+    assert(lfi_box_bufvalid(box, dst, size));
+    memcpy((void *) l2p(box, dst), src, size);
+    return dst;
+}
+
+EXPORT uintptr_t
+lfi_box_l2p(struct LFIBox *box, lfiptr l)
+{
+    return l2p(box, l);
+}
+
+EXPORT uintptr_t
+lfi_box_p2l(struct LFIBox *box, uintptr_t p)
+{
+    return p2l(box, p);
 }
