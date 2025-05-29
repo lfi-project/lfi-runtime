@@ -58,6 +58,7 @@ lfi_new(struct LFIOptions opts, size_t reserve)
     *engine = (struct LFIEngine) {
         .bm = bm,
         .opts = opts,
+        .guardsize = kb(80),
     };
 
     init_verifier(&engine->verifier, &opts);

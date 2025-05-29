@@ -24,6 +24,8 @@ name(int errno)
         return "boxmap failed";
     case LFI_ERR_RESERVE:
         return "memory reservation failed";
+    case LFI_ERR_MMAP:
+        return "libmmap failed";
     default:
         return "unknown error";
     }

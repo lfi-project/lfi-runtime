@@ -31,8 +31,11 @@ struct LFIOptions {
     // Disable verification.
     bool noverify;
 
-    // System page size
+    // System page size.
     size_t pagesize;
+
+    // Sandbox size.
+    size_t boxsize;
 
     // Display verbose debugging information using the system logger.
     bool verbose;
@@ -54,6 +57,19 @@ struct LFIBoxInfo {
     // One past the maximum accessible address.
     lfiptr max;
 };
+
+#define LFI_PROT_NONE  0
+#define LFI_PROT_READ  1
+#define LFI_PROT_WRITE 2
+#define LFI_PROT_EXEC  4
+
+// Currently MAP_SHARED is disabled to prevent pages from being double-mapped
+// as writable and executable in two separate locations. In the future, we
+// could have a more fine-grained way to prevent this attack.
+// #define LFI_MAP_SHARED    1
+#define LFI_MAP_PRIVATE   2
+#define LFI_MAP_FIXED     16
+#define LFI_MAP_ANONYMOUS 32
 
 // Creates a new LFI engine and reserve a certain amount of virtual address
 // space for it. For future lfi_box_new calls to succeed, the reservation must
@@ -112,9 +128,9 @@ lfiptr
 lfi_box_copyto(struct LFIBox *box, lfiptr dst, void *src, size_t size);
 
 // Frees all resources associated with box and deallocates its reservation in
-// the LFIEngine.
-void *
-lfi_box_free(struct LFIEngine *lfi, struct LFIBox *box);
+// the LFIEngine in which it was allocated.
+void
+lfi_box_free(struct LFIBox *box);
 
 // Creates a new LFIContext for a given sandbox, along with a user-provided
 // data pointer.
@@ -155,6 +171,7 @@ enum {
     LFI_ERR_ALLOC = 1,
     LFI_ERR_BOXMAP = 2,
     LFI_ERR_RESERVE = 3,
+    LFI_ERR_MMAP = 4,
 };
 
 #ifdef __cplusplus

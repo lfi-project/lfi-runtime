@@ -13,6 +13,8 @@ struct LFIEngine {
     struct BoxMap *bm;
     struct LFIOptions opts;
     struct LFIVerifier verifier;
+
+    size_t guardsize;
 };
 
 struct LFIBox {
