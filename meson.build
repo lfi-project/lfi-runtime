@@ -1,5 +1,5 @@
 project(
-  'lfi-verifier',
+  'lfi-runtime',
   ['c'],
   default_options: ['warning_level=1', 'buildtype=release']
 )

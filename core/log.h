@@ -11,10 +11,10 @@ xasprintf(const char *fmt, ...);
 
 #else
 
-#define LOG(engine, ...)          \
-    do {                          \
-        if (engine->opts.verbose) \
-            LOG_(__VA_ARGS__);    \
+#define LOG(engine, ...)            \
+    do {                            \
+        if ((*engine).opts.verbose) \
+            LOG_(__VA_ARGS__);      \
     } while (0)
 
 #endif

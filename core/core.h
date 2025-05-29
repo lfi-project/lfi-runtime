@@ -27,6 +27,10 @@ struct LFIBox {
     // Memory mapper object.
     MMAddrSpace mm;
 
+    // Pointer to the page at the start of the sandbox holding runtime call
+    // entrypoints.
+    struct Sys *sys;
+
     struct LFIEngine *engine;
 };
 
@@ -40,10 +44,6 @@ struct LFIContext {
 
     // User-provided data pointer.
     void *ctxp;
-
-    // Pointer to the page at the start of the sandbox holding runtime call
-    // entrypoints.
-    struct Sys *sys;
 
     // Sandbox that this context is associated with.
     struct LFIBox *box;

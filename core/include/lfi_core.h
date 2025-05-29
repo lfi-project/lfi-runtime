@@ -42,6 +42,9 @@ struct LFIOptions {
 
     // Enable stores-only mode (for verification).
     bool stores_only;
+
+    // Handler for 'syscall' runtime calls.
+    void (*sys_handler)(struct LFIContext *ctx);
 };
 
 struct LFIBoxInfo {
@@ -166,11 +169,17 @@ lfi_errno(void);
 const char *
 lfi_errmsg(void);
 
+// Possible values returned by lfi_error().
 enum {
+    // No error.
     LFI_ERR_NONE = 0,
+    // Allocation error (malloc failed).
     LFI_ERR_ALLOC = 1,
+    // Error inside libboxmap (sandbox allocator).
     LFI_ERR_BOXMAP = 2,
+    // Error reserving memory for a sandbox.
     LFI_ERR_RESERVE = 3,
+    // Error inside libmmap (sandbox memory mapper).
     LFI_ERR_MMAP = 4,
 };
 

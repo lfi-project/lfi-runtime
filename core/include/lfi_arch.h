@@ -9,8 +9,12 @@ extern "C" {
 #if defined(__aarch64__) || defined(_M_ARM64)
 
 struct LFIRegs {
+    // The host sp and tp slots are used for saving/restoring host information
+    // when transitioning in and out of the sandbox and should not typically be
+    // directly modified.
     uint64_t host_sp;
     uint64_t host_tp;
+    // Sandbox thread pointer.
     uint64_t tp;
     uint64_t _pad0;
 
@@ -56,6 +60,10 @@ struct LFIRegs {
 
 struct LFIRegs {
     uint64_t host_sp;
+    // The host tp that is saved/restored is actually the value pointed to by
+    // the thread pointer, not the thread pointer itself. This is because
+    // directly modifying %fs (where the thread pointer is stored on x86-64) is
+    // a slow operation: wrfsbase can take up to 40 cycles.
     uint64_t host_tp;
     uint64_t tp;
     uint64_t _pad0;

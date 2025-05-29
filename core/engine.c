@@ -1,5 +1,6 @@
 #include "core.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 static void
@@ -63,7 +64,7 @@ lfi_new(struct LFIOptions opts, size_t reserve)
 
     init_verifier(&engine->verifier, &opts);
 
-    LOG(&engine, "initialized LFI engine: %ld GiB",
+    LOG(engine, "initialized LFI engine: %ld GiB",
         reserve / 1024 / 1024 / 1024);
 
     return engine;
@@ -73,4 +74,25 @@ err2:
 err1:
     free(engine);
     return NULL;
+}
+
+void
+lfi_free(struct LFIEngine *engine)
+{
+    // Unmaps all virtual memory reserved by the engine.
+    boxmap_delete(engine->bm);
+    free(engine);
+}
+
+// Declare this function with asm ("lfi_syscall_handler") so that it will be
+// callable from hand-writtem assembly (runtime.S). Otherwise, macOS names the
+// symbol _lfi_syscall_handler.
+void
+lfi_syscall_handler(struct LFIContext *ctx) asm ("lfi_syscall_handler");
+
+void
+lfi_syscall_handler(struct LFIContext *ctx)
+{
+    assert(ctx->box->engine->opts.sys_handler && "engine does not have a system call handler");
+    ctx->box->engine->opts.sys_handler(ctx);
 }

@@ -22,6 +22,35 @@ p2l(struct LFIBox *box, uintptr_t p)
     return (lfiptr) p;
 }
 
+// Runtime call entrypoints. These are defined in runtime.S.
+extern void
+lfi_syscall_entry(void) asm ("lfi_syscall_entry");
+extern void
+lfi_get_tp(void) asm ("lfi_get_tp");
+extern void
+lfi_set_tp(void) asm ("lfi_set_tp");
+extern void
+lfi_ret(void) asm ("lfi_ret");
+
+// Initialize the sys page (at the beginning of the sandbox) to contain the
+// runtime call entrypoints.
+static void
+syssetup(struct LFIBox *box)
+{
+    // Map read/write.
+    box->sys = mmap((void *) box->base, box->engine->opts.pagesize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+    assert(box->sys == (void *) box->base);
+
+    box->sys->rtcalls[0] = (uintptr_t) &lfi_syscall_entry;
+    box->sys->rtcalls[1] = (uintptr_t) &lfi_get_tp;
+    box->sys->rtcalls[2] = (uintptr_t) &lfi_set_tp;
+    box->sys->rtcalls[3] = (uintptr_t) &lfi_ret;
+
+    // Map read-only.
+    int r = mprotect((void *) box->base, box->engine->opts.pagesize, PROT_READ);
+    assert(r == 0);
+}
+
 EXPORT struct LFIBox *
 lfi_box_new(struct LFIEngine *engine)
 {
@@ -45,6 +74,7 @@ lfi_box_new(struct LFIEngine *engine)
         .min = base + engine->guardsize + engine->opts.pagesize, // for sys page
         .max = base + size - engine->guardsize,
     };
+    syssetup(box);
 
     bool ok = mm_init(&box->mm, box->min, box->max - box->min,
         engine->opts.pagesize);
