@@ -1,5 +1,5 @@
-#include "lfi_core.h"
 #include "core.h"
+#include "lfi_core.h"
 
 #include <stdlib.h>
 
@@ -11,6 +11,4 @@ lfi_ctx_new(struct LFIBox *box, void *ctxp)
         lfi_error = LFI_ERR_ALLOC;
         return NULL;
     }
-
-
 }

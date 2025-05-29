@@ -88,11 +88,12 @@ lfi_free(struct LFIEngine *engine)
 // callable from hand-writtem assembly (runtime.S). Otherwise, macOS names the
 // symbol _lfi_syscall_handler.
 void
-lfi_syscall_handler(struct LFIContext *ctx) asm ("lfi_syscall_handler");
+lfi_syscall_handler(struct LFIContext *ctx) asm("lfi_syscall_handler");
 
 void
 lfi_syscall_handler(struct LFIContext *ctx)
 {
-    assert(ctx->box->engine->opts.sys_handler && "engine does not have a system call handler");
+    assert(ctx->box->engine->opts.sys_handler &&
+        "engine does not have a system call handler");
     ctx->box->engine->opts.sys_handler(ctx);
 }

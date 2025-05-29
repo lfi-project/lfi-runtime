@@ -24,13 +24,13 @@ p2l(struct LFIBox *box, uintptr_t p)
 
 // Runtime call entrypoints. These are defined in runtime.S.
 extern void
-lfi_syscall_entry(void) asm ("lfi_syscall_entry");
+lfi_syscall_entry(void) asm("lfi_syscall_entry");
 extern void
-lfi_get_tp(void) asm ("lfi_get_tp");
+lfi_get_tp(void) asm("lfi_get_tp");
 extern void
-lfi_set_tp(void) asm ("lfi_set_tp");
+lfi_set_tp(void) asm("lfi_set_tp");
 extern void
-lfi_ret(void) asm ("lfi_ret");
+lfi_ret(void) asm("lfi_ret");
 
 // Initialize the sys page (at the beginning of the sandbox) to contain the
 // runtime call entrypoints.
@@ -38,7 +38,8 @@ static void
 syssetup(struct LFIBox *box)
 {
     // Map read/write.
-    box->sys = mmap((void *) box->base, box->engine->opts.pagesize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+    box->sys = mmap((void *) box->base, box->engine->opts.pagesize,
+        PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
     assert(box->sys == (void *) box->base);
 
     box->sys->rtcalls[0] = (uintptr_t) &lfi_syscall_entry;
