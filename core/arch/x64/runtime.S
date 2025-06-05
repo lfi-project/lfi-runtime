@@ -3,8 +3,7 @@
 .text
 
 .macro get_ctx reg
-    movq lfi_ctx@gottpoff(%rip), \reg
-    movq %fs:(\reg), \reg
+    movq %fs:0x0, \reg
 .endm
 
 // lfi_ctx_entry(struct LFIContext *ctx, uintptr_t *host_sp_ptr, uintptr_t entry)
@@ -21,25 +20,32 @@ lfi_ctx_entry:
     // save stack to host_sp_ptr
     movq %rsp, (%rsi)
     movq %rdx, %r11
-    // fallthrough
-.lfi_restore_regs:
-    mov REGS_RSP(%rdi), %rsp
-    mov REGS_RAX(%rdi), %rax
-    mov REGS_RCX(%rdi), %rcx
-    mov REGS_RDX(%rdi), %rdx
-    mov REGS_RBX(%rdi), %rbx
-    mov REGS_RBP(%rdi), %rbp
-    mov REGS_RSI(%rdi), %rsi
-    mov REGS_R8(%rdi), %r8
-    mov REGS_R9(%rdi), %r9
-    mov REGS_R10(%rdi), %r10
+
+    // set the sandbox thread control block by saving the old value of %fs:0x0
+    // into the context and setting it to point to the context itself.
+    movq %fs:0x0, %rax
+    movq %rax, REGS_HOST_TP(%rdi)
+    movq %rdi, %fs:0x0
+
+    // set all registers
+    movq REGS_RSP(%rdi), %rsp
+    movq REGS_RAX(%rdi), %rax
+    movq REGS_RCX(%rdi), %rcx
+    movq REGS_RDX(%rdi), %rdx
+    movq REGS_RBX(%rdi), %rbx
+    movq REGS_RBP(%rdi), %rbp
+    movq REGS_RSI(%rdi), %rsi
+    movq REGS_R8(%rdi), %r8
+    movq REGS_R9(%rdi), %r9
+    movq REGS_R10(%rdi), %r10
     // %r11 skipped because it holds the entrypoint
-    mov REGS_R12(%rdi), %r12
-    mov REGS_R13(%rdi), %r13
-    mov REGS_R14(%rdi), %r14
-    mov REGS_R15(%rdi), %r15
-    mov REGS_RDI(%rdi), %rdi
+    movq REGS_R12(%rdi), %r12
+    movq REGS_R13(%rdi), %r13
+    movq REGS_R14(%rdi), %r14
+    movq REGS_R15(%rdi), %r15
+    movq REGS_RDI(%rdi), %rdi
     wrgsbase %REG_BASE
+    // zero vector registers
     xorps %xmm0, %xmm0
     xorps %xmm1, %xmm1
     xorps %xmm2, %xmm2
@@ -58,12 +64,15 @@ lfi_ctx_entry:
     xorps %xmm15, %xmm15
     jmpq *%r11
 
-// lfi_ctx_end(uintptr_t host_sp, int val)
+// lfi_ctx_end(struct LFIContext *ctx, int val)
 .global lfi_ctx_end
 .p2align 4
 lfi_ctx_end:
     // restore host_sp
-    movq %rdi, %rsp
+    movq REGS_HOST_SP(%rdi), %rsp
+    // restore host_tp
+    movq REGS_HOST_TP(%rdi), %rbp
+    movq %rbp, %fs:0x0
     // put val in the return register
     movq %rsi, %rax
     // restore callee-saved registers saved in lfi_ctx_entry
@@ -109,12 +118,19 @@ lfi_syscall_entry:
     movq %xmm14, REGS_XMM+14*16(%rcx)
     movq %xmm15, REGS_XMM+15*16(%rcx)
 
+    // swap the thread control block back to the host one
+    movq REGS_HOST_TP(%rcx), %rdi
+    movq %rdi, %fs:0x0
+
     // context is now in %rcx
     movq REGS_HOST_SP(%rcx), %rsp
     pushq %rcx
     movq %rcx, %rdi
     callq lfi_syscall_handler
     popq %rcx
+
+    // swap thread control block back to context pointer
+    movq %rcx, %fs:0x0
 
     // restore registers
     movq REGS_RSP(%rcx), %rsp

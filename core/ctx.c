@@ -9,7 +9,7 @@ extern int
 lfi_ctx_entry(struct LFIContext *ctx, uintptr_t *host_sp_ptr, uintptr_t entry) asm("lfi_ctx_entry");
 
 extern void
-lfi_ctx_end(uintptr_t host_sp, int val) asm("lfi_ctx_end");
+lfi_ctx_end(struct LFIContext *ctx, int val) asm("lfi_ctx_end");
 
 EXPORT struct LFIContext *
 lfi_ctx_new(struct LFIBox *box, void *ctxp)
@@ -56,7 +56,7 @@ lfi_ctx_exit(struct LFIContext *ctx, int code)
 {
     lfi_ctx = NULL;
     // Exit the sandbox, restoring the stack pointer to the value in host_sp.
-    lfi_ctx_end(ctx->regs.host_sp, code);
+    lfi_ctx_end(ctx, code);
 }
 
 EXPORT struct LFIBox *
