@@ -8,8 +8,6 @@
 #include <string.h>
 #include <unistd.h>
 
-// clang-format: off
-
 #if defined(LFI_ARCH_ARM64)
 
 static uint8_t prog[] = {
@@ -33,8 +31,6 @@ static uint8_t prog[] = {
 #error "architecture not supported"
 
 #endif
-
-// clang-format: on
 
 static void
 handler(struct LFIContext *ctx)

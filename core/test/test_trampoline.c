@@ -6,12 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
 
 #define BENCHMARK 1
-
-// clang-format: off
 
 #if defined(LFI_ARCH_ARM64)
 
@@ -37,7 +35,7 @@ static uint8_t prog[] = {
     0x4d, 0x09, 0xf3,       // or %r14, %r11
     0x41, 0xff, 0xe3,       // jmp *%r11
     0x66, 0x2e, 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00, // nop
-    0x0f, 0x1f, 0x40, 0x00, // nop
+    0x0f, 0x1f, 0x40, 0x00,                                     // nop
 };
 
 _Static_assert(sizeof(prog) % 32 == 0, "end of prog is not bundle-aligned");
@@ -53,18 +51,16 @@ static uint8_t ret[] = {
 
 #endif
 
-static inline
-long long unsigned time_ns()
+static inline long long unsigned
+time_ns()
 {
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts)) {
         exit(1);
     }
-    return ((long long unsigned)ts.tv_sec) * 1000000000LLU +
-        (long long unsigned)ts.tv_nsec;
+    return ((long long unsigned) ts.tv_sec) * 1000000000LLU +
+        (long long unsigned) ts.tv_nsec;
 }
-
-// clang-format: on
 
 int
 main(void)

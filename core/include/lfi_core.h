@@ -222,12 +222,13 @@ extern _Thread_local struct LFIContext *lfi_ctx;
 
 extern const void *lfi_trampoline_addr;
 
-#define LFI_INVOKE(ctx, fn, ret_type, args, ...) ({ \
-        lfi_ctx = ctx; \
-        lfi_targetfn = fn; \
-        lfi_retfn = lfi_ctx_ret(ctx); \
-        ret_type (*_trampoline)args = (ret_type (*)args) lfi_trampoline_addr; \
-        _trampoline(__VA_ARGS__); \
+#define LFI_INVOKE(ctx, fn, ret_type, args, ...)                              \
+    ({                                                                        \
+        lfi_ctx = ctx;                                                        \
+        lfi_targetfn = fn;                                                    \
+        lfi_retfn = lfi_ctx_ret(ctx);                                         \
+        ret_type(*_trampoline) args = (ret_type(*) args) lfi_trampoline_addr; \
+        _trampoline(__VA_ARGS__);                                             \
     })
 
 #ifdef __cplusplus
