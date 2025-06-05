@@ -62,6 +62,11 @@ lfi_new(struct LFIOptions opts, size_t reserve)
         .guardsize = kb(80),
     };
 
+    if (opts.no_verify)
+        LOG(engine, "unsafe: verification disabled");
+    if (opts.allow_wx)
+        LOG(engine, "unsafe: allowing WX pages");
+
     init_verifier(&engine->verifier, &opts);
 
     LOG(engine, "initialized LFI engine: %ld GiB",

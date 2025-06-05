@@ -71,10 +71,11 @@ struct LFIBoxInfo {
 #define LFI_PROT_WRITE 2
 #define LFI_PROT_EXEC  4
 
-// Currently MAP_SHARED is disabled to prevent pages from being double-mapped
-// as writable and executable in two separate locations. In the future, we
-// could have a more fine-grained way to prevent this attack.
-// #define LFI_MAP_SHARED    1
+// CAUTION: the runtime must be careful allowing mappings with MAP_SHARED,
+// since such a page could be mapped twice: once as W and once as X. Thus, the
+// user of liblfi should not allow the sandbox to aliased WX mappings via
+// MAP_SHARED, and liblfi does not internally enforce this restriction.
+#define LFI_MAP_SHARED    1
 #define LFI_MAP_PRIVATE   2
 #define LFI_MAP_FIXED     16
 #define LFI_MAP_ANONYMOUS 32

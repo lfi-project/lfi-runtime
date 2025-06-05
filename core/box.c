@@ -120,7 +120,8 @@ host_flags(int flags)
 {
     return ((flags & LFI_MAP_PRIVATE) ? MAP_PRIVATE : 0) |
         ((flags & LFI_MAP_ANONYMOUS) ? MAP_ANONYMOUS : 0) |
-        ((flags & LFI_MAP_FIXED) ? MAP_FIXED : 0);
+        ((flags & LFI_MAP_FIXED) ? MAP_FIXED : 0) |
+        ((flags & LFI_MAP_SHARED) ? MAP_SHARED : 0);
 }
 
 // Create a fixed memory mapping with the LFI_MAP/LFI_PROT flags.
