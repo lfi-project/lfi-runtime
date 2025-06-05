@@ -42,6 +42,9 @@ struct LFIContext {
     // Registers, including saved host stack and thread pointers.
     struct LFIRegs regs;
 
+    // Function in the sandbox that calls lfi_ret.
+    lfiptr retfn;
+
     // User-provided data pointer.
     void *ctxp;
 

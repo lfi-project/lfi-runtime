@@ -184,6 +184,16 @@ lfi_ctx_exit(struct LFIContext *ctx, int code);
 struct LFIBox *
 lfi_ctx_box(struct LFIContext *ctx);
 
+// Set the context's ret function to ret, which should be a function inside the
+// sandbox that calls the lfi_ret runtime call. Initializing this is necessary
+// if you use LFI_INVOKE, but otherwise is not necessary.
+void
+lfi_ctx_init_ret(struct LFIContext *ctx, lfiptr ret);
+
+// Return the context's ret function.
+lfiptr
+lfi_ctx_ret(struct LFIContext *ctx);
+
 // Returns the error code for the current error.
 int
 lfi_errno(void);
@@ -212,10 +222,10 @@ extern _Thread_local struct LFIContext *lfi_ctx;
 
 extern const void *lfi_trampoline_addr;
 
-#define LFI_INVOKE(ctx, fn, retfn, ret_type, args, ...) ({ \
+#define LFI_INVOKE(ctx, fn, ret_type, args, ...) ({ \
         lfi_ctx = ctx; \
         lfi_targetfn = fn; \
-        lfi_retfn = retfn; \
+        lfi_retfn = lfi_ctx_ret(ctx); \
         ret_type (*_trampoline)args = (ret_type (*)args) lfi_trampoline_addr; \
         _trampoline(__VA_ARGS__); \
     })

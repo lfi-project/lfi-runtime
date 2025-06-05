@@ -97,6 +97,8 @@ main(void)
     lfi_box_copyto(box, p, prog, sizeof(prog));
     lfi_box_copyto(box, pret, ret, sizeof(ret));
 
+    lfi_ctx_init_ret(ctx, pret);
+
     int r = lfi_box_mprotect(box, p, pagesize, LFI_PROT_READ | LFI_PROT_EXEC);
     assert(r == 0);
 
@@ -109,7 +111,7 @@ main(void)
     lfi_ctx_regs(ctx)->sp = stack + pagesize;
 #endif
 
-    int x = LFI_INVOKE(ctx, p, pret, int, (int, int), 10, 32);
+    int x = LFI_INVOKE(ctx, p, int, (int, int), 10, 32);
     assert(x == 42);
     printf("add(%d, %d) = %d\n", 10, 32, x);
 
@@ -117,7 +119,7 @@ main(void)
     size_t iters = 100000000;
     long long unsigned start = time_ns();
     for (size_t i = 0; i < iters; i++) {
-        LFI_INVOKE(ctx, p, pret, int, (int, int), 10, 32);
+        LFI_INVOKE(ctx, p, int, (int, int), 10, 32);
     }
     long long unsigned elapsed = time_ns() - start;
     printf("time per invocation: %.1f ns\n", (float) elapsed / (float) iters);

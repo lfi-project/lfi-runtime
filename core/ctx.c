@@ -65,3 +65,15 @@ lfi_ctx_box(struct LFIContext *ctx)
 {
     return ctx->box;
 }
+
+EXPORT void
+lfi_ctx_init_ret(struct LFIContext *ctx, lfiptr ret)
+{
+    ctx->retfn = ret;
+}
+
+EXPORT lfiptr
+lfi_ctx_ret(struct LFIContext *ctx)
+{
+    return ctx->retfn;
+}
