@@ -15,3 +15,11 @@ lfi_set_tp:
 .global lfi_ret
 lfi_ret:
     int3
+
+.global lfi_ctx_entry
+lfi_ctx_entry:
+    int3
+
+.global lfi_ctx_end
+lfi_ctx_end:
+    int3

@@ -70,6 +70,8 @@ main(void)
     r = lfi_box_mprotect(box, p, pagesize, LFI_PROT_READ | LFI_PROT_WRITE | LFI_PROT_EXEC);
     assert(r == -1);
 
+    lfi_box_free(box);
+
     lfi_free(engine);
 
     return 0;

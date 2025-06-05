@@ -1,3 +1,4 @@
 srcs += files(
-  'runtime.S'
+  'runtime.S',
+  'regs.c',
 )

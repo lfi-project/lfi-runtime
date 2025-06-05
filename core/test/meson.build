@@ -1,6 +1,7 @@
 tests = [
-  'init.c',
-  'box.c',
+  'test_init.c',
+  'test_box.c',
+  'test_ctx.c',
 ]
 
 foreach t : tests

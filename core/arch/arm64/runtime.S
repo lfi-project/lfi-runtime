@@ -15,3 +15,11 @@ lfi_set_tp:
 .global lfi_ret
 lfi_ret:
     brk #0
+
+.global lfi_ctx_entry
+lfi_ctx_entry:
+    brk #0
+
+.global lfi_ctx_end
+lfi_ctx_end:
+    brk #0

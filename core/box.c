@@ -138,22 +138,31 @@ mapmem(uintptr_t start, size_t size, int prot, int flags, int fd, off_t off)
 static int
 protectverify(struct LFIBox *box, uintptr_t base, size_t size, int prot)
 {
-    if ((prot & LFI_PROT_EXEC) == 0) {
+    bool noverify = box->engine->opts.noverify;
+    bool allow_wx = box->engine->opts.allow_wx && noverify;
+    bool w = (prot & LFI_PROT_WRITE) != 0;
+    bool x = (prot & LFI_PROT_EXEC) != 0;
+
+    // Allow mprotect if mapping is not executable, or verification is disabled
+    // and it's not WX, or WX is allowed (and verification is disabled).
+    if (!x || (noverify && !(w && x)) || allow_wx) {
         return mprotect((void *) base, size, host_prot(prot));
-    } else if ((prot & LFI_PROT_EXEC) && (prot & LFI_PROT_WRITE)) {
+    } else if (w && x) {
         LOG(box->engine, "error: attempted to set memory as WX");
         return -1;
     }
 
-    assert((prot & LFI_PROT_EXEC));
+    assert(x);
 
     // Mark the memory as read-only so we can verify it without someone else
     // writing to it at the same time.
     mprotect((void *) base, size, PROT_READ);
 
     // Verify.
-    if (!lfiv_verify(&box->engine->verifier, (char *) base, size, base))
+    if (!lfiv_verify(&box->engine->verifier, (char *) base, size, base)) {
+        LOG(box->engine, "verification failed");
         return -1;
+    }
     // Mark the memory as requested.
     return mprotect((void *) base, size, host_prot(prot));
 }
@@ -163,14 +172,21 @@ static int
 mapverify(struct LFIBox *box, uintptr_t start, size_t size, int prot, int flags,
     int fd, off_t off)
 {
-    if ((prot & LFI_PROT_EXEC) == 0) {
+    bool noverify = box->engine->opts.noverify;
+    bool allow_wx = box->engine->opts.allow_wx && noverify;
+    bool w = (prot & LFI_PROT_WRITE) != 0;
+    bool x = (prot & LFI_PROT_EXEC) != 0;
+
+    // Allow mprotect if mapping is not executable, or verification is disabled
+    // and it's not WX, or WX is allowed (and verification is disabled).
+    if (!x || (noverify && !(w && x)) || allow_wx) {
         return mapmem(start, size, prot, flags, fd, off);
-    } else if ((prot & LFI_PROT_EXEC) && (prot & LFI_PROT_WRITE)) {
+    } else if (w && x) {
         LOG(box->engine, "error: attempted to map WX memory");
         return -1;
     }
 
-    assert((prot & LFI_PROT_EXEC));
+    assert(x);
 
     // Map memory as readable so that we can verify it.
     int r;

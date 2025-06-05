@@ -7,6 +7,7 @@ srcs = files(
   'error.c',
   'log.c',
   'box.c',
+  'ctx.c',
 )
 
 subdir('arch/' + archmap[cpu])

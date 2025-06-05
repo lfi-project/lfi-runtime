@@ -28,9 +28,6 @@ struct LFIBox;
 struct LFIContext;
 
 struct LFIOptions {
-    // Disable verification.
-    bool noverify;
-
     // System page size.
     size_t pagesize;
 
@@ -45,6 +42,14 @@ struct LFIOptions {
 
     // Handler for 'syscall' runtime calls.
     void (*sys_handler)(struct LFIContext *ctx);
+
+    // Disable verification (unsafe).
+    bool noverify;
+
+    // Allow WX mappings (unsafe).
+    //
+    // If allow_wx is enabled you must also enable noverify.
+    bool allow_wx;
 };
 
 struct LFIBoxInfo {
@@ -153,7 +158,7 @@ lfi_ctx_new(struct LFIBox *box, void *ctxp);
 
 // Begins executing the sandbox context.
 int
-lfi_ctx_run(struct LFIContext *ctx);
+lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry);
 
 // Frees the sandbox context.
 void
@@ -163,6 +168,12 @@ lfi_ctx_free(struct LFIContext *ctx);
 // written.
 struct LFIRegs *
 lfi_ctx_regs(struct LFIContext *ctx);
+
+// Initializes registers to values that maintain sandbox invariants
+// (essentially, this sets all sandbox-reserved registers to the sandbox base
+// address).
+void
+lfi_ctx_regs_init(struct LFIContext *ctx);
 
 // Causes the sandbox context to exit with a given exit code.
 void
