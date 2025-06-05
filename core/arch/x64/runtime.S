@@ -179,11 +179,6 @@ lfi_set_tp:
     movq REGS_BASE(%REG_BASE), %REG_BASE
     jmpq *%r11
 
-.global lfi_ret
-.p2align 4
-lfi_ret:
-    int3
-
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits
 #endif

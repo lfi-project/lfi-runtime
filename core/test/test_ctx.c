@@ -59,6 +59,7 @@ main(void)
             .boxsize = gb(4),
             .pagesize = pagesize,
             .verbose = true,
+            .no_verify = true,
             .sys_handler = handler,
         },
         gb(256));

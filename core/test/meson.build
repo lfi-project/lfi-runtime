@@ -2,6 +2,7 @@ tests = [
   'test_init.c',
   'test_box.c',
   'test_ctx.c',
+  'test_trampoline.c',
 ]
 
 foreach t : tests

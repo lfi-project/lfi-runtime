@@ -1,0 +1,127 @@
+#include "lfi_arch.h"
+#include "lfi_core.h"
+#include "test.h"
+
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <time.h>
+
+#define BENCHMARK 0
+
+// clang-format: off
+
+#if defined(LFI_ARCH_ARM64)
+
+static uint8_t prog[] = {
+};
+
+static uint8_t ret[] = {
+};
+
+#elif defined(LFI_ARCH_X64)
+
+static uint8_t prog[] = {
+    0x48, 0x01, 0xfe,       // add %rdi, %rsi
+    0x48, 0x89, 0xf0,       // mov %rsi, %rax
+    0x41, 0x5b,             // pop %r11
+    0x41, 0x83, 0xe3, 0xe0, // and $0xffffffe0, %r11d
+    0x4d, 0x09, 0xf3,       // or %r14, %r11
+    0x41, 0xff, 0xe3,       // jmp *%r11
+    0x66, 0x2e, 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00, // nop
+    0x0f, 0x1f, 0x40, 0x00, // nop
+};
+
+_Static_assert(sizeof(prog) % 32 == 0, "end of prog is not bundle-aligned");
+
+static uint8_t ret[] = {
+    0x4c, 0x8d, 0x1d, 0x04, 0x00, 0x00, 0x00, // lea 0x4(%rip), %r11
+    0x41, 0xff, 0x66, 0x18,                   // jmp *0x18(%r14)
+};
+
+#else
+
+#error "architecture not supported"
+
+#endif
+
+static inline
+long long unsigned time_ns()
+{
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts)) {
+        exit(1);
+    }
+    return ((long long unsigned)ts.tv_sec) * 1000000000LLU +
+        (long long unsigned)ts.tv_nsec;
+}
+
+// clang-format: on
+
+int
+main(void)
+{
+    size_t pagesize = getpagesize();
+    // Initialize LFI.
+    struct LFIEngine *engine = lfi_new(
+        (struct LFIOptions) {
+            .boxsize = gb(4),
+            .pagesize = pagesize,
+            .verbose = true,
+            .no_verify = true,
+        },
+        gb(256));
+    assert(engine);
+
+    // Create a new sandbox.
+    struct LFIBox *box = lfi_box_new(engine);
+    assert(box);
+
+    struct LFIContext *ctx = lfi_ctx_new(box, NULL);
+    assert(ctx);
+
+    lfiptr p = lfi_box_mapany(box, pagesize, LFI_PROT_READ | LFI_PROT_WRITE,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
+    assert(p != (lfiptr) -1);
+    assert(lfi_box_ptrvalid(box, p));
+
+    lfiptr pret = p + sizeof(prog);
+    lfi_box_copyto(box, p, prog, sizeof(prog));
+    lfi_box_copyto(box, pret, ret, sizeof(ret));
+
+    int r = lfi_box_mprotect(box, p, pagesize, LFI_PROT_READ | LFI_PROT_EXEC);
+    assert(r == 0);
+
+    lfiptr stack = lfi_box_mapany(box, pagesize, LFI_PROT_READ | LFI_PROT_WRITE,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
+
+#if defined(LFI_ARCH_X64)
+    lfi_ctx_regs(ctx)->rsp = stack + pagesize;
+#elif defined(LFI_ARCH_ARM64)
+    lfi_ctx_regs(ctx)->sp = stack + pagesize;
+#endif
+
+    int x = LFI_INVOKE(ctx, p, pret, int, (int, int), 10, 32);
+    assert(x == 42);
+    printf("add(%d, %d) = %d\n", 10, 32, x);
+
+#if BENCHMARK
+    size_t iters = 100000000;
+    long long unsigned start = time_ns();
+    for (size_t i = 0; i < iters; i++) {
+        LFI_INVOKE(ctx, p, pret, int, (int, int), 10, 32);
+    }
+    long long unsigned elapsed = time_ns() - start;
+    printf("time per invocation: %.1f ns\n", (float) elapsed / (float) iters);
+#endif
+
+    lfi_ctx_free(ctx);
+
+    lfi_box_free(box);
+
+    lfi_free(engine);
+
+    return 0;
+}
