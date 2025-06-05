@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 static int
-vasprintf(char **strp, const char *fmt, va_list ap)
+xvasprintf(char **strp, const char *fmt, va_list ap)
 {
     va_list cp;
 
@@ -33,7 +33,7 @@ xasprintf(const char *fmt, ...)
     char *strp = NULL;
 
     va_start(ap, fmt);
-    int error = vasprintf(&strp, fmt, ap);
+    int error = xvasprintf(&strp, fmt, ap);
     va_end(ap);
 
     if (error == -1)

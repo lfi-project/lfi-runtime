@@ -9,8 +9,13 @@ _Static_assert(offsetof(struct LFIRegs, tp) == REGS_TP, "incorrect REGS offset")
 
 #if defined(LFI_ARCH_ARM64)
 
-_Static_assert(offsetof(struct LFIRegs, x0) == REGS_GPRS, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, x0) == REGS_X0, "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, sp) == REGS_SP, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, REG_BASE) == REGS_BASE, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, REG_ADDR) == REGS_ADDR, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, vector) == REGS_VECTOR, "incorrect REGS offset");
+
+_Static_assert(offsetof(struct LFIRegs, vector) % 16 == 0, "incorrect vector alignment");
 
 #elif defined(LFI_ARCH_X64)
 

@@ -45,6 +45,7 @@ handler(struct LFIContext *ctx)
     int arg = (int) lfi_ctx_regs(ctx)->rax;
 #endif
     assert(arg == 42);
+    printf("success: received %d\n", 42);
     lfi_ctx_exit(ctx, 1);
 }
 

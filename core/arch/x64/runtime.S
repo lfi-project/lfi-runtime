@@ -19,6 +19,7 @@ lfi_ctx_entry:
     pushq %rbp
     // save stack to host_sp_ptr
     movq %rsp, (%rsi)
+    // put entrypoint in %r11
     movq %rdx, %r11
 
     // set the sandbox thread control block by saving the old value of %fs:0x0
@@ -27,7 +28,7 @@ lfi_ctx_entry:
     movq %rax, REGS_HOST_TP(%rdi)
     movq %rdi, %fs:0x0
 
-    // set all registers
+    // load all registers
     movq REGS_RSP(%rdi), %rsp
     movq REGS_RAX(%rdi), %rax
     movq REGS_RCX(%rdi), %rcx
@@ -122,7 +123,7 @@ lfi_syscall_entry:
     movq REGS_HOST_TP(%rcx), %rdi
     movq %rdi, %fs:0x0
 
-    // context is now in %rcx
+    // restore host stack and call handler
     movq REGS_HOST_SP(%rcx), %rsp
     pushq %rcx
     movq %rcx, %rdi
@@ -135,7 +136,7 @@ lfi_syscall_entry:
     // restore registers
     movq REGS_RSP(%rcx), %rsp
     movq REGS_RAX(%rcx), %rax
-    mov  $0, %rcx // clobbered
+    movq REGS_RDI(%rcx), %rdi
     movq REGS_RDX(%rcx), %rdx
     movq REGS_RBX(%rcx), %rbx
     movq REGS_RBP(%rcx), %rbp
@@ -160,7 +161,7 @@ lfi_syscall_entry:
     movq REGS_XMM+13*16(%rcx), %xmm13
     movq REGS_XMM+14*16(%rcx), %xmm14
     movq REGS_XMM+15*16(%rcx), %xmm15
-    movq REGS_RDI(%rcx), %rdi
+    movq $0, %rcx // clobbered
     jmpq *%r11
 
 .global lfi_get_tp

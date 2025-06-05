@@ -16,7 +16,7 @@ c_args = [
 compiler = meson.get_compiler('c')
 has_auto_var_init = compiler.has_argument('-ftrivial-auto-var-init=zero')
 if has_auto_var_init
-  c_args_hardened += '-ftrivial-auto-var-init=zero'
+  c_args += '-ftrivial-auto-var-init=zero'
 endif
 c_args_warnings = [
   '-Wno-unused-parameter',

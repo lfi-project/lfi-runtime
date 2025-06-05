@@ -1,17 +1,19 @@
 #pragma once
 
-// Offsets for the LFIRegs struct. These are
-// static asserted to be correct in arch_asm.c
-// and used in hand-written assembly for
-// accessing offsets of the LFIRegs struct.
+// Offsets for the LFIRegs struct. These are statically asserted to be correct
+// in arch_asm.c and used in hand-written assembly for accessing offsets of the
+// LFIRegs struct.
 #define REGS_HOST_SP 0
 #define REGS_HOST_TP 8
 #define REGS_TP      16
-#define REGS_GPRS    32
 
 #if defined(__aarch64__) || defined(_M_ARM64)
 
-#define REGS_SP 288
+#define REGS_X0 32
+#define REGS_ADDR (REGS_X0+18*8) // x18
+#define REGS_BASE (REGS_X0+21*8) // x21
+#define REGS_SP 280
+#define REGS_VECTOR 288
 
 #define REG_BASE x21
 #define REG_ADDR x18

@@ -50,7 +50,6 @@ struct LFIRegs {
     uint64_t x29;
     uint64_t x30;
     uint64_t sp;
-    uint64_t _pad[3];
     uint64_t vector[64];
 };
 
