@@ -206,6 +206,9 @@ enum {
     LFI_ERR_MMAP = 4,
 };
 
+extern _Thread_local void *lfi_retfn;
+extern _Thread_local void *lfi_targetfn;
+
 #ifdef __cplusplus
 }
 #endif

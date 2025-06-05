@@ -8,6 +8,7 @@ srcs = files(
   'log.c',
   'box.c',
   'ctx.c',
+  'trampoline.c',
   'arch_asm.c',
 )
 

@@ -183,3 +183,7 @@ lfi_set_tp:
 .p2align 4
 lfi_ret:
     int3
+
+#ifndef __APPLE__
+.section .note.GNU-stack,"",@progbits
+#endif

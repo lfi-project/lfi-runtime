@@ -216,7 +216,6 @@ lfi_set_tp:
     add x30, REG_BASE, w30, uxtw
     ret
 
-.global lfi_ret
-.p2align 4
-lfi_ret:
-    brk #0
+#ifndef __APPLE__
+.section .note.GNU-stack,"",@progbits
+#endif
