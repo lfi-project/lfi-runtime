@@ -25,7 +25,7 @@ main(void)
         (struct LFIOptions) {
             .boxsize = gb(4),
             .pagesize = pagesize,
-            .noverify = true,
+            .no_verify = true,
         },
         gb(256));
 

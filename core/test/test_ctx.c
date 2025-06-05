@@ -36,6 +36,18 @@ static uint8_t prog[] = {
 
 // clang-format: on
 
+static void
+handler(struct LFIContext *ctx)
+{
+#if defined(LFI_ARCH_ARM64)
+    int arg = (int) lfi_ctx_regs(ctx)->x8;
+#elif defined(LFI_ARCH_X64)
+    int arg = (int) lfi_ctx_regs(ctx)->rax;
+#endif
+    assert(arg == 42);
+    lfi_ctx_exit(ctx, 1);
+}
+
 int
 main(void)
 {
@@ -45,28 +57,19 @@ main(void)
         (struct LFIOptions) {
             .boxsize = gb(4),
             .pagesize = pagesize,
-            .noverify = true,
+            .no_verify = true,
             .verbose = true,
+            .sys_handler = handler,
         },
         gb(256));
-
-    if (!engine) {
-        fprintf(stderr, "failed to create LFI engine: %s\n", lfi_errmsg());
-        exit(1);
-    }
+    assert(engine);
 
     // Create a new sandbox.
     struct LFIBox *box = lfi_box_new(engine);
-    if (!box) {
-        fprintf(stderr, "failed to create LFI sandbox: %s\n", lfi_errmsg());
-        exit(1);
-    }
+    assert(box);
 
     struct LFIContext *ctx = lfi_ctx_new(box, NULL);
-    if (!ctx) {
-        fprintf(stderr, "failed to create LFI context: %s\n", lfi_errmsg());
-        exit(1);
-    }
+    assert(ctx);
 
     lfiptr p = lfi_box_mapany(box, pagesize, LFI_PROT_READ | LFI_PROT_WRITE, LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
     assert(p != (lfiptr) -1);
@@ -77,7 +80,8 @@ main(void)
     int r = lfi_box_mprotect(box, p, pagesize, LFI_PROT_READ | LFI_PROT_EXEC);
     assert(r == 0);
 
-    lfi_ctx_run(ctx, p);
+    int code = lfi_ctx_run(ctx, p);
+    assert(code == 1);
 
     lfi_ctx_free(ctx);
 

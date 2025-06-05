@@ -138,14 +138,14 @@ mapmem(uintptr_t start, size_t size, int prot, int flags, int fd, off_t off)
 static int
 protectverify(struct LFIBox *box, uintptr_t base, size_t size, int prot)
 {
-    bool noverify = box->engine->opts.noverify;
-    bool allow_wx = box->engine->opts.allow_wx && noverify;
+    bool no_verify = box->engine->opts.no_verify;
+    bool allow_wx = box->engine->opts.allow_wx && no_verify;
     bool w = (prot & LFI_PROT_WRITE) != 0;
     bool x = (prot & LFI_PROT_EXEC) != 0;
 
     // Allow mprotect if mapping is not executable, or verification is disabled
     // and it's not WX, or WX is allowed (and verification is disabled).
-    if (!x || (noverify && !(w && x)) || allow_wx) {
+    if (!x || (no_verify && !(w && x)) || allow_wx) {
         return mprotect((void *) base, size, host_prot(prot));
     } else if (w && x) {
         LOG(box->engine, "error: attempted to set memory as WX");
@@ -172,14 +172,14 @@ static int
 mapverify(struct LFIBox *box, uintptr_t start, size_t size, int prot, int flags,
     int fd, off_t off)
 {
-    bool noverify = box->engine->opts.noverify;
-    bool allow_wx = box->engine->opts.allow_wx && noverify;
+    bool no_verify = box->engine->opts.no_verify;
+    bool allow_wx = box->engine->opts.allow_wx && no_verify;
     bool w = (prot & LFI_PROT_WRITE) != 0;
     bool x = (prot & LFI_PROT_EXEC) != 0;
 
     // Allow mprotect if mapping is not executable, or verification is disabled
     // and it's not WX, or WX is allowed (and verification is disabled).
-    if (!x || (noverify && !(w && x)) || allow_wx) {
+    if (!x || (no_verify && !(w && x)) || allow_wx) {
         return mapmem(start, size, prot, flags, fd, off);
     } else if (w && x) {
         LOG(box->engine, "error: attempted to map WX memory");

@@ -44,11 +44,11 @@ struct LFIOptions {
     void (*sys_handler)(struct LFIContext *ctx);
 
     // Disable verification (unsafe).
-    bool noverify;
+    bool no_verify;
 
     // Allow WX mappings (unsafe).
     //
-    // If allow_wx is enabled you must also enable noverify.
+    // If allow_wx is enabled you must also enable no_verify.
     bool allow_wx;
 };
 

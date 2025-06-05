@@ -13,7 +13,7 @@ logerr(char *msg, size_t size)
 static void
 init_verifier(struct LFIVerifier *v, struct LFIOptions *opts)
 {
-    if (opts->noverify)
+    if (opts->no_verify)
         return;
 
     if (opts->stores_only)
