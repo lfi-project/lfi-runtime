@@ -4,8 +4,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 
 static bool
 isbyte(char *buf, size_t size, char b)
@@ -45,7 +45,8 @@ main(void)
     assert(info.size == gb(4));
 
     // Request a mapping from anywhere in the sandbox (should succeed).
-    lfiptr p = lfi_box_mapany(box, pagesize, LFI_PROT_READ, LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
+    lfiptr p = lfi_box_mapany(box, pagesize, LFI_PROT_READ,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
     assert(p != (lfiptr) -1);
     assert(lfi_box_ptrvalid(box, p));
 
@@ -66,7 +67,8 @@ main(void)
     assert(isbyte((char *) lfi_box_l2p(box, p), sizeof(buf), 42));
 
     // Try to make a RWX page (should fail).
-    r = lfi_box_mprotect(box, p, pagesize, LFI_PROT_READ | LFI_PROT_WRITE | LFI_PROT_EXEC);
+    r = lfi_box_mprotect(box, p, pagesize,
+        LFI_PROT_READ | LFI_PROT_WRITE | LFI_PROT_EXEC);
     assert(r == -1);
 
     lfi_box_free(box);

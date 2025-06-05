@@ -6,7 +6,8 @@
 _Thread_local struct LFIContext *lfi_ctx;
 
 extern int
-lfi_ctx_entry(struct LFIContext *ctx, uintptr_t *host_sp_ptr, uintptr_t entry) asm("lfi_ctx_entry");
+lfi_ctx_entry(struct LFIContext *ctx, uintptr_t *host_sp_ptr,
+    uintptr_t entry) asm("lfi_ctx_entry");
 
 extern void
 lfi_ctx_end(struct LFIContext *ctx, int val) asm("lfi_ctx_end");
