@@ -9,16 +9,22 @@
 #include <unistd.h>
 #include <time.h>
 
-#define BENCHMARK 0
+#define BENCHMARK 1
 
 // clang-format: off
 
 #if defined(LFI_ARCH_ARM64)
 
 static uint8_t prog[] = {
+    0x00, 0x00, 0x01, 0x8b, // add x0, x0, x1
+    0xc0, 0x03, 0x5f, 0xd6, // ret
 };
 
 static uint8_t ret[] = {
+    0xf6, 0x03, 0x1e, 0xaa, // mov x22, x30
+    0xbe, 0x0e, 0x40, 0xf9, // ldr x30, [x21, #24]
+    0xc0, 0x03, 0x3f, 0xd6, // blr x30
+    0xbe, 0x42, 0x36, 0x8b, // add x30, x21, w22, uxtw
 };
 
 #elif defined(LFI_ARCH_X64)

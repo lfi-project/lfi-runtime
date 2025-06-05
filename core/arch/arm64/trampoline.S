@@ -55,6 +55,13 @@ lfi_trampoline:
 
     get_tls_vars
 
+    // set the sandbox thread control block by saving the old value of
+    // tpidr_el0 into the context and setting it to point to the context
+    // itself.
+    mrs x12, tpidr_el0
+    str x12, [x8, REGS_HOST_TP]
+    msr tpidr_el0, x8
+
     // save user sp to stack
     ldr x12, [x8, REGS_SP]
     stp x12, xzr, [sp, #-16]!
