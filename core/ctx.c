@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-_Thread_local struct LFIContext *lfi_ctx;
+EXPORT _Thread_local struct LFIContext *lfi_ctx;
 
 extern int
 lfi_ctx_entry(struct LFIContext *ctx, uintptr_t *host_sp_ptr,

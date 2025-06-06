@@ -1,9 +1,9 @@
-#include "lfi_core.h"
+#include "core.h"
 
-_Thread_local lfiptr lfi_retfn;
-_Thread_local lfiptr lfi_targetfn;
+EXPORT _Thread_local lfiptr lfi_retfn;
+EXPORT _Thread_local lfiptr lfi_targetfn;
 
-extern void
+EXPORT extern void
 lfi_trampoline() asm("lfi_trampoline");
 
-const void *lfi_trampoline_addr = &lfi_trampoline;
+EXPORT const void *lfi_trampoline_addr = &lfi_trampoline;
