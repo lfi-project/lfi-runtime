@@ -33,6 +33,25 @@ if not archmap.has_key(cpu)
   subdir_done()
 endif
 
+defines = []
+if compiler.has_function('getdents64', prefix : '''#define _GNU_SOURCE
+#include <dirent.h>''')
+  defines += '-DHAVE_GETDENTS64'
+endif
+if compiler.has_function('memfd_create', prefix : '''#define _GNU_SOURCE
+#include <sys/mman.h>''')
+  defines += '-DHAVE_MEMFD_CREATE'
+endif
+if compiler.has_function('getentropy', prefix : '#include <unistd.h>')
+  defines += '-DHAVE_GETENTROPY'
+endif
+if compiler.has_function('getrandom', prefix : '#include <sys/random.h>')
+  defines += '-DHAVE_GETRANDOM'
+endif
+if compiler.has_function('arc4random_buf', prefix : '#include <stdlib.h>')
+  defines += '-DHAVE_ARC4RANDOM_BUF'
+endif
+
 subdir('core')
 subdir('linux')
 subdir('tools')

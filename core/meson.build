@@ -17,7 +17,7 @@ subdir('arch/' + archmap[cpu])
 liblfi_core = static_library(
   'lfi-core',
   srcs,
-  c_args: c_args + c_args_warnings,
+  c_args: c_args + c_args_warnings + defines,
   dependencies: [lfiv, mmap, boxmap],
   install: true,
   include_directories: include_directories('include'),

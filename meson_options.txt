@@ -1,0 +1,11 @@
+option('enable_threads',
+  type: 'boolean',
+  value: true,
+  description: 'enable use of threads and futexes')
+
+option('max_futexes',
+  type: 'integer',
+  min: 1,
+  max: 16384,
+  value: 512,
+  description: 'maximum number of futexes per sandbox')
