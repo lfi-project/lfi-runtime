@@ -2,11 +2,11 @@
 
 #include "linux.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct Buf {
     uint8_t *data;
@@ -14,9 +14,9 @@ struct Buf {
 };
 
 static inline bool
-buf_write(struct Buf* buf, uint8_t* data, size_t size)
+buf_write(struct Buf *buf, uint8_t *data, size_t size)
 {
-    uint8_t* b = realloc(buf->data, buf->size + size);
+    uint8_t *b = realloc(buf->data, buf->size + size);
     if (!b)
         return false;
     buf->data = b;
@@ -26,7 +26,7 @@ buf_write(struct Buf* buf, uint8_t* data, size_t size)
 }
 
 static inline size_t
-buf_read(struct Buf buf, void* to, size_t count, size_t offset)
+buf_read(struct Buf buf, void *to, size_t count, size_t offset)
 {
     if (offset + count > buf.size)
         count = buf.size - offset;

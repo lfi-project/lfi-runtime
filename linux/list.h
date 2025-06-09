@@ -2,7 +2,8 @@
 
 #include <stddef.h>
 
-#define LIST_CONTAINER(type, field, ptr) ((type*)(((char *) (ptr)) - offsetof(type, field)))
+#define LIST_CONTAINER(type, field, ptr) \
+    ((type *) (((char *) (ptr)) - offsetof(type, field)))
 
 struct List {
     struct List *next;
@@ -16,14 +17,14 @@ list_init(struct List *l)
     l->prev = l;
 }
 
-struct List*
-list_first(struct List* list);
+struct List *
+list_first(struct List *list);
 
-struct List*
-list_next(struct List* list, struct List* e);
-
-void
-list_make_first(struct List** list, struct List* e);
+struct List *
+list_next(struct List *list, struct List *e);
 
 void
-list_remove(struct List** list, struct List* e);
+list_make_first(struct List **list, struct List *e);
+
+void
+list_remove(struct List **list, struct List *e);

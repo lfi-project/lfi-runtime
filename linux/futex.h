@@ -1,7 +1,7 @@
 #pragma once
 
-#include "list.h"
 #include "config.h"
+#include "list.h"
 
 #include <pthread.h>
 #include <stdint.h>
@@ -18,7 +18,7 @@ struct Futex {
 
 struct Futexes {
     pthread_mutex_t lock;
-    struct List* active;
-    struct List* free;
+    struct List *active;
+    struct List *free;
     struct Futex futexes[CONFIG_MAX_FUTEXES];
 };

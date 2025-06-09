@@ -1,4 +1,5 @@
 #include "elfload.h"
+
 #include "buf.h"
 
 #include <elf.h>
@@ -35,10 +36,11 @@ elf_interp(uint8_t *prog_data, size_t prog_size)
         if (phdr[x].p_type == PT_INTERP) {
             if (phdr[x].p_filesz >= INTERP_MAX)
                 return NULL;
-            char* interp = malloc(phdr[x].p_filesz);
+            char *interp = malloc(phdr[x].p_filesz);
             if (!interp)
                 return NULL;
-            size_t n = buf_read(prog, interp, phdr[x].p_filesz, phdr[x].p_offset);
+            size_t n = buf_read(prog, interp, phdr[x].p_filesz,
+                phdr[x].p_offset);
             if (n != phdr[x].p_filesz) {
                 free(interp);
                 return NULL;
