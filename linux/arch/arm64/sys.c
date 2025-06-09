@@ -1,5 +1,5 @@
-#include "linux.h"
 #include "arch_sys.h"
+#include "linux.h"
 
 #include <assert.h>
 

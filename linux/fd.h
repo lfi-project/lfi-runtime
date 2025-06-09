@@ -3,10 +3,10 @@
 #include "linux.h"
 #include "proc.h"
 
-#include <sys/stat.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdbool.h>
+#include <sys/stat.h>
 
 // Assign the slot for 'fd' to the file 'ff'.
 void

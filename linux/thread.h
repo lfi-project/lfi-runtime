@@ -24,4 +24,6 @@ unlock_deferred(pthread_mutex_t **l)
     unlock(*l);
 }
 
-#define LOCK_WITH_DEFER(x, y) pthread_mutex_t* y __attribute__((cleanup(unlock_deferred))) = lock(x); (void) y;
+#define LOCK_WITH_DEFER(x, y)                                               \
+    pthread_mutex_t *y __attribute__((cleanup(unlock_deferred))) = lock(x); \
+    (void) y;

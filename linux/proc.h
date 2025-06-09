@@ -2,8 +2,8 @@
 
 #include "linux.h"
 
-#include <stddef.h>
 #include <pthread.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 
