@@ -3,7 +3,7 @@ mmap = subproject('libmmap').get_variable('mmap').as_link_whole()
 boxmap = subproject('libboxmap').get_variable('boxmap').as_link_whole()
 
 srcs = files(
-  'engine.c',
+  'core.c',
   'error.c',
   'log.c',
   'box.c',

@@ -8,7 +8,7 @@ liblfi_linux = static_library(
   c_args: c_args + c_args_warnings,
   dependencies: [lfi_core.as_link_whole()],
   install: true,
-  include_directories: include_directories('include'),
+  include_directories: include_directories('include', '../core/'),
 )
 
 lfi_linux = declare_dependency(link_with: liblfi_linux, include_directories: include_directories('include'))

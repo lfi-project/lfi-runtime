@@ -48,7 +48,7 @@ xasprintf(const char *fmt, ...)
 // that just prints to stderr. This is used when building for Android but when
 // liblog is not linked.
 __attribute__((weak)) int
-__android_log_print(int prio, const char *tag,  const char *fmt, ...)
+__android_log_print(int prio, const char *tag, const char *fmt, ...)
 {
     (void) prio;
 
