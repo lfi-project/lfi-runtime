@@ -105,6 +105,14 @@ lfiptr
 lfi_box_mapat(struct LFIBox *box, lfiptr addr, size_t size, int prot, int flags,
     int fd, off_t off);
 
+// Registers an existing memory mapping in the sandbox at 'addr'. This is used
+// in cases where the system loader has already mmapped a region in the sandbox
+// before liblfi has started. Returns -1 on failure. May run the verifier for
+// executable pages.
+lfiptr
+lfi_box_mapat_register(struct LFIBox *box, lfiptr addr, size_t size, int prot,
+    int flags, int fd, off_t off);
+
 // Creates a new memory mapping in the sandbox at an arbitrary location,
 // similar to mapat.
 lfiptr

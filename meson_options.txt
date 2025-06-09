@@ -3,9 +3,19 @@ option('enable_threads',
   value: true,
   description: 'enable use of threads and futexes')
 
+option('enable_syscalls',
+  type: 'string',
+  value: 'all',
+  description: 'comma-separated list of syscalls to enable')
+
 option('max_futexes',
   type: 'integer',
   min: 1,
   max: 16384,
   value: 512,
   description: 'maximum number of futexes per sandbox')
+
+option('enable_dyld',
+  type: 'boolean',
+  value: true,
+  description: 'enable loading of dynamically-linked executables')

@@ -1,20 +1,49 @@
 #include "linux.h"
 
+#include "file.h"
+
 #include <stdlib.h>
 #include <unistd.h>
 
-EXPORT struct LFILinuxEngine *
-lfi_linux_new(struct LFIEngine *engine, struct LFILinuxOptions opts)
+static bool
+init_streams(struct LFILinuxEngine *engine)
 {
-    struct LFILinuxEngine *lengine = malloc(sizeof(struct LFILinuxEngine));
-    if (!lengine)
+    engine->fstdin = filefdnew(STDIN_FILENO, LINUX_O_RDONLY);
+    if (!engine->fstdin)
+        goto err1;
+    engine->fstdout = filefdnew(STDOUT_FILENO, LINUX_O_WRONLY);
+    if (!engine->fstdout)
+        goto err2;
+    engine->fstderr = filefdnew(STDERR_FILENO, LINUX_O_WRONLY);
+    if (!engine->fstderr)
+        goto err3;
+
+    return true;
+err3:
+    free(engine->fstdout);
+err2:
+    free(engine->fstdin);
+err1:
+    return false;
+}
+
+EXPORT struct LFILinuxEngine *
+lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
+{
+    struct LFILinuxEngine *engine = malloc(sizeof(struct LFILinuxEngine));
+    if (!engine)
         return NULL;
-    *lengine = (struct LFILinuxEngine) {
-        .engine = engine,
+    *engine = (struct LFILinuxEngine) {
+        .engine = lfi_engine,
         .opts = opts,
     };
 
-    return lengine;
+    if (!init_streams(engine)) {
+        free(engine);
+        return NULL;
+    }
+
+    return engine;
 }
 
 static struct LFILinuxEngine *lib_engine;

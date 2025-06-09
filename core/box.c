@@ -135,6 +135,35 @@ mapmem(uintptr_t start, size_t size, int prot, int flags, int fd, off_t off)
     return 0;
 }
 
+// Verify a region given that it is marked with certain protections.
+static bool
+verify(struct LFIBox *box, uintptr_t base, size_t size, int prot)
+{
+    bool no_verify = box->engine->opts.no_verify;
+    bool allow_wx = box->engine->opts.allow_wx && no_verify;
+    bool w = (prot & LFI_PROT_WRITE) != 0;
+    bool x = (prot & LFI_PROT_EXEC) != 0;
+
+    // Allow mprotect if mapping is not executable, or verification is disabled
+    // and it's not WX, or WX is allowed (and verification is disabled).
+    if (!x || (no_verify && !(w && x)) || allow_wx) {
+        return true;
+    } else if (w && x) {
+        LOG(box->engine, "error: region is WX");
+        return false;
+    }
+
+    assert(x && !w);
+
+    // Verify.
+    if (!lfiv_verify(&box->engine->verifier, (char *) base, size, base)) {
+        LOG(box->engine, "verification failed");
+        return false;
+    }
+
+    return true;
+}
+
 // Set the protection for a memory mapping, and verify if necessary.
 static int
 protectverify(struct LFIBox *box, uintptr_t base, size_t size, int prot)
@@ -235,6 +264,24 @@ lfi_box_mapat(struct LFIBox *box, lfiptr addr, size_t size, int prot, int flags,
     if (m_addr == (uintptr_t) -1)
         return (lfiptr) -1;
     int r = mapverify(box, m_addr, size, prot, flags, fd, off);
+    if (r < 0) {
+        mm_unmap(&box->mm, m_addr, size);
+        return (lfiptr) -1;
+    }
+    return p2l(box, m_addr);
+}
+
+EXPORT lfiptr
+lfi_box_mapat_register(struct LFIBox *box, lfiptr addr, size_t size, int prot,
+    int flags, int fd, off_t off)
+{
+    assert(l2p(box, addr) >= box->min && l2p(box, addr) + size <= box->max);
+
+    uintptr_t m_addr = mm_mapat_cb(&box->mm, l2p(box, addr), size, prot, flags,
+        fd, off, cbunmap, NULL);
+    if (m_addr == (uintptr_t) -1)
+        return (lfiptr) -1;
+    int r = verify(box, m_addr, size, prot);
     if (r < 0) {
         mm_unmap(&box->mm, m_addr, size);
         return (lfiptr) -1;

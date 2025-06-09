@@ -8,3 +8,4 @@ subprojects/libmmap
 subprojects/libboxmap
 subprojects/libargp
 subprojects/lfi-verifier
+subprojects/cwalk
