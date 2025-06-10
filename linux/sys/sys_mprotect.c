@@ -1,5 +1,5 @@
-#include "sys/sys.h"
 #include "lock.h"
+#include "sys/sys.h"
 
 int
 sys_mprotect(struct LFILinuxThread *t, lfiptr addrp, size_t length, int prot)

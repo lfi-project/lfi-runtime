@@ -22,8 +22,10 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
         // clang-format off
     SYS(getpid,
             0)
+#ifdef LINUX_SYS_arch_prctl
     SYS(arch_prctl,
             sys_arch_prctl(t, a0, a1))
+#endif
     SYS(set_tid_address,
             sys_set_tid_address(t, a0))
     SYS(ioctl,

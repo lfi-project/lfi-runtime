@@ -98,12 +98,12 @@ lfi_proc_free(struct LFILinuxProc *proc)
 
 int
 proc_mapany(struct LFILinuxProc *p, size_t size, int prot, int flags, int fd,
-        off_t offset, lfiptr *o_mapstart)
+    off_t offset, lfiptr *o_mapstart)
 {
     int kfd = -1;
     if (fd >= 0) {
         // TODO: fdrelease this FDFile when this region is fully unmapped.
-        struct FDFile* f = fdget(&p->fdtable, fd);
+        struct FDFile *f = fdget(&p->fdtable, fd);
         if (!f)
             return -LINUX_EBADF;
         if (f->filefd) {
@@ -121,8 +121,8 @@ proc_mapany(struct LFILinuxProc *p, size_t size, int prot, int flags, int fd,
 }
 
 int
-proc_mapat(struct LFILinuxProc* p, lfiptr start, size_t size, int prot, int flags,
-        int fd, off_t offset)
+proc_mapat(struct LFILinuxProc *p, lfiptr start, size_t size, int prot,
+    int flags, int fd, off_t offset)
 {
     int kfd = -1;
     if (fd >= 0) {
@@ -144,7 +144,7 @@ proc_mapat(struct LFILinuxProc* p, lfiptr start, size_t size, int prot, int flag
 }
 
 int
-proc_unmap(struct LFILinuxProc* p, lfiptr start, size_t size)
+proc_unmap(struct LFILinuxProc *p, lfiptr start, size_t size)
 {
     LOCK_WITH_DEFER(&p->lk_box, lk_box);
     return lfi_box_munmap(p->box, start, size);

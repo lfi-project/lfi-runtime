@@ -79,7 +79,8 @@ uintptr_t
 sys_brk(struct LFILinuxThread *t, lfiptr addr);
 
 uintptr_t
-sys_mmap(struct LFILinuxThread *t, lfiptr addrp, size_t length, int prot, int flags, int fd, off_t off);
+sys_mmap(struct LFILinuxThread *t, lfiptr addrp, size_t length, int prot,
+    int flags, int fd, off_t off);
 
 int
 sys_mprotect(struct LFILinuxThread *t, lfiptr addrp, size_t length, int prot);

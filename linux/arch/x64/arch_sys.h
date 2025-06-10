@@ -2,102 +2,93 @@
 
 #include "lfi_core.h"
 
-// clang-format off
-
-enum {
-    LINUX_SYS_read               = 0,
-    LINUX_SYS_write              = 1,
-    LINUX_SYS_open               = 2,
-    LINUX_SYS_close              = 3,
-    LINUX_SYS_stat               = 4,
-    LINUX_SYS_fstat              = 5,
-    LINUX_SYS_lstat              = 6,
-    LINUX_SYS_poll               = 7,
-    LINUX_SYS_lseek              = 8,
-    LINUX_SYS_mmap               = 9,
-    LINUX_SYS_mprotect           = 10,
-    LINUX_SYS_munmap             = 11,
-    LINUX_SYS_brk                = 12,
-    LINUX_SYS_rt_sigaction       = 13,
-    LINUX_SYS_rt_sigprocmask     = 14,
-    LINUX_SYS_rt_sigreturn       = 15,
-    LINUX_SYS_ioctl              = 16,
-    LINUX_SYS_pread64            = 17,
-    LINUX_SYS_pwrite64           = 18,
-    LINUX_SYS_readv              = 19,
-    LINUX_SYS_writev             = 20,
-    LINUX_SYS_access             = 21,
-    LINUX_SYS_sched_yield        = 24,
-    LINUX_SYS_mremap             = 25,
-    LINUX_SYS_madvise            = 28,
-    LINUX_SYS_nanosleep          = 35,
-    LINUX_SYS_getpid             = 39,
-    LINUX_SYS_socket             = 41,
-    LINUX_SYS_clone              = 56,
-    LINUX_SYS_fork               = 57,
-    LINUX_SYS_vfork              = 58,
-    LINUX_SYS_execve             = 59,
-    LINUX_SYS_exit               = 60,
-    LINUX_SYS_uname              = 63,
-    LINUX_SYS_fcntl              = 72,
-    LINUX_SYS_fsync              = 74,
-    LINUX_SYS_truncate           = 76,
-    LINUX_SYS_ftruncate          = 77,
-    LINUX_SYS_getcwd             = 79,
-    LINUX_SYS_chdir              = 80,
-    LINUX_SYS_fchdir             = 81,
-    LINUX_SYS_rename             = 82,
-    LINUX_SYS_mkdir              = 83,
-    LINUX_SYS_unlink             = 87,
-    LINUX_SYS_readlink           = 89,
-    LINUX_SYS_chmod              = 90,
-    LINUX_SYS_fchmod             = 91,
-    LINUX_SYS_chown              = 92,
-    LINUX_SYS_fchown             = 93,
-    LINUX_SYS_lchown             = 94,
-    LINUX_SYS_getrlimit          = 97,
-    LINUX_SYS_getrusage          = 98,
-    LINUX_SYS_sysinfo            = 99,
-    LINUX_SYS_rt_sigpending      = 127,
-    LINUX_SYS_rt_sigtimedwait    = 128,
-    LINUX_SYS_rt_sigqueueinfo    = 129,
-    LINUX_SYS_rt_sigsuspend      = 130,
-    LINUX_SYS_sigaltstack        = 131,
-    LINUX_SYS_statfs             = 137,
-    LINUX_SYS_prctl              = 157,
-    LINUX_SYS_arch_prctl         = 158,
-    LINUX_SYS_setrlimit          = 160,
-    LINUX_SYS_gettid             = 186,
-    LINUX_SYS_getxattr           = 191,
-    LINUX_SYS_lgetxattr          = 192,
-    LINUX_SYS_time               = 201,
-    LINUX_SYS_futex              = 202,
-    LINUX_SYS_sched_setaffinity  = 203,
-    LINUX_SYS_sched_getaffinity  = 204,
-    LINUX_SYS_getdents64         = 217,
-    LINUX_SYS_set_tid_address    = 218,
-    LINUX_SYS_clock_gettime      = 228,
-    LINUX_SYS_exit_group         = 231,
-    LINUX_SYS_openat             = 257,
-    LINUX_SYS_mkdirat            = 258,
-    LINUX_SYS_newfstatat         = 262,
-    LINUX_SYS_unlinkat           = 263,
-    LINUX_SYS_renameat           = 264,
-    LINUX_SYS_readlinkat         = 267,
-    LINUX_SYS_faccessat          = 269,
-    LINUX_SYS_set_robust_list    = 273,
-    LINUX_SYS_utimensat          = 280,
-    LINUX_SYS_prlimit64          = 302,
-    LINUX_SYS_getrandom          = 318,
-    LINUX_SYS_membarrier         = 324,
-    LINUX_SYS_statx              = 332,
-    LINUX_SYS_rseq               = 334,
-
-    // always last syscall+1
-    LINUX_SYS_ntotal             = 335,
-};
-
-// clang-format on
+#define LINUX_SYS_read              0
+#define LINUX_SYS_write             1
+#define LINUX_SYS_open              2
+#define LINUX_SYS_close             3
+#define LINUX_SYS_stat              4
+#define LINUX_SYS_fstat             5
+#define LINUX_SYS_lstat             6
+#define LINUX_SYS_poll              7
+#define LINUX_SYS_lseek             8
+#define LINUX_SYS_mmap              9
+#define LINUX_SYS_mprotect          10
+#define LINUX_SYS_munmap            11
+#define LINUX_SYS_brk               12
+#define LINUX_SYS_rt_sigaction      13
+#define LINUX_SYS_rt_sigprocmask    14
+#define LINUX_SYS_rt_sigreturn      15
+#define LINUX_SYS_ioctl             16
+#define LINUX_SYS_pread64           17
+#define LINUX_SYS_pwrite64          18
+#define LINUX_SYS_readv             19
+#define LINUX_SYS_writev            20
+#define LINUX_SYS_access            21
+#define LINUX_SYS_sched_yield       24
+#define LINUX_SYS_mremap            25
+#define LINUX_SYS_madvise           28
+#define LINUX_SYS_nanosleep         35
+#define LINUX_SYS_getpid            39
+#define LINUX_SYS_socket            41
+#define LINUX_SYS_clone             56
+#define LINUX_SYS_fork              57
+#define LINUX_SYS_vfork             58
+#define LINUX_SYS_execve            59
+#define LINUX_SYS_exit              60
+#define LINUX_SYS_uname             63
+#define LINUX_SYS_fcntl             72
+#define LINUX_SYS_fsync             74
+#define LINUX_SYS_truncate          76
+#define LINUX_SYS_ftruncate         77
+#define LINUX_SYS_getcwd            79
+#define LINUX_SYS_chdir             80
+#define LINUX_SYS_fchdir            81
+#define LINUX_SYS_rename            82
+#define LINUX_SYS_mkdir             83
+#define LINUX_SYS_unlink            87
+#define LINUX_SYS_readlink          89
+#define LINUX_SYS_chmod             90
+#define LINUX_SYS_fchmod            91
+#define LINUX_SYS_chown             92
+#define LINUX_SYS_fchown            93
+#define LINUX_SYS_lchown            94
+#define LINUX_SYS_getrlimit         97
+#define LINUX_SYS_getrusage         98
+#define LINUX_SYS_sysinfo           99
+#define LINUX_SYS_rt_sigpending     127
+#define LINUX_SYS_rt_sigtimedwait   128
+#define LINUX_SYS_rt_sigqueueinfo   129
+#define LINUX_SYS_rt_sigsuspend     130
+#define LINUX_SYS_sigaltstack       131
+#define LINUX_SYS_statfs            137
+#define LINUX_SYS_prctl             157
+#define LINUX_SYS_arch_prctl        158
+#define LINUX_SYS_setrlimit         160
+#define LINUX_SYS_gettid            186
+#define LINUX_SYS_getxattr          191
+#define LINUX_SYS_lgetxattr         192
+#define LINUX_SYS_time              201
+#define LINUX_SYS_futex             202
+#define LINUX_SYS_sched_setaffinity 203
+#define LINUX_SYS_sched_getaffinity 204
+#define LINUX_SYS_getdents64        217
+#define LINUX_SYS_set_tid_address   218
+#define LINUX_SYS_clock_gettime     228
+#define LINUX_SYS_exit_group        231
+#define LINUX_SYS_openat            257
+#define LINUX_SYS_mkdirat           258
+#define LINUX_SYS_newfstatat        262
+#define LINUX_SYS_unlinkat          263
+#define LINUX_SYS_renameat          264
+#define LINUX_SYS_readlinkat        267
+#define LINUX_SYS_faccessat         269
+#define LINUX_SYS_set_robust_list   273
+#define LINUX_SYS_utimensat         280
+#define LINUX_SYS_prlimit64         302
+#define LINUX_SYS_getrandom         318
+#define LINUX_SYS_membarrier        324
+#define LINUX_SYS_statx             332
+#define LINUX_SYS_rseq              334
 
 void
 arch_syshandle(struct LFIContext *ctx);

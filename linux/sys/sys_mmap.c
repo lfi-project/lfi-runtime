@@ -1,8 +1,9 @@
-#include "sys/sys.h"
 #include "align.h"
+#include "sys/sys.h"
 
 uintptr_t
-sys_mmap(struct LFILinuxThread *t, lfiptr addrp, size_t length, int prot, int flags, int fd, off_t off)
+sys_mmap(struct LFILinuxThread *t, lfiptr addrp, size_t length, int prot,
+    int flags, int fd, off_t off)
 {
     if (length == 0)
         return -LINUX_EINVAL;
@@ -10,13 +11,11 @@ sys_mmap(struct LFILinuxThread *t, lfiptr addrp, size_t length, int prot, int fl
     length = ceilp(length, pagesize);
 
     // Any mmap flag outside this list is rejected.
-    const int illegal_mask = ~LINUX_MAP_ANONYMOUS &
-        ~LINUX_MAP_PRIVATE &
-        ~LINUX_MAP_NORESERVE &
-        ~LINUX_MAP_DENYWRITE &
-        ~LINUX_MAP_FIXED;
+    const int illegal_mask = ~LINUX_MAP_ANONYMOUS & ~LINUX_MAP_PRIVATE &
+        ~LINUX_MAP_NORESERVE & ~LINUX_MAP_DENYWRITE & ~LINUX_MAP_FIXED;
     if ((flags & illegal_mask) != 0) {
-        LOG(t->proc->engine, "invalid mmap flag: not one of MAP_ANONYMOUS, MAP_PRIVATE, MAP_FIXED");
+        LOG(t->proc->engine,
+            "invalid mmap flag: not one of MAP_ANONYMOUS, MAP_PRIVATE, MAP_FIXED");
         return -LINUX_EINVAL;
     }
 
@@ -32,10 +31,12 @@ sys_mmap(struct LFILinuxThread *t, lfiptr addrp, size_t length, int prot, int fl
         r = proc_mapany(t->proc, length, prot, flags, fd, off, &addrp);
     }
     if (r < 0) {
-        LOG(t->proc->engine, "sys_mmap((%lx), %ld, %d, %d, %d, %ld) = %d", i_addrp, length, prot, flags, fd, (long) off, r);
+        LOG(t->proc->engine, "sys_mmap((%lx), %ld, %d, %d, %d, %ld) = %d",
+            i_addrp, length, prot, flags, fd, (long) off, r);
         return r;
     }
     lfiptr ret = addrp;
-    LOG(t->proc->engine, "sys_mmap(%lx (%lx), %ld, %d, %d, %d, %ld) = %lx", addrp, i_addrp, length, prot, flags, fd, (long) off, ret);
+    LOG(t->proc->engine, "sys_mmap(%lx (%lx), %ld, %d, %d, %d, %ld) = %lx",
+        addrp, i_addrp, length, prot, flags, fd, (long) off, ret);
     return ret;
 }
