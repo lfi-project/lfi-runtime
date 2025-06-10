@@ -1,7 +1,6 @@
 #include "core.h"
 
-EXPORT _Thread_local lfiptr lfi_retfn;
-EXPORT _Thread_local lfiptr lfi_targetfn;
+EXPORT _Thread_local struct LFIInvokeInfo lfi_invoke_info;
 
 EXPORT extern void
 lfi_trampoline() asm("lfi_trampoline");

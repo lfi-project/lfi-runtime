@@ -3,8 +3,6 @@
 
 #include <stdlib.h>
 
-EXPORT _Thread_local struct LFIContext *lfi_ctx;
-
 extern int
 lfi_ctx_entry(struct LFIContext *ctx, uintptr_t *host_sp_ptr,
     uintptr_t entry) asm("lfi_ctx_entry");
@@ -34,7 +32,6 @@ lfi_ctx_new(struct LFIBox *box, void *ctxp)
 EXPORT int
 lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
 {
-    lfi_ctx = ctx;
     // Enter the sandbox, saving the stack pointer to host_sp.
     int ret = lfi_ctx_entry(ctx, &ctx->regs.host_sp, entry);
     return ret;
@@ -55,7 +52,6 @@ lfi_ctx_regs(struct LFIContext *ctx)
 EXPORT void
 lfi_ctx_exit(struct LFIContext *ctx, int code)
 {
-    lfi_ctx = NULL;
     // Exit the sandbox, restoring the stack pointer to the value in host_sp.
     lfi_ctx_end(ctx, code);
 }

@@ -18,10 +18,9 @@ lfi_trampoline:
     pushq %rbx
     pushq %rbp
 
-    // load lfi_myctx thread-local
-    movq lfi_ctx@gottpoff(%rip), %r11
-    movq %fs:(%r11), %r11
-    movq %r11, %r13
+    // load lfi_invoke_info thread-local
+    movq lfi_invoke_info@gottpoff(%rip), %r13
+    movq %fs:INVOKE_CTX(%r13), %r11
 
     // dummy push to keep the stack aligned
     pushq %rbp
@@ -39,16 +38,14 @@ lfi_trampoline:
 
     // load address of the lfi_retfn function that will make the return rtcall
     movq %fs:0x0, %r11
-    movq lfi_retfn@gottpoff(%rip), %r11
-    movq %fs:(%r11), %r11
+    movq %fs:INVOKE_RETFN(%r13), %r11
     // align stack
     andq $0xfffffffffffffff0, %rsp
     // push this as the return address onto the user stack
     pushq %r11
 
     // load address of the target function
-    movq lfi_targetfn@gottpoff(%rip), %r11
-    movq %fs:(%r11), %r11
+    movq %fs:INVOKE_TARGETFN(%r13), %r11
     // apply mask just to be safe
     andl $0xffffffe0, %r11d
     addq %REG_BASE, %r11
@@ -56,6 +53,7 @@ lfi_trampoline:
     // set the sandbox thread control block by saving the old value of %fs:0x0
     // into the context and setting it to point to the context itself.
     movq %fs:0x0, %r12
+    movq %fs:INVOKE_CTX(%r13), %r13
     movq %r12, REGS_HOST_TP(%r13)
     movq %r13, %fs:0x0
     movq $0, %r13

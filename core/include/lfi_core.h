@@ -228,17 +228,23 @@ enum {
     LFI_ERR_MMAP = 4,
 };
 
-extern _Thread_local lfiptr lfi_retfn;
-extern _Thread_local lfiptr lfi_targetfn;
-extern _Thread_local struct LFIContext *lfi_ctx;
+struct LFIInvokeInfo {
+    struct LFIContext *ctx;
+    lfiptr targetfn;
+    lfiptr retfn;
+};
+
+extern _Thread_local struct LFIInvokeInfo lfi_invoke_info; 
 
 extern const void *lfi_trampoline_addr;
 
 #define LFI_INVOKE(ctx, fn, ret_type, args, ...)                              \
     ({                                                                        \
-        lfi_ctx = ctx;                                                        \
-        lfi_targetfn = fn;                                                    \
-        lfi_retfn = lfi_ctx_ret(ctx);                                         \
+     lfi_invoke_info = (struct LFIInvokeInfo) { \
+        .ctx = ctx, \
+        .targetfn = fn, \
+        .retfn = lfi_ctx_ret(ctx), \
+     }; \
         ret_type(*_trampoline) args = (ret_type(*) args) lfi_trampoline_addr; \
         _trampoline(__VA_ARGS__);                                             \
     })
