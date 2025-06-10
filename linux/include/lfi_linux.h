@@ -15,6 +15,22 @@ struct LFILinuxOptions {
 
     // Enable generation of a perf.map file containing symbol mappings.
     bool perf;
+
+    // Null-terminated list of directory mappings from the sandbox FS to the
+    // host. Each directory mapping is expressed as host_path=sandbox_path. For
+    // example, you might have /path/to/lfi-sysroot=/ along with $PWD=/work.
+    // TODO: not implemented
+    const char **dir_maps;
+
+    // Working directory that the sandbox starts in, within the sandbox FS. For
+    // example, you might set wd to /work if you have mapped $PWD=/work.
+    // TODO: not implemented
+    const char *wd;
+
+    // Exit the entire process when an unknown syscall is executed, rather than
+    // returning ENOSYS. This is useful for debugging when we want programs
+    // that use unsupported syscalls to crash.
+    bool exit_unknown_syscalls;
 };
 
 // An LFILinuxEngine tracks a set of LFILinuxProcs and LFILinuxThreads.
@@ -71,7 +87,7 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, char **argv, char **envp);
 
 // Begins executed an LFILinuxThread.
 int
-lfi_thread_run(struct LFILinuxThread *p);
+lfi_thread_run(struct LFILinuxThread *t);
 
 // Frees an LFILinuxThread.
 void

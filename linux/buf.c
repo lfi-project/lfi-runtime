@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 struct Buf
-bufreadfile(struct LFILinuxEngine *engine, const char *filename)
+buf_read_file(struct LFILinuxEngine *engine, const char *filename)
 {
     int fd = open(filename, O_RDONLY);
     if (fd < 0)

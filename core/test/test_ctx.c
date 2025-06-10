@@ -56,9 +56,11 @@ main(void)
             .pagesize = pagesize,
             .verbose = true,
             .no_verify = true,
-            .sys_handler = handler,
         },
         gb(256));
+
+    lfi_sys_handler(engine, handler);
+
     assert(engine);
 
     // Create a new sandbox.

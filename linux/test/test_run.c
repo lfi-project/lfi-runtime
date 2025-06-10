@@ -1,0 +1,89 @@
+#include "lfi_linux.h"
+#include "test.h"
+
+#include <assert.h>
+#include <stdbool.h>
+#include <sys/mman.h>
+#include <unistd.h>
+
+struct Buf {
+    void *data;
+    size_t size;
+};
+
+static struct Buf
+readfile(char *path)
+{
+    FILE *f = fopen(path, "r");
+    if (!f) {
+        fprintf(stderr, "Cannot open %s\n", path);
+        return (struct Buf) { 0 };
+    }
+    fseek(f, 0, SEEK_END);
+    size_t sz = ftell(f);
+    void *p = mmap(NULL, sz, PROT_READ, MAP_PRIVATE, fileno(f), 0);
+    assert(p != (void *) -1);
+    fclose(f);
+    return (struct Buf) {
+        .data = p,
+        .size = sz,
+    };
+}
+
+int
+main(int argc, char **argv)
+{
+    struct LFIEngine *engine = lfi_new(
+        (struct LFIOptions) {
+            .boxsize = gb(4),
+            .pagesize = getpagesize(),
+            .no_verify = true,
+            .verbose = true,
+        },
+        gb(256));
+    assert(engine);
+
+    struct LFILinuxEngine *linux_ = lfi_linux_new(engine,
+        (struct LFILinuxOptions) {
+            .stacksize = mb(2),
+            .verbose = true,
+            .exit_unknown_syscalls = true,
+        });
+    assert(linux_);
+
+    if (argc <= 1) {
+        fprintf(stderr, "no input program provided\n");
+        return 1;
+    }
+
+    struct Buf prog = readfile(argv[1]);
+    assert(prog.data);
+
+    struct LFIBox *box = lfi_box_new(engine);
+    assert(box);
+    struct LFILinuxProc *proc = lfi_proc_new(linux_, box);
+    assert(proc);
+
+    bool ok = lfi_proc_load(proc, prog.data, prog.size);
+    assert(ok);
+
+    char *envp[] = {
+        "LFI=1",
+        "USER=sandbox",
+        "HOME=/home",
+        NULL,
+    };
+
+    struct LFILinuxThread *t = lfi_thread_new(proc, argc - 1, &argv[1],
+        &envp[0]);
+    assert(t);
+
+    int result = lfi_thread_run(t);
+    assert(result == 0);
+
+    lfi_linux_free(linux_);
+
+    lfi_free(engine);
+
+    return 0;
+}

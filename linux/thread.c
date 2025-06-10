@@ -4,6 +4,7 @@
 #include "linux.h"
 #include "proc.h"
 
+#include <assert.h>
 #include <elf.h>
 #include <stdatomic.h>
 #include <stdlib.h>
@@ -71,20 +72,26 @@ stack_init(struct LFILinuxThread *t, int argc, char **argv, char **envp)
     for (int i = 0; i < argc; i++) {
         if (!argv[i])
             break;
-        strs_len += strnlen(argv[i], ARGV_MAXLEN);
+        size_t len = strnlen(argv[i], ARGV_MAXLEN);
+        assert(argv[i][len] == '\0');
+        strs_len += len + 1;
         nargv++;
     }
     size_t nenvp = 0;
     for (int i = 0; i < ENVP_MAX; i++) {
         if (!envp[i])
             break;
-        strs_len += strnlen(envp[i], ENVP_MAXLEN);
+        size_t len = strnlen(envp[i], ENVP_MAXLEN);
+        assert(envp[i][len] == '\0');
+        strs_len += len + 1;
         nenvp++;
     }
 
     // Store the sandbox pointers to each argv/envp string.
-    lfiptr box_argv[nargv];
-    lfiptr box_envp[nenvp];
+    lfiptr box_argv[nargv + 1];
+    lfiptr box_envp[nenvp + 1];
+    box_argv[nargv] = 0;
+    box_envp[nenvp] = 0;
 
     // We make this 16-byte aligned so that we can use this as a base offset
     // for also storing aligned values.
@@ -93,12 +100,12 @@ stack_init(struct LFILinuxThread *t, int argc, char **argv, char **envp)
     struct LFIBox *box = t->proc->box;
     // Copy the argv and envp strings into the sandbox.
     for (int i = 0; i < nargv; i++) {
-        size_t len = strnlen(argv[i], ARGV_MAXLEN);
+        size_t len = strnlen(argv[i], ARGV_MAXLEN) + 1;
         box_argv[i] = lfi_box_copyto(box, strs_start + count, argv[i], len);
         count += len;
     }
     for (int i = 0; i < nenvp; i++) {
-        size_t len = strnlen(envp[i], ARGV_MAXLEN);
+        size_t len = strnlen(envp[i], ARGV_MAXLEN) + 1;
         box_envp[i] = lfi_box_copyto(box, strs_start + count, envp[i], len);
         count += len;
     }
@@ -156,6 +163,16 @@ stack_init(struct LFILinuxThread *t, int argc, char **argv, char **envp)
     return stack_start;
 }
 
+static void
+sp_init(struct LFILinuxThread *t, lfiptr sp)
+{
+#if defined(LFI_ARCH_ARM64)
+    lfi_ctx_regs(t->ctx)->sp = sp;
+#elif defined(LFI_ARCH_X64)
+    lfi_ctx_regs(t->ctx)->rsp = sp;
+#endif
+}
+
 EXPORT struct LFILinuxThread *
 lfi_thread_new(struct LFILinuxProc *proc, int argc, char **argv, char **envp)
 {
@@ -178,12 +195,10 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, char **argv, char **envp)
     }
     t->stack_size = stacksize;
 
-    if (!stack_init(t, argc, argv, envp))
-        goto err4;
+    lfiptr sp = stack_init(t, argc, argv, envp);
+    sp_init(t, sp);
 
     return t;
-err4:
-    lfi_box_munmap(proc->box, t->stack, stacksize);
 err3:
     lfi_ctx_free(t->ctx);
 err2:

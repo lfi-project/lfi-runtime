@@ -29,6 +29,12 @@ lfi_ctx_new(struct LFIBox *box, void *ctxp)
     return ctx;
 }
 
+EXPORT void *
+lfi_ctx_data(struct LFIContext *ctx)
+{
+    return ctx->ctxp;
+}
+
 EXPORT int
 lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
 {

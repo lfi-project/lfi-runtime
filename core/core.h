@@ -14,6 +14,8 @@ struct LFIEngine {
     struct LFIOptions opts;
     struct LFIVerifier verifier;
 
+    void (*sys_handler)(struct LFIContext *ctx);
+
     size_t guardsize;
 };
 

@@ -12,6 +12,7 @@ srcs = files(
 )
 
 subdir('arch/' + archmap[cpu])
+subdir('sys')
 
 config_h = configure_file(
   output: 'config.h',

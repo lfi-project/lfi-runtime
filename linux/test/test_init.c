@@ -23,6 +23,7 @@ main(void)
             .stacksize = mb(2),
             .verbose = true,
         });
+    assert(linux_);
 
     lfi_linux_free(linux_);
 

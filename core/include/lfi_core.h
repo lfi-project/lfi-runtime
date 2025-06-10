@@ -40,9 +40,6 @@ struct LFIOptions {
     // Enable stores-only mode (for verification).
     bool stores_only;
 
-    // Handler for 'syscall' runtime calls.
-    void (*sys_handler)(struct LFIContext *ctx);
-
     // Disable verification (unsafe).
     bool no_verify;
 
@@ -89,6 +86,11 @@ lfi_new(struct LFIOptions opts, size_t reserve);
 // Frees the LFIEngine.
 void
 lfi_free(struct LFIEngine *lfi);
+
+// Sets the system call handler for the given engine.
+void
+lfi_sys_handler(struct LFIEngine *engine,
+    void (*sys_handler)(struct LFIContext *ctx));
 
 // Returns the options for this LFIEngine.
 struct LFIOptions
@@ -169,6 +171,10 @@ lfi_box_free(struct LFIBox *box);
 struct LFIContext *
 lfi_ctx_new(struct LFIBox *box, void *ctxp);
 
+// Returns the ctxp user data pointer for ctx.
+void *
+lfi_ctx_data(struct LFIContext *ctx);
+
 // Begins executing the sandbox context.
 int
 lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry);
@@ -234,17 +240,17 @@ struct LFIInvokeInfo {
     lfiptr retfn;
 };
 
-extern _Thread_local struct LFIInvokeInfo lfi_invoke_info; 
+extern _Thread_local struct LFIInvokeInfo lfi_invoke_info;
 
 extern const void *lfi_trampoline_addr;
 
 #define LFI_INVOKE(ctx, fn, ret_type, args, ...)                              \
     ({                                                                        \
-     lfi_invoke_info = (struct LFIInvokeInfo) { \
-        .ctx = ctx, \
-        .targetfn = fn, \
-        .retfn = lfi_ctx_ret(ctx), \
-     }; \
+        lfi_invoke_info = (struct LFIInvokeInfo) {                            \
+            .ctx = ctx,                                                       \
+            .targetfn = fn,                                                   \
+            .retfn = lfi_ctx_ret(ctx),                                        \
+        };                                                                    \
         ret_type(*_trampoline) args = (ret_type(*) args) lfi_trampoline_addr; \
         _trampoline(__VA_ARGS__);                                             \
     })

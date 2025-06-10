@@ -127,6 +127,7 @@ filefdnew(int kfd, int flags)
         .chmod = filechmod,
         .sync = filesync,
         .getdents = filegetdents,
+        .filefd = filefd,
     };
     pthread_mutex_init(&ff->lk_refs, NULL);
     return ff;

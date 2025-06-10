@@ -1,7 +1,7 @@
 #include "arch_asm.h"
 
-#include "lfi_core.h"
 #include "lfi_arch.h"
+#include "lfi_core.h"
 
 #include <stddef.h>
 
@@ -72,6 +72,9 @@ _Static_assert(offsetof(struct LFIRegs, xmm) % 16 == 0,
 
 #endif
 
-_Static_assert(offsetof(struct LFIInvokeInfo, ctx) == INVOKE_CTX, "incorrect INVOKE offset");
-_Static_assert(offsetof(struct LFIInvokeInfo, targetfn) == INVOKE_TARGETFN, "incorrect INVOKE offset");
-_Static_assert(offsetof(struct LFIInvokeInfo, retfn) == INVOKE_RETFN, "incorrect INVOKE offset");
+_Static_assert(offsetof(struct LFIInvokeInfo, ctx) == INVOKE_CTX,
+    "incorrect INVOKE offset");
+_Static_assert(offsetof(struct LFIInvokeInfo, targetfn) == INVOKE_TARGETFN,
+    "incorrect INVOKE offset");
+_Static_assert(offsetof(struct LFIInvokeInfo, retfn) == INVOKE_RETFN,
+    "incorrect INVOKE offset");

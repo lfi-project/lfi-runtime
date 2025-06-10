@@ -90,7 +90,14 @@ err1:
     return NULL;
 }
 
-void
+EXPORT void
+lfi_sys_handler(struct LFIEngine *engine,
+    void (*sys_handler)(struct LFIContext *ctx))
+{
+    engine->sys_handler = sys_handler;
+}
+
+EXPORT void
 lfi_free(struct LFIEngine *engine)
 {
     // Unmaps all virtual memory reserved by the engine.
@@ -98,7 +105,7 @@ lfi_free(struct LFIEngine *engine)
     free(engine);
 }
 
-struct LFIOptions
+EXPORT struct LFIOptions
 lfi_opts(struct LFIEngine *engine)
 {
     return engine->opts;
@@ -113,7 +120,7 @@ lfi_syscall_handler(struct LFIContext *ctx) asm("lfi_syscall_handler");
 void
 lfi_syscall_handler(struct LFIContext *ctx)
 {
-    assert(ctx->box->engine->opts.sys_handler &&
+    assert(ctx->box->engine->sys_handler &&
         "engine does not have a system call handler");
-    ctx->box->engine->opts.sys_handler(ctx);
+    ctx->box->engine->sys_handler(ctx);
 }

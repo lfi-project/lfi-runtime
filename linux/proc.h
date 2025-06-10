@@ -33,6 +33,7 @@ struct FDFile {
     int (*chmod)(void *, linux_mode_t);
     int (*truncate)(void *, off_t);
     int (*sync)(void *);
+    int (*filefd)(void *);
 };
 
 struct FDTable {
@@ -88,7 +89,7 @@ struct LFILinuxThread {
     size_t stack_size;
 
     // Child tid pointer location.
-    uintptr_t ctidp;
+    lfiptr ctidp;
 
     // This thread's virtual TID.
     int tid;

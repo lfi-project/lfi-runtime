@@ -1,5 +1,6 @@
 #include "linux.h"
 
+#include "arch_sys.h"
 #include "file.h"
 
 #include <stdlib.h>
@@ -38,6 +39,8 @@ lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
     const char *verbose = getenv("LFI_VERBOSE");
     if (verbose && strcmp(verbose, "1"))
         opts.verbose = true;
+
+    lfi_sys_handler(lfi_engine, arch_syshandle);
 
     *engine = (struct LFILinuxEngine) {
         .engine = lfi_engine,

@@ -46,6 +46,6 @@
 
 // Offsets for the LFIInvokeInfo struct
 
-#define INVOKE_CTX 0
+#define INVOKE_CTX      0
 #define INVOKE_TARGETFN 8
-#define INVOKE_RETFN 16
+#define INVOKE_RETFN    16
