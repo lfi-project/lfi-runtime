@@ -15,6 +15,14 @@ struct LFILinuxEngine {
     struct FDFile *fstderr;
 };
 
+struct Dirent {
+    linux_ino_t d_ino;
+    linux_off_t d_off;
+    unsigned short d_reclen;
+    unsigned char d_type;
+    char d_name[256];
+};
+
 #define LINUX_EPERM                1
 #define LINUX_ENOENT               2
 #define LINUX_EBADF                9

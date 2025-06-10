@@ -1,11 +1,13 @@
 srcs = files(
   'linux.c',
   'fd.c',
+  'file.c',
   'sys.c',
   'proc.c',
   'buf.c',
   'elfload.c',
   'thread.c',
+  'host.c',
 )
 
 subdir('arch/' + archmap[cpu])
@@ -27,9 +29,11 @@ liblfi_linux = static_library(
   c_args: c_args + c_args_warnings + defines,
   dependencies: [lfi_core.as_link_whole(), cwalk.as_link_whole()],
   install: true,
-  include_directories: include_directories('include', 'arch/' + archmap[cpu], '../core/'),
+  include_directories: include_directories('include', 'arch/' + archmap[cpu]),
 )
 
-lfi_linux = declare_dependency(link_with: liblfi_linux, include_directories: include_directories('include'))
+lfi_linux = declare_dependency(link_with: liblfi_linux, include_directories: include_directories('include', '../core/include'))
 
 install_headers('include/lfi_linux.h')
+
+subdir('test')

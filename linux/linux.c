@@ -43,6 +43,8 @@ lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
         return NULL;
     }
 
+    LOG(engine, "initialized LFI Linux engine");
+
     return engine;
 }
 

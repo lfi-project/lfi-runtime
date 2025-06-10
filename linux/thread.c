@@ -105,7 +105,11 @@ stack_init(struct LFILinuxThread *t, int argc, char **argv, char **envp)
 
     // Create 16 random bytes for AT_RANDOM.
     char random[16];
-    getrandom(&random[0], sizeof(random), 0);
+    ssize_t r = getrandom(&random[0], sizeof(random), 0);
+    if (r != sizeof(random)) {
+        LOG(t->proc->engine,
+            "warning: getrandom for AT_RANDOM returned %ld (less than 16)", r);
+    }
     lfiptr rand_start = strs_start - sizeof(random);
     // Copy into the sandbox.
     lfi_box_copyto(box, rand_start, &random[0], sizeof(random));
