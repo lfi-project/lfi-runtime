@@ -5,6 +5,7 @@ srcs = files(
   'proc.c',
   'buf.c',
   'elfload.c',
+  'thread.c',
 )
 
 subdir('arch/' + archmap[cpu])

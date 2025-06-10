@@ -50,10 +50,14 @@ lfi_new(struct LFIOptions opts, size_t reserve)
         lfi_error = LFI_ERR_BOXMAP;
         goto err1;
     }
-    if (!boxmap_reserve(bm, reserve)) {
-        lfi_error = LFI_ERR_RESERVE;
-        lfi_error_desc = xasprintf("attempted to reserve %ld bytes", reserve);
-        goto err2;
+
+    if (reserve > 0) {
+        if (!boxmap_reserve(bm, reserve)) {
+            lfi_error = LFI_ERR_RESERVE;
+            lfi_error_desc = xasprintf("attempted to reserve %ld bytes",
+                reserve);
+            goto err2;
+        }
     }
 
     *engine = (struct LFIEngine) {
@@ -87,6 +91,12 @@ lfi_free(struct LFIEngine *engine)
     // Unmaps all virtual memory reserved by the engine.
     boxmap_delete(engine->bm);
     free(engine);
+}
+
+struct LFIOptions
+lfi_opts(struct LFIEngine *engine)
+{
+    return engine->opts;
 }
 
 // Declare this function with asm ("lfi_syscall_handler") so that it will be

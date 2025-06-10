@@ -10,6 +10,8 @@
 
 // Maximum number of file descriptors a process can have open.
 #define LINUX_NOFILE 128
+// Maximum number of bytes that can be allocated via sys_brk.
+#define BRKMAXSIZE (512UL * 1024 * 1024)
 
 struct FDFile {
     // Underlying device pointer, passed as the first argument to all file
@@ -49,13 +51,16 @@ struct LFILinuxProc {
     size_t brksize;
     pthread_mutex_t lk_brk;
 
+    // ELF entrypoint for running the process.
+    lfiptr entry;
+
     // File descriptor table.
     struct FDTable fdtable;
 
     // Futexes for this process.
     struct Futexes futexes;
 
-    // Count of this proc's threads.
+    // Total number of threads this proc has spawned.
     _Atomic(int) threads;
 
     struct LFILinuxEngine *engine;

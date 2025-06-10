@@ -1,7 +1,7 @@
 #include "fd.h"
 
 #include "file.h"
-#include "thread.h"
+#include "lock.h"
 
 #include <stdio.h>
 #include <stdlib.h>

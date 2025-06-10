@@ -90,6 +90,10 @@ lfi_new(struct LFIOptions opts, size_t reserve);
 void
 lfi_free(struct LFIEngine *lfi);
 
+// Returns the options for this LFIEngine.
+struct LFIOptions
+lfi_opts(struct LFIEngine *lfi);
+
 // Creates a new LFIBox by allocating a portion of the virtual address space.
 struct LFIBox *
 lfi_box_new(struct LFIEngine *lfi);
