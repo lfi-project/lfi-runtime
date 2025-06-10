@@ -35,6 +35,7 @@ testdata = [
   {'bin': test_run, 'file': 'programs/alloc.c', 'inputs': [], 'cflags': []},
   {'bin': test_run, 'file': 'programs/argv.c', 'inputs': ['one', 'two', 'three'], 'cflags': []},
   {'bin': test_run, 'file': 'programs/envp.c', 'inputs': [], 'cflags': []},
+  {'bin': test_run, 'file': 'programs/mmap.c', 'inputs': [], 'cflags': []},
   # {'bin': test_run, 'file': 'programs/file.c', 'inputs': ['programs/inputs/file.txt'], 'cflags': []},
   # {'bin': test_run, 'file': 'programs/chdir.c', 'inputs': ['programs/inputs', 'file.txt'], 'cflags': []},
   # {'bin': test_run, 'file': 'programs/thread.c', 'inputs': [], 'cflags': []},

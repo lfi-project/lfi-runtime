@@ -7,6 +7,7 @@
 #include "fd.h"
 #include "lfi_core.h"
 #include "linux.h"
+#include "lock.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -93,4 +94,58 @@ lfi_proc_free(struct LFILinuxProc *proc)
 {
     fdclear(&proc->fdtable);
     free(proc);
+}
+
+int
+proc_mapany(struct LFILinuxProc *p, size_t size, int prot, int flags, int fd,
+        off_t offset, lfiptr *o_mapstart)
+{
+    int kfd = -1;
+    if (fd >= 0) {
+        // TODO: fdrelease this FDFile when this region is fully unmapped.
+        struct FDFile* f = fdget(&p->fdtable, fd);
+        if (!f)
+            return -LINUX_EBADF;
+        if (f->filefd) {
+            kfd = f->filefd(f->dev);
+        } else {
+            return -LINUX_EACCES;
+        }
+    }
+    LOCK_WITH_DEFER(&p->lk_box, lk_box);
+    lfiptr addr = lfi_box_mapany(p->box, size, prot, flags, kfd, offset);
+    if (addr == (lfiptr) -1)
+        return -LINUX_EINVAL;
+    *o_mapstart = (uintptr_t) addr;
+    return 0;
+}
+
+int
+proc_mapat(struct LFILinuxProc* p, lfiptr start, size_t size, int prot, int flags,
+        int fd, off_t offset)
+{
+    int kfd = -1;
+    if (fd >= 0) {
+        // TODO: fdrelease this FDFile when this region is fully unmapped.
+        struct FDFile *f = fdget(&p->fdtable, fd);
+        if (!f)
+            return LINUX_EBADF;
+        if (f->filefd) {
+            kfd = f->filefd(f->dev);
+        } else {
+            return -LINUX_EACCES;
+        }
+    }
+    LOCK_WITH_DEFER(&p->lk_box, lk_box);
+    lfiptr addr = lfi_box_mapat(p->box, start, size, prot, flags, kfd, offset);
+    if (addr == (lfiptr) -1)
+        return -LINUX_EINVAL;
+    return 0;
+}
+
+int
+proc_unmap(struct LFILinuxProc* p, lfiptr start, size_t size)
+{
+    LOCK_WITH_DEFER(&p->lk_box, lk_box);
+    return lfi_box_munmap(p->box, start, size);
 }

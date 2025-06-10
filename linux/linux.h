@@ -35,6 +35,13 @@ struct Dirent {
 #define LINUX_EMFILE               24
 #define LINUX_ENOSYS               38
 
+#define LINUX_MAP_SHARED    1
+#define LINUX_MAP_PRIVATE   2
+#define LINUX_MAP_FIXED     16
+#define LINUX_MAP_ANONYMOUS 32
+#define LINUX_MAP_DENYWRITE 2048
+#define LINUX_MAP_NORESERVE 16384
+
 #define LINUX_SEEK_SET             0
 #define LINUX_SEEK_CUR             1
 #define LINUX_SEEK_END             2

@@ -96,3 +96,14 @@ struct LFILinuxThread {
 
     struct LFILinuxProc *proc;
 };
+
+int
+proc_mapany(struct LFILinuxProc *p, size_t size, int prot, int flags, int fd,
+        off_t offset, lfiptr *o_mapstart);
+
+int
+proc_mapat(struct LFILinuxProc* p, lfiptr start, size_t size, int prot, int flags,
+        int fd, off_t offset);
+
+int
+proc_unmap(struct LFILinuxProc* p, lfiptr start, size_t size);

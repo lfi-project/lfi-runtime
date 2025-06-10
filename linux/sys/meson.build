@@ -7,4 +7,7 @@ srcs += files(
   'sys_writev.c',
   'sys_exit_group.c',
   'sys_brk.c',
+  'sys_mmap.c',
+  'sys_mprotect.c',
+  'sys_munmap.c',
 )
