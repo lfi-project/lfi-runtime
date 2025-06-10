@@ -5,17 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-struct ELFLoadInfo {
-    lfiptr lastva;
-    lfiptr elfentry;
-    lfiptr ldentry;
-    lfiptr elfbase;
-    lfiptr ldbase;
-    uint64_t elfphoff;
-    uint16_t elfphnum;
-    uint16_t elfphentsize;
-};
-
 // Returns the name of the ELF interpreter for this ELF file.
 char *
 elf_interp(uint8_t *prog, size_t prog_size);

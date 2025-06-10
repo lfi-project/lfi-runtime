@@ -83,6 +83,7 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size)
     if (interp.data != NULL)
         entry = info.ldentry;
     proc->entry = entry;
+    proc->elfinfo = info;
 
     return true;
 }

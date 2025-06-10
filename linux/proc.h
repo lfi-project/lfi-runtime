@@ -40,6 +40,17 @@ struct FDTable {
     pthread_mutex_t lk;
 };
 
+struct ELFLoadInfo {
+    lfiptr lastva;
+    lfiptr elfentry;
+    lfiptr ldentry;
+    lfiptr elfbase;
+    lfiptr ldbase;
+    uint64_t elfphoff;
+    uint16_t elfphnum;
+    uint16_t elfphentsize;
+};
+
 struct LFILinuxProc {
     // Underlying sandbox information.
     struct LFIBox *box;
@@ -53,6 +64,8 @@ struct LFILinuxProc {
 
     // ELF entrypoint for running the process.
     lfiptr entry;
+    // ELF load info.
+    struct ELFLoadInfo elfinfo;
 
     // File descriptor table.
     struct FDTable fdtable;
@@ -72,6 +85,7 @@ struct LFILinuxThread {
 
     // Pointer to base of sandbox stack.
     lfiptr stack;
+    size_t stack_size;
 
     // Child tid pointer location.
     uintptr_t ctidp;
