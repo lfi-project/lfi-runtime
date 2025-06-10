@@ -4,34 +4,18 @@
     mrs \reg, tpidr_el0
 .endm
 
-.macro get_tls_vars
+// Returns a pointer to lfi_invoke_info in reg.
+.macro get_invoke_info reg
     mov x11, x0
     mov x12, x30
-    mrs x13, tpidr_el0
 
-    // lfi_ctx in x8
-    adrp x0, :tlsdesc:lfi_ctx
-    ldr x8, [x0, :tlsdesc_lo12:lfi_ctx]
-    add x0, x0, :tlsdesc_lo12:lfi_ctx
-    .tlsdesccall lfi_ctx
+    adrp x0, :tlsdesc:lfi_invoke_info
+    ldr x8, [x0, :tlsdesc_lo12:lfi_invoke_info]
+    add x0, x0, :tlsdesc_lo12:lfi_invoke_info
+    .tlsdesccall lfi_invoke_info
     blr x8
-    ldr x8, [x13, x0]
-
-    // lfi_retfn in x9
-    adrp x0, :tlsdesc:lfi_retfn
-    ldr x9, [x0, :tlsdesc_lo12:lfi_retfn]
-    add x0, x0, :tlsdesc_lo12:lfi_retfn
-    .tlsdesccall lfi_retfn
-    blr x9
-    ldr x9, [x13, x0]
-
-    // lfi_targetfn in x10
-    adrp x0, :tlsdesc:lfi_targetfn
-    ldr x10, [x0, :tlsdesc_lo12:lfi_targetfn]
-    add x0, x0, :tlsdesc_lo12:lfi_targetfn
-    .tlsdesccall lfi_targetfn
-    blr x10
-    ldr x10, [x13, x0]
+    mrs x8, tpidr_el0
+    add x8, x8, x0
 
     mov x30, x12
     mov x0, x11
@@ -53,7 +37,10 @@ lfi_trampoline:
     
     // TODO: if LFI-full, zero the non-argument registers
 
-    get_tls_vars
+    get_invoke_info x8
+    ldr x9, [x8, #INVOKE_RETFN]
+    ldr x10, [x8, #INVOKE_TARGETFN]
+    ldr x8, [x8, #INVOKE_CTX]
 
     // set the sandbox thread control block by saving the old value of
     // tpidr_el0 into the context and setting it to point to the context
@@ -78,8 +65,9 @@ lfi_trampoline:
     ldr REG_BASE, [x8, REGS_BASE]
     // set address pointer to a valid value
     mov REG_ADDR, REG_BASE
-    // clear x8
+    // clear x8, x9
     mov x8, #0
+    mov x9, #0
     // enter sandbox
     add x10, REG_BASE, w10, uxtw
     br x10
