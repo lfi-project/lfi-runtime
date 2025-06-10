@@ -6,4 +6,5 @@ srcs += files(
   'sys_write.c',
   'sys_writev.c',
   'sys_exit_group.c',
+  'sys_brk.c',
 )

@@ -34,6 +34,8 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
             sys_writev(t, a0, a1, a2))
     SYS(exit_group,
             sys_exit_group(t, a0))
+    SYS(brk,
+            sys_brk(t, a0))
     // clang-format on
     default:
         LOG(t->proc->engine, "unknown syscall: %ld", sysno);

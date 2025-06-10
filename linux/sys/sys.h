@@ -74,3 +74,6 @@ sys_writev(struct LFILinuxThread *t, int fd, lfiptr iovp, size_t iovcnt);
 
 uintptr_t
 sys_exit_group(struct LFILinuxThread *t, int code);
+
+uintptr_t
+sys_brk(struct LFILinuxThread *t, lfiptr addr);
