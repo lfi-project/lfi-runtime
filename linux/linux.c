@@ -3,6 +3,7 @@
 #include "file.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 static bool
@@ -33,6 +34,11 @@ lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
     struct LFILinuxEngine *engine = malloc(sizeof(struct LFILinuxEngine));
     if (!engine)
         return NULL;
+
+    const char *verbose = getenv("LFI_VERBOSE");
+    if (verbose && strcmp(verbose, "1"))
+        opts.verbose = true;
+
     *engine = (struct LFILinuxEngine) {
         .engine = lfi_engine,
         .opts = opts,
@@ -72,4 +78,13 @@ lfi_linux_lib_init(void *base, void *end, void *entry, void *phdrs,
     // run the entrypoint
 
     return true;
+}
+
+void
+lfi_linux_free(struct LFILinuxEngine *engine)
+{
+    free(engine->fstdout);
+    free(engine->fstderr);
+    free(engine->fstdin);
+    free(engine);
 }

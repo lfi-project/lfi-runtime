@@ -44,6 +44,11 @@ bool
 lfi_linux_lib_init(void *base, void *end, void *entry, void *phdrs,
     struct LFIOptions opts, struct LFILinuxOptions linux_opts);
 
+// Frees the resources allocated for the linux engine (but not the underlying
+// LFIEngine).
+void
+lfi_linux_free(struct LFILinuxEngine *engine);
+
 // Creates a new LFILinuxProc for the given LFIBox.
 struct LFILinuxProc *
 lfi_proc_new(struct LFILinuxEngine *engine, struct LFIBox *box);

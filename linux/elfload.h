@@ -16,3 +16,10 @@ bool
 elf_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
     uint8_t *interp, size_t interp_size, bool perform_map,
     struct ELFLoadInfo *info);
+
+// Output a perf map file listing all the symbols from the ELF file. This
+// allows perf to map the symbols in the dynamically mapped code for the
+// sandbox to recognizable symbols.
+bool
+perf_output_jit_interface_file(uint8_t *elf_data, size_t size,
+    uintptr_t offset);

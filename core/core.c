@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 static void
 logerr(char *msg, size_t size)
@@ -59,6 +60,10 @@ lfi_new(struct LFIOptions opts, size_t reserve)
             goto err2;
         }
     }
+
+    const char *verbose = getenv("LFI_VERBOSE");
+    if (verbose && strcmp(verbose, "1"))
+        opts.verbose = true;
 
     *engine = (struct LFIEngine) {
         .bm = bm,

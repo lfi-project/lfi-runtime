@@ -24,6 +24,8 @@ main(void)
             .verbose = true,
         });
 
+    lfi_linux_free(linux_);
+
     lfi_free(engine);
 
     return 0;

@@ -8,6 +8,7 @@ srcs = files(
   'elfload.c',
   'thread.c',
   'host.c',
+  'perf.c',
 )
 
 subdir('arch/' + archmap[cpu])

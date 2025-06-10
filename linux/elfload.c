@@ -297,6 +297,10 @@ elf_load(struct LFILinuxProc *proc, uint8_t *prog_data, size_t prog_size,
             goto err;
     }
 
+    if (proc->engine->opts.perf)
+        if (!perf_output_jit_interface_file(prog_data, prog_size, p_first))
+            LOG(proc->engine, "failed to generated perf map");
+
     struct LFIBox *box = proc->box;
     *info = (struct ELFLoadInfo) {
         .lastva = has_interp ? p2l(box, i_last) : p2l(box, p_last),
