@@ -10,4 +10,10 @@ srcs += files(
   'sys_mmap.c',
   'sys_mprotect.c',
   'sys_munmap.c',
+  'sys_sched_getaffinity.c',
+  'sys_clone.c',
+  'sys_sched_yield.c',
+  'sys_futex.c',
+  'sys_exit.c',
+  'sys_gettid.c',
 )

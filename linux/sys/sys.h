@@ -44,6 +44,14 @@ bufhost(struct LFILinuxThread *t, lfiptr p, size_t size, size_t align)
     return (void *) lfi_box_l2p(t->proc->box, p);
 }
 
+static inline void *
+ptrhost(struct LFILinuxThread *t, lfiptr p)
+{
+    if (!ptrcheck(t, p))
+        return NULL;
+    return (void *) lfi_box_l2p(t->proc->box, p);
+}
+
 // Allocates a buffer and copies the sandbox data to it. Assumes the sandbox
 // buffer has already been checked with bufcheck.
 static inline void *
@@ -55,6 +63,19 @@ copyout(struct LFILinuxThread *t, lfiptr p, size_t size)
         return NULL;
     return lfi_box_copyfm(t->proc->box, host, p, size);
 }
+
+static inline void
+copyin(struct LFILinuxThread *t, lfiptr p, void *hostp, size_t size)
+{
+    assert(bufcheck(t, p, size, 1));
+    lfi_box_copyto(t->proc->box, p, hostp, size);
+}
+
+uintptr_t
+sys_ignore(struct LFILinuxThread *t, const char *name);
+
+uintptr_t
+sys_nosys(struct LFILinuxThread *t, const char *name);
 
 int
 sys_arch_prctl(struct LFILinuxThread *t, int code, lfiptr addr);
@@ -87,3 +108,24 @@ sys_mprotect(struct LFILinuxThread *t, lfiptr addrp, size_t length, int prot);
 
 int
 sys_munmap(struct LFILinuxThread *t, lfiptr addrp, size_t length);
+
+int
+sys_gettid(struct LFILinuxThread *t);
+
+int
+sys_sched_yield(struct LFILinuxThread *t);
+
+int
+sys_sched_getaffinity(struct LFILinuxThread *t, int32_t pid,
+    uint64_t cpusetsize, lfiptr maskaddr);
+
+long
+sys_futex(struct LFILinuxThread *t, lfiptr uaddrp, int op, uint32_t val,
+    uint64_t timeoutp, lfiptr uaddr2p, uint32_t val3);
+
+uintptr_t
+sys_exit(struct LFILinuxThread *t, uint64_t code);
+
+int
+sys_clone(struct LFILinuxThread *t, uint64_t flags, uint64_t stack,
+    uint64_t ptid, uint64_t ctid, uint64_t tls, uint64_t func);

@@ -170,6 +170,8 @@ sp_init(struct LFILinuxThread *t, lfiptr sp)
     lfi_ctx_regs(t->ctx)->sp = sp;
 #elif defined(LFI_ARCH_X64)
     lfi_ctx_regs(t->ctx)->rsp = sp;
+#else
+#error "invalid arch"
 #endif
 }
 
@@ -224,7 +226,6 @@ thread_clone(struct LFILinuxThread *t)
         goto err2;
     // Copy all registers.
     *lfi_ctx_regs(new_t->ctx) = *lfi_ctx_regs(t->ctx);
-    lfi_ctx_regs(new_t->ctx)->tp = 0;
 
     return new_t;
 

@@ -36,9 +36,9 @@ testdata = [
   {'bin': test_run, 'file': 'programs/argv.c', 'inputs': ['one', 'two', 'three'], 'cflags': []},
   {'bin': test_run, 'file': 'programs/envp.c', 'inputs': [], 'cflags': []},
   {'bin': test_run, 'file': 'programs/mmap.c', 'inputs': [], 'cflags': []},
+  {'bin': test_run, 'file': 'programs/thread.c', 'inputs': [], 'cflags': []},
   # {'bin': test_run, 'file': 'programs/file.c', 'inputs': ['programs/inputs/file.txt'], 'cflags': []},
   # {'bin': test_run, 'file': 'programs/chdir.c', 'inputs': ['programs/inputs', 'file.txt'], 'cflags': []},
-  # {'bin': test_run, 'file': 'programs/thread.c', 'inputs': [], 'cflags': []},
   # {'bin': test_fs, 'file': 'programs/fs.c', 'inputs': './inputs/test.txt', 'cflags': []}
 ]
 
@@ -53,6 +53,6 @@ foreach input : testdata
   test(input['file'],
     go, args: ['run', 'run.go', expected, input['bin'], exec] + input['inputs'],
     workdir: meson.current_source_dir(),
-    suite: ['liblfi']
+    suite: ['linux']
   )
 endforeach

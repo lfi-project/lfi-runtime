@@ -107,3 +107,6 @@ proc_mapat(struct LFILinuxProc *p, lfiptr start, size_t size, int prot,
 
 int
 proc_unmap(struct LFILinuxProc *p, lfiptr start, size_t size);
+
+struct LFILinuxThread *
+thread_clone(struct LFILinuxThread *t);
