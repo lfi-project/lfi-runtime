@@ -82,7 +82,8 @@ lfi_proc_free(struct LFILinuxProc *proc);
 
 // Creates a new LFILinuxThread from an ELF file and a command-line.
 struct LFILinuxThread *
-lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv, const char **envp);
+lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
+    const char **envp);
 
 // Begins executed an LFILinuxThread.
 int

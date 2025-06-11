@@ -1,12 +1,12 @@
-#include "lfi_linux.h"
 #include "argtable3.h"
+#include "lfi_linux.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 static inline size_t
 gb(size_t x)
@@ -64,17 +64,24 @@ int
 main(int argc, char **argv)
 {
     struct arg_lit *help = arg_lit0("h", "help", "show help");
-    struct arg_lit *verbose = arg_lit0("V",  "verbose", "verbose output");
-    struct arg_lit *perf = arg_lit0(NULL,  "perf", "enable perf support");
-    struct arg_lit *no_verify = arg_lit0(NULL,  "no-verify", "disable verification (unsafe)");
-    struct arg_int *pagesize = arg_intn(NULL, "pagesize", "<int>", 0, 1, "system page size");
-    struct arg_str *envs = arg_strn(NULL, "env", "<var=val>", 0, 100, "set environment variable");
-    struct arg_str *dirs = arg_strn(NULL, "dir", "<box=host>", 0, 100, "map sandbox path to host directory");
-    struct arg_str *wd = arg_strn(NULL, "wd", "<dir>", 0, 1, "working directory within sandbox");
-    struct arg_str *inputs = arg_strn(NULL, NULL, "<input>", 0, 1000, "input command");
+    struct arg_lit *verbose = arg_lit0("V", "verbose", "verbose output");
+    struct arg_lit *perf = arg_lit0(NULL, "perf", "enable perf support");
+    struct arg_lit *no_verify = arg_lit0(NULL, "no-verify",
+        "disable verification (unsafe)");
+    struct arg_int *pagesize = arg_intn(NULL, "pagesize", "<int>", 0, 1,
+        "system page size");
+    struct arg_str *envs = arg_strn(NULL, "env", "<var=val>", 0, 100,
+        "set environment variable");
+    struct arg_str *dirs = arg_strn(NULL, "dir", "<box=host>", 0, 100,
+        "map sandbox path to host directory");
+    struct arg_str *wd = arg_strn(NULL, "wd", "<dir>", 0, 1,
+        "working directory within sandbox");
+    struct arg_str *inputs = arg_strn(NULL, NULL, "<input>", 0, 1000,
+        "input command");
     struct arg_end *end = arg_end(20);
 
-    void *argtable[] = { help, verbose, perf, no_verify, pagesize, envs, dirs, wd, inputs, end };
+    void *argtable[] = { help, verbose, perf, no_verify, pagesize, envs, dirs,
+        wd, inputs, end };
 
     if (arg_nullcheck(argtable) != 0) {
         fprintf(stderr, "Memory allocation error\n");
@@ -127,7 +134,8 @@ main(int argc, char **argv)
 
     struct Buf prog = readfile(inputs->sval[0]);
     if (!prog.data) {
-        fprintf(stderr, "failed to open %s: %s\n", inputs->sval[0], strerror(errno));
+        fprintf(stderr, "failed to open %s: %s\n", inputs->sval[0],
+            strerror(errno));
         exit(1);
     }
 
@@ -148,7 +156,8 @@ main(int argc, char **argv)
         exit(1);
     }
 
-    struct LFILinuxThread *t = lfi_thread_new(proc, inputs->count, strarray(inputs), strarray(envs));
+    struct LFILinuxThread *t = lfi_thread_new(proc, inputs->count,
+        strarray(inputs), strarray(envs));
     if (!t) {
         fprintf(stderr, "failed to create LFI thread\n");
         exit(1);

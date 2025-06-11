@@ -49,8 +49,11 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size)
 #ifdef CONFIG_ENABLE_DYLD
         if (cwk_path_is_absolute(interp_path)) {
             char interp_host[FILENAME_MAX];
-            if (!path_resolve(proc, interp_path, interp_host, sizeof(interp_host))) {
-                LOG(proc->engine, "error opening dynamic linker %s: host path resolution failed", interp_path);
+            if (!path_resolve(proc, interp_path, interp_host,
+                    sizeof(interp_host))) {
+                LOG(proc->engine,
+                    "error opening dynamic linker %s: host path resolution failed",
+                    interp_path);
                 free(interp_path);
                 return false;
             }
@@ -99,7 +102,6 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size)
 EXPORT void
 lfi_proc_free(struct LFILinuxProc *proc)
 {
-    fdclear(&proc->fdtable);
     free(proc);
 }
 
@@ -109,15 +111,9 @@ proc_mapany(struct LFILinuxProc *p, size_t size, int prot, int flags, int fd,
 {
     int kfd = -1;
     if (fd >= 0) {
-        // TODO: fdrelease this FDFile when this region is fully unmapped.
-        struct FDFile *f = fdget(&p->fdtable, fd);
-        if (!f)
+        kfd = fdget(&p->fdtable, fd);
+        if (kfd == -1)
             return -LINUX_EBADF;
-        if (f->filefd) {
-            kfd = f->filefd(f->dev);
-        } else {
-            return -LINUX_EACCES;
-        }
     }
     LOCK_WITH_DEFER(&p->lk_box, lk_box);
     lfiptr addr = lfi_box_mapany(p->box, size, prot, flags, kfd, offset);
@@ -133,15 +129,9 @@ proc_mapat(struct LFILinuxProc *p, lfiptr start, size_t size, int prot,
 {
     int kfd = -1;
     if (fd >= 0) {
-        // TODO: fdrelease this FDFile when this region is fully unmapped.
-        struct FDFile *f = fdget(&p->fdtable, fd);
-        if (!f)
+        kfd = fdget(&p->fdtable, fd);
+        if (kfd == -1)
             return LINUX_EBADF;
-        if (f->filefd) {
-            kfd = f->filefd(f->dev);
-        } else {
-            return -LINUX_EACCES;
-        }
     }
     LOCK_WITH_DEFER(&p->lk_box, lk_box);
     lfiptr addr = lfi_box_mapat(p->box, start, size, prot, flags, kfd, offset);

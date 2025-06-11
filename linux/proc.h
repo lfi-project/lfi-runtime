@@ -8,36 +8,13 @@
 #include <stdint.h>
 #include <stdio.h>
 
-// Maximum number of file descriptors a process can have open.
-#define LINUX_NOFILE 128
+// Maximum number of file descriptors the LFI runtime process can have open.
+#define LINUX_NOFILE 1024
 // Maximum number of bytes that can be allocated via sys_brk.
 #define BRKMAXSIZE (512UL * 1024 * 1024)
 
-struct FDFile {
-    // Underlying device pointer, passed as the first argument to all file
-    // operations.
-    void *dev;
-
-    // File refcount.
-    size_t refs;
-    pthread_mutex_t lk_refs;
-
-    // Virtual function table for file operations.
-    ssize_t (*read)(void *, uint8_t *, size_t);
-    ssize_t (*write)(void *, uint8_t *, size_t);
-    ssize_t (*lseek)(void *, off_t, int);
-    int (*close)(void *);
-    int (*stat_)(void *, struct Stat *);
-    ssize_t (*getdents)(void *, void *, size_t);
-    int (*chown)(void *, linux_uid_t, linux_gid_t);
-    int (*chmod)(void *, linux_mode_t);
-    int (*truncate)(void *, off_t);
-    int (*sync)(void *);
-    int (*filefd)(void *);
-};
-
 struct FDTable {
-    struct FDFile *files[LINUX_NOFILE];
+    int fds[LINUX_NOFILE];
     pthread_mutex_t lk;
 };
 

@@ -1,7 +1,7 @@
 #include "align.h"
+#include "cwalk.h"
 #include "linux.h"
 #include "proc.h"
-#include "cwalk.h"
 
 #include <assert.h>
 #include <string.h>
@@ -10,7 +10,8 @@
 // resolution uses the dir_maps variable from the engine to determine where
 // directories in the sandbox are mapped in the host.
 bool
-path_resolve(struct LFILinuxProc *proc, const char *path, char *buffer, size_t buffer_size)
+path_resolve(struct LFILinuxProc *proc, const char *path, char *buffer,
+    size_t buffer_size)
 {
     // If the path is relative, append the process's working directory to it.
     if (!cwk_path_is_absolute(path)) {

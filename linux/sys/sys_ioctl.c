@@ -26,12 +26,9 @@ sys_ioctl(struct LFILinuxThread *t, int fd, unsigned long request,
         return -LINUX_EINVAL;
 
     struct winsize ws;
-    struct FDFile *FD_DEFER(file) = fdget(&t->proc->fdtable, fd);
-    if (!file)
+    int kfd = fdget(&t->proc->fdtable, fd);
+    if (kfd == -1)
         return -LINUX_EBADF;
-    if (!file->filefd)
-        return -LINUX_EPERM;
-    int kfd = file->filefd(file->dev);
     int e = ioctl(kfd, TIOCGWINSZ, &ws);
     if (e != 0)
         return -errno;

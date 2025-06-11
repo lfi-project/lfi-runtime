@@ -1,7 +1,6 @@
 srcs = files(
   'linux.c',
   'fd.c',
-  'file.c',
   'sys.c',
   'proc.c',
   'buf.c',

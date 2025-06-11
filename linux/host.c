@@ -1,7 +1,7 @@
 #define _GNU_SOURCE
 
 #include "align.h"
-#include "file.h"
+#include "linux.h"
 
 #include <assert.h>
 #include <errno.h>
