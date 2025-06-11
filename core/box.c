@@ -341,7 +341,7 @@ lfi_box_copyfm(struct LFIBox *box, void *dst, lfiptr src, size_t size)
 }
 
 EXPORT lfiptr
-lfi_box_copyto(struct LFIBox *box, lfiptr dst, void *src, size_t size)
+lfi_box_copyto(struct LFIBox *box, lfiptr dst, const void *src, size_t size)
 {
     assert(lfi_box_bufvalid(box, dst, size));
     memcpy((void *) l2p(box, dst), src, size);

@@ -17,9 +17,8 @@ struct LFILinuxOptions {
     bool perf;
 
     // Null-terminated list of directory mappings from the sandbox FS to the
-    // host. Each directory mapping is expressed as host_path=sandbox_path. For
-    // example, you might have /path/to/lfi-sysroot=/ along with $PWD=/work.
-    // TODO: not implemented
+    // host. Each directory mapping is expressed as sandbox_path=host_path. For
+    // example, you might have /=/path/to/lfi-sysroot along with /work=$PWD.
     const char **dir_maps;
 
     // Working directory that the sandbox starts in, within the sandbox FS. For
@@ -83,7 +82,7 @@ lfi_proc_free(struct LFILinuxProc *proc);
 
 // Creates a new LFILinuxThread from an ELF file and a command-line.
 struct LFILinuxThread *
-lfi_thread_new(struct LFILinuxProc *proc, int argc, char **argv, char **envp);
+lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv, const char **envp);
 
 // Begins executed an LFILinuxThread.
 int

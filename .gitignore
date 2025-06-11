@@ -9,3 +9,4 @@ subprojects/libboxmap
 subprojects/libargp
 subprojects/lfi-verifier
 subprojects/cwalk
+subprojects/argtable3

@@ -12,7 +12,7 @@ struct Buf {
 };
 
 static struct Buf
-readfile(char *path)
+readfile(const char *path)
 {
     FILE *f = fopen(path, "r");
     if (!f) {
@@ -31,7 +31,7 @@ readfile(char *path)
 }
 
 int
-main(int argc, char **argv)
+main(int argc, const char **argv)
 {
     struct LFIEngine *engine = lfi_new(
         (struct LFIOptions) {
@@ -40,7 +40,7 @@ main(int argc, char **argv)
             .no_verify = true,
             .verbose = true,
         },
-        gb(256));
+        gb(32));
     assert(engine);
 
     struct LFILinuxEngine *linux_ = lfi_linux_new(engine,
@@ -67,7 +67,7 @@ main(int argc, char **argv)
     bool ok = lfi_proc_load(proc, prog.data, prog.size);
     assert(ok);
 
-    char *envp[] = {
+    const char *envp[] = {
         "LFI=1",
         "USER=sandbox",
         "HOME=/home",

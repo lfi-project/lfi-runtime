@@ -148,7 +148,7 @@ lfi_box_copyfm(struct LFIBox *box, void *dst, lfiptr src, size_t size);
 
 // Copies data in to the given sandbox location.
 lfiptr
-lfi_box_copyto(struct LFIBox *box, lfiptr dst, void *src, size_t size);
+lfi_box_copyto(struct LFIBox *box, lfiptr dst, const void *src, size_t size);
 
 // Use of the following two functions assumes that the sandbox and host share
 // an address space.

@@ -8,6 +8,7 @@
 #include "lfi_core.h"
 #include "linux.h"
 #include "lock.h"
+#include "path.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -47,14 +48,20 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size)
     if (interp_path) {
 #ifdef CONFIG_ENABLE_DYLD
         if (cwk_path_is_absolute(interp_path)) {
-            interp = buf_read_file(proc->engine, interp_path);
+            char interp_host[FILENAME_MAX];
+            if (!path_resolve(proc, interp_path, interp_host, sizeof(interp_host))) {
+                LOG(proc->engine, "error opening dynamic linker %s: host path resolution failed", interp_path);
+                free(interp_path);
+                return false;
+            }
+            interp = buf_read_file(proc->engine, interp_host);
             if (!interp.data) {
                 LOG(proc->engine, "error opening dynamic linker %s: %s",
                     interp_path, strerror(errno));
                 free(interp_path);
                 return false;
             }
-            LOG(proc->engine, "using dynamic linker: %s", interp_path);
+            LOG(proc->engine, "using sandbox dynamic linker: %s", interp_path);
         } else {
             LOG(proc->engine,
                 "dynamic linker ignored because it is relative path: %s",

@@ -62,7 +62,7 @@ struct AuxvList {
 // | argc | argv[0] .. 0 | envp[0] .. 0 | auxv | rand | argv/envp strings |
 // ^ sp
 static lfiptr
-stack_init(struct LFILinuxThread *t, int argc, char **argv, char **envp)
+stack_init(struct LFILinuxThread *t, int argc, const char **argv, const char **envp)
 {
     argc = MIN(argc, ARGV_MAX);
 
@@ -176,7 +176,7 @@ sp_init(struct LFILinuxThread *t, lfiptr sp)
 }
 
 EXPORT struct LFILinuxThread *
-lfi_thread_new(struct LFILinuxProc *proc, int argc, char **argv, char **envp)
+lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv, const char **envp)
 {
     struct LFILinuxThread *t = calloc(sizeof(struct LFILinuxThread), 1);
     if (!t)
