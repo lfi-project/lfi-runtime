@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fd.h"
+#include "host.h"
 #include "lfi_arch.h"
 #include "lfi_core.h"
 #include "linux.h"
@@ -129,3 +130,87 @@ sys_exit(struct LFILinuxThread *t, uint64_t code);
 int
 sys_clone(struct LFILinuxThread *t, uint64_t flags, uint64_t stack,
     uint64_t ptid, uint64_t ctid, uint64_t tls, uint64_t func);
+
+ssize_t
+sys_read(struct LFILinuxThread *t, int fd, lfiptr bufp, size_t size);
+
+ssize_t
+sys_readv(struct LFILinuxThread *t, int fd, lfiptr iovp, size_t iovcnt);
+
+off_t
+sys_lseek(struct LFILinuxThread *t, int fd, off_t offset, int whence);
+
+ssize_t
+sys_pread64(struct LFILinuxThread *t, int fd, lfiptr bufp, size_t size,
+    ssize_t offset);
+
+int
+sys_openat(struct LFILinuxThread *t, int dirfd, lfiptr pathp, int flags,
+    int mode);
+
+int
+sys_close(struct LFILinuxThread *t, int fd);
+
+ssize_t
+sys_getdents64(struct LFILinuxThread *t, int fd, lfiptr dirp, size_t count);
+
+int
+sys_newfstatat(struct LFILinuxThread *t, int dirfd, lfiptr pathp,
+    lfiptr statbufp, int flags);
+
+int
+sys_fchmod(struct LFILinuxThread *t, int fd, linux_mode_t mode);
+
+int
+sys_truncate(struct LFILinuxThread *p, lfiptr pathp, off_t length);
+
+int
+sys_ftruncate(struct LFILinuxThread *t, int fd, off_t length);
+
+int
+sys_fchown(struct LFILinuxThread *t, int fd, linux_uid_t owner,
+    linux_gid_t group);
+
+int
+sys_fsync(struct LFILinuxThread *p, int fd);
+
+int
+sys_mkdirat(struct LFILinuxThread *t, int dirfd, lfiptr pathp,
+    linux_mode_t mode);
+
+int
+sys_unlinkat(struct LFILinuxThread *t, int dirfd, lfiptr pathp, int flags);
+
+int
+sys_renameat(struct LFILinuxThread *t, int olddir, lfiptr oldpathp, int newdir,
+    lfiptr newpathp);
+
+int
+sys_faccessat(struct LFILinuxThread *t, int dirfd, uintptr_t pathp, int mode);
+
+ssize_t
+sys_readlinkat(struct LFILinuxThread *t, int dirfd, lfiptr pathp, lfiptr bufp,
+    size_t size);
+
+int
+sys_chdir(struct LFILinuxThread *p, lfiptr pathp);
+
+int
+sys_fchdir(struct LFILinuxThread *t, int fd);
+
+ssize_t
+sys_getcwd(struct LFILinuxThread *t, lfiptr bufp, size_t size);
+
+int
+sys_nanosleep(struct LFILinuxThread *t, lfiptr reqp, lfiptr remp);
+
+int
+sys_clock_gettime(struct LFILinuxThread *t, linux_clockid_t clockid, lfiptr tp);
+
+ssize_t
+sys_getrandom(struct LFILinuxThread *t, lfiptr bufp, size_t buflen,
+    unsigned int flags);
+
+int
+sys_fcntl(struct LFILinuxThread *t, int fd, int cmd, uintptr_t va0,
+    uintptr_t va1, uintptr_t va2, uintptr_t va3);

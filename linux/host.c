@@ -1,5 +1,7 @@
 #define _GNU_SOURCE
 
+#include "host.h"
+
 #include "align.h"
 #include "linux.h"
 
@@ -9,7 +11,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-static int
+int
 host_err(int err)
 {
     switch (err) {
@@ -81,17 +83,14 @@ getdents64(int fd, struct dirent *buf, size_t len)
 {
     if (len > INT_MAX)
         len = INT_MAX;
-    return syscall(SYS_getdents64, fd, buf, len);
+    return HOST_ERR(int, syscall(SYS_getdents64, fd, buf, len));
 }
 #endif
 
 ssize_t
 host_getdents64(int fd, void *dirp, size_t count)
 {
-    ssize_t r = getdents64(fd, dirp, count);
-    if (r < 0)
-        return host_err(errno);
-    return r;
+    return HOST_ERR(ssize_t, getdents64(fd, dirp, count));
 }
 
 #else

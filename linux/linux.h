@@ -23,6 +23,9 @@ struct Dirent {
     char d_name[256];
 };
 
+typedef int linux_clockid_t;
+typedef int64_t linux_time_t;
+
 #define LINUX_EPERM                1
 #define LINUX_ENOENT               2
 #define LINUX_EBADF                9

@@ -1,6 +1,15 @@
 #pragma once
 
-#include "file.h"
+#include "linux.h"
+
+#include <errno.h>
+#include <stdio.h>
+
+#define HOST_ERR(type, expr)                               \
+    ({                                                     \
+        type _ret = (type) expr;                           \
+        _ret == (type) -1 ? (type) host_err(errno) : _ret; \
+    })
 
 int
 host_fstatat(int fd, const char *path, struct Stat *stat_, int flags);
@@ -13,3 +22,6 @@ host_fstat(int fd, struct Stat *stat_)
 
 ssize_t
 host_getdents64(int fd, void *dirp, size_t count);
+
+int
+host_err(int err);

@@ -26,12 +26,15 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
     SYS(arch_prctl,
             sys_arch_prctl(t, a0, a1))
 #endif
-    SYS(ioctl,
-            sys_ioctl(t, a0, a1, a2, a3, a4, a5))
+    // Basic syscalls.
     SYS(write,
             sys_write(t, a0, a1, a2))
     SYS(writev,
             sys_writev(t, a0, a1, a2))
+    SYS(read,
+            sys_read(t, a0, a1, a2))
+    SYS(readv,
+            sys_readv(t, a0, a1, a2))
     SYS(exit_group,
             sys_exit_group(t, a0))
     SYS(exit,
@@ -82,7 +85,62 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
             sys_ignore(t, "sigaltstack"))
 
     // File operations.
-    // ...
+    SYS(openat,
+            sys_openat(t, a0, a1, a2, a3))
+    SYS(close,
+            sys_close(t, a0))
+    SYS(lseek,
+            sys_lseek(t, a0, a1, a2))
+    SYS(pread64,
+            sys_pread64(t, a0, a1, a2, a3))
+    SYS(getdents64,
+            sys_getdents64(t, a0, a1, a2))
+    SYS(newfstatat,
+            sys_newfstatat(t, a0, a1, a2, a3))
+    SYS(fstat,
+            sys_newfstatat(t, a0, 0, a1, LINUX_AT_EMPTY_PATH))
+    SYS(fchmod,
+            sys_fchmod(t, a0, a1))
+    SYS(truncate,
+            sys_truncate(t, a0, a1))
+    SYS(ftruncate,
+            sys_ftruncate(t, a0, a1))
+    SYS(fchown,
+            sys_fchown(t, a0, a1, a2))
+    SYS(fsync,
+            sys_fsync(t, a0))
+    SYS(mkdirat,
+            sys_mkdirat(t, a0, a1, a2))
+    SYS(unlinkat,
+            sys_unlinkat(t, a0, a1, a2))
+    SYS(renameat,
+            sys_renameat(t, a0, a1, a2, a3))
+    SYS(faccessat,
+            sys_faccessat(t, a0, a1, a2))
+    SYS(readlinkat,
+            sys_readlinkat(t, a0, a1, a2, a3))
+
+    // Working directory syscalls.
+    SYS(chdir,
+            sys_chdir(t, a0))
+    SYS(fchdir,
+            sys_fchdir(t, a0))
+    SYS(getcwd,
+            sys_getcwd(t, a0, a1))
+
+    // Time syscalls.
+    SYS(nanosleep,
+            sys_nanosleep(t, a0, a1))
+    SYS(clock_gettime,
+            sys_clock_gettime(t, a0, a1))
+
+    // Other syscalls.
+    SYS(getrandom,
+            sys_getrandom(t, a0, a1, a2))
+    SYS(ioctl,
+            sys_ioctl(t, a0, a1, a2, a3, a4, a5))
+    SYS(fcntl,
+            sys_fcntl(t, a0, a1, a2, a3, a4, a5))
 
     // Unsupported syscalls that we ignore or purposefully return ENOSYS for.
     SYS(set_robust_list,

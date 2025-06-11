@@ -6,12 +6,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-void
+bool
 fdassign(struct FDTable *t, int fd, int host_fd)
 {
+    if (fd >= LINUX_NOFILE)
+        return false;
     LOCK_WITH_DEFER(&t->lk, t_lk);
     assert(t->fds[fd] == -1);
     t->fds[fd] = host_fd;
+    return true;
 }
 
 int
@@ -24,7 +27,9 @@ fdget(struct FDTable *t, int fd)
 void
 fdclose(struct FDTable *t, int fd)
 {
-    fdassign(t, fd, -1);
+    LOCK_WITH_DEFER(&t->lk, lk);
+    close(t->fds[fd]);
+    t->fds[fd] = -1;
 }
 
 void
