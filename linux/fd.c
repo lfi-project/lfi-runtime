@@ -24,12 +24,15 @@ fdget(struct FDTable *t, int fd)
     return t->fds[fd];
 }
 
-void
+bool
 fdclose(struct FDTable *t, int fd)
 {
     LOCK_WITH_DEFER(&t->lk, lk);
+    if (t->fds[fd] == -1)
+        return false;
     close(t->fds[fd]);
     t->fds[fd] = -1;
+    return true;
 }
 
 void

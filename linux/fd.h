@@ -18,7 +18,7 @@ fdget(struct FDTable *t, int fd);
 
 // Close the host file descriptor associated with fd and remove the
 // slot for fd in the table.
-void
+bool
 fdclose(struct FDTable *t, int fd);
 
 // Initialize the file descriptor table.

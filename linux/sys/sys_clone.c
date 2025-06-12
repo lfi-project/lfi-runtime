@@ -105,7 +105,7 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
     int err = pthread_create(&thread, &attr, threadspawn, p2);
     pthread_attr_destroy(&attr);
     if (err) {
-        assert(!"unimplemented: free machine");
+        lfi_thread_free(p2);
         return -LINUX_EAGAIN;
     }
 

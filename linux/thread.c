@@ -3,13 +3,13 @@
 #include "lfi_core.h"
 #include "linux.h"
 #include "proc.h"
+#include "host.h"
 
 #include <assert.h>
 #include <elf.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/random.h>
 
 // First TID, to avoid using low TID numbers.
 #define BASE_TID 10000
@@ -113,7 +113,7 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
 
     // Create 16 random bytes for AT_RANDOM.
     char random[16];
-    ssize_t r = getrandom(&random[0], sizeof(random), 0);
+    ssize_t r = host_getrandom(&random[0], sizeof(random), 0);
     if (r != sizeof(random)) {
         LOG(t->proc->engine,
             "warning: getrandom for AT_RANDOM returned %ld (less than 16)", r);

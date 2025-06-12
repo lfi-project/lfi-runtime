@@ -140,7 +140,7 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
     SYS(ioctl,
             sys_ioctl(t, a0, a1, a2, a3, a4, a5))
     SYS(fcntl,
-            sys_fcntl(t, a0, a1, a2, a3, a4, a5))
+            sys_ignore(t, "fcntl"))
 
     // Unsupported syscalls that we ignore or purposefully return ENOSYS for.
     SYS(set_robust_list,

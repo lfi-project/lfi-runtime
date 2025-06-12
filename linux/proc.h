@@ -29,6 +29,11 @@ struct ELFLoadInfo {
     uint16_t elfphentsize;
 };
 
+struct Dir {
+    int fd;
+    pthread_mutex_t lk;
+};
+
 struct LFILinuxProc {
     // Underlying sandbox information.
     struct LFIBox *box;
@@ -47,6 +52,9 @@ struct LFILinuxProc {
 
     // File descriptor table.
     struct FDTable fdtable;
+
+    // Current working directory.
+    struct Dir cwd;
 
     // Futexes for this process.
     struct Futexes futexes;
