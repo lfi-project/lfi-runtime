@@ -15,4 +15,5 @@ struct CallbackEntry {
     _Atomic(uint64_t) trampoline;
 };
 
-_Static_assert(sizeof(struct CallbackEntry) == 32, "invalid callback entry size");
+_Static_assert(sizeof(struct CallbackEntry) == 32,
+    "invalid callback entry size");

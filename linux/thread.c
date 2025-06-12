@@ -1,9 +1,9 @@
 #include "align.h"
+#include "host.h"
 #include "lfi_arch.h"
 #include "lfi_core.h"
 #include "linux.h"
 #include "proc.h"
-#include "host.h"
 
 #include <assert.h>
 #include <elf.h>

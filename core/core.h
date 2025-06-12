@@ -1,12 +1,12 @@
 #pragma once
 
+#include "arch_callback.h"
 #include "boxmap.h"
 #include "lfi_arch.h"
 #include "lfi_core.h"
 #include "lfiv.h"
 #include "log.h"
 #include "mmap.h"
-#include "arch_callback.h"
 
 #define EXPORT __attribute__((visibility("default")))
 

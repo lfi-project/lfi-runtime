@@ -41,6 +41,7 @@ static uint8_t prog[] = {
 _Static_assert(sizeof(prog) % 32 == 0, "end of prog is not bundle-aligned");
 
 static uint8_t prog_cb[] = {
+    // clang-format off
     0x48, 0x89, 0xf8, // mov %rdi, %rax
     0x89, 0xf7,       // mov %esi, %edi
     0xff, 0xe0,       // jmp *%rax
@@ -48,9 +49,11 @@ static uint8_t prog_cb[] = {
     0x66, 0x2e, 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00, // nop
     0x0f, 0x1f, 0x40, 0x00,                                     // nop
     0xcc,
+    // clang-format on
 };
 
-_Static_assert(sizeof(prog_cb) % 32 == 0, "end of prog_cb is not bundle-aligned");
+_Static_assert(sizeof(prog_cb) % 32 == 0,
+    "end of prog_cb is not bundle-aligned");
 
 static uint8_t ret[] = {
     0x4c, 0x8d, 0x1d, 0x04, 0x00, 0x00, 0x00, // lea 0x4(%rip), %r11
@@ -111,8 +114,10 @@ main(void)
     assert(lfi_box_ptrvalid(box, p));
 
     lfiptr p_prog = lfi_box_copyto(box, p, prog, sizeof(prog));
-    lfiptr p_prog_cb = lfi_box_copyto(box, p + sizeof(prog), prog_cb, sizeof(prog_cb));
-    lfiptr p_ret = lfi_box_copyto(box, p + sizeof(prog) + sizeof(prog_cb), ret, sizeof(ret));
+    lfiptr p_prog_cb = lfi_box_copyto(box, p + sizeof(prog), prog_cb,
+        sizeof(prog_cb));
+    lfiptr p_ret = lfi_box_copyto(box, p + sizeof(prog) + sizeof(prog_cb), ret,
+        sizeof(ret));
 
     lfi_ctx_init_ret(ctx, p_ret);
 
@@ -149,7 +154,8 @@ main(void)
         LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int), callback, 42);
     }
     elapsed = time_ns() - start;
-    printf("time per invocation with callback: %.1f ns\n", (float) elapsed / (float) iters);
+    printf("time per invocation with callback: %.1f ns\n",
+        (float) elapsed / (float) iters);
 #endif
 
     lfi_ctx_free(ctx);

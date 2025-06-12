@@ -1,11 +1,13 @@
-#define _GNU_SOURCE  // Required for getrandom
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/random.h>
+#define _GNU_SOURCE // Required for getrandom
 #include <errno.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/random.h>
+#include <unistd.h>
 
-int main() {
+int
+main()
+{
     unsigned char buffer[16];
 
     ssize_t bytes_read = getrandom(buffer, sizeof(buffer), 0);

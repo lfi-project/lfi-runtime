@@ -2,7 +2,9 @@
 #include <time.h>
 #include <unistd.h>
 
-int main() {
+int
+main()
+{
     struct timespec start, end;
 
     if (clock_gettime(CLOCK_MONOTONIC, &start) == -1) {

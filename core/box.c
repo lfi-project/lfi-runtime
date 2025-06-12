@@ -245,8 +245,8 @@ box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd,
 }
 
 EXPORT lfiptr
-lfi_box_mapany_noverify(struct LFIBox *box, size_t size, int prot, int flags, int fd,
-    off_t off)
+lfi_box_mapany_noverify(struct LFIBox *box, size_t size, int prot, int flags,
+    int fd, off_t off)
 {
     return box_mapany(box, size, prot, flags, fd, off, true);
 }

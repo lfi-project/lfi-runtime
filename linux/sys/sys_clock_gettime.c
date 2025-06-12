@@ -20,7 +20,8 @@ sys_clock_gettime(struct LFILinuxThread *t, linux_clockid_t clockid, lfiptr tp)
 {
     if (clockid != LINUX_CLOCK_REALTIME && clockid != LINUX_CLOCK_MONOTONIC)
         return -LINUX_EINVAL;
-    struct TimeSpec* box_ts = bufhost(t, tp, sizeof(struct TimeSpec), alignof(struct TimeSpec));
+    struct TimeSpec *box_ts = bufhost(t, tp, sizeof(struct TimeSpec),
+        alignof(struct TimeSpec));
     if (!box_ts)
         return -LINUX_EFAULT;
     struct timespec ts;
