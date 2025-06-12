@@ -167,6 +167,20 @@ lfi_box_l2p(struct LFIBox *box, lfiptr l);
 uintptr_t
 lfi_box_p2l(struct LFIBox *box, uintptr_t p);
 
+// Initialize use of callbacks with this sandbox.
+bool
+lfi_box_cbinit(struct LFIBox *box);
+
+// Register fn as a callback. Returns the function pointer that should be
+// passed to the sandbox code in order to call 'fn'. Returns NULL if there are
+// no more callback slots available.
+void *
+lfi_box_register_cb(struct LFIBox *box, void *fn);
+
+// Unregister fn as a callback.
+void
+lfi_box_unregister_cb(struct LFIBox *box, void *fn);
+
 // Frees all resources associated with box and deallocates its reservation in
 // the LFIEngine in which it was allocated.
 void

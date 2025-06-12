@@ -44,11 +44,11 @@ static uint8_t prog_cb[] = {
     // clang-format off
     0x48, 0x89, 0xf8, // mov %rdi, %rax
     0x89, 0xf7,       // mov %esi, %edi
+    0x83, 0xe0, 0xe0, // and $0xffffffe0, %eax
+    0x4c, 0x09, 0xf0, // or %r14, %rax
     0xff, 0xe0,       // jmp *%rax
     0x66, 0x2e, 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00, // nop
-    0x66, 0x2e, 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00, // nop
-    0x0f, 0x1f, 0x40, 0x00,                                     // nop
-    0xcc,
+    0x0f, 0x1f, 0x40, 0x00, 0xcc, 0xcc, 0xcc, 0xcc, 0xcc,       // nop/int3
     // clang-format on
 };
 
@@ -105,6 +105,9 @@ main(void)
     struct LFIBox *box = lfi_box_new(engine);
     assert(box);
 
+    bool ok = lfi_box_cbinit(box);
+    assert(ok);
+
     struct LFIContext *ctx = lfi_ctx_new(box, NULL);
     assert(ctx);
 
@@ -137,7 +140,9 @@ main(void)
     assert(x == 42);
     printf("add(%d, %d) = %d\n", 10, 32, x);
 
-    x = LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int), callback, 42);
+    void *box_callback = lfi_box_register_cb(box, callback);
+
+    x = LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int), box_callback, 42);
     assert(x == 42);
 
 #if BENCHMARK
@@ -151,7 +156,7 @@ main(void)
 
     start = time_ns();
     for (size_t i = 0; i < iters; i++) {
-        LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int), callback, 42);
+        LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int), box_callback, 42);
     }
     elapsed = time_ns() - start;
     printf("time per invocation with callback: %.1f ns\n",

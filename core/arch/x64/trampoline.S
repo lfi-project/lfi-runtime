@@ -88,12 +88,12 @@ lfi_trampoline:
 
     // dummy push to keep the stack aligned
     pushq %rbp
-    // push user rsp
+    // push sandbox rsp
     pushq REGS_RSP(%r11)
 
     // save current host stack
     movq %rsp, REGS_HOST_SP(%r11)
-    // load user rsp
+    // load sandbox rsp
     movq REGS_RSP(%r11), %rsp
     // load sandbox base
     movq REGS_BASE(%r11), %REG_BASE
@@ -105,7 +105,7 @@ lfi_trampoline:
     movq INVOKE_RETFN(%r13), %r11
     // align stack
     andq $0xfffffffffffffff0, %rsp
-    // push this as the return address onto the user stack
+    // push this as the return address onto the sandbox stack
     pushq %r11
 
     // load address of the target function
@@ -135,7 +135,7 @@ lfi_ret:
     // restore host tp
     movq REGS_HOST_TP(%r11), %rbp
     movq %rbp, %fs:0x0
-    // restore user sp to its initial value
+    // restore sandbox sp to its initial value
     popq %rbp
     movq %rbp, REGS_RSP(%r11)
     popq %rbp // pop dummy value

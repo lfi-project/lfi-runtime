@@ -3,4 +3,5 @@ srcs += files(
   'trampoline.S',
   'regs.c',
   'callback.c',
+  'callback.S',
 )
