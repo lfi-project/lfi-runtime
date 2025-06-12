@@ -40,6 +40,18 @@ static uint8_t prog[] = {
 
 _Static_assert(sizeof(prog) % 32 == 0, "end of prog is not bundle-aligned");
 
+static uint8_t prog_cb[] = {
+    0x48, 0x89, 0xf8, // mov %rdi, %rax
+    0x89, 0xf7,       // mov %esi, %edi
+    0xff, 0xe0,       // jmp *%rax
+    0x66, 0x2e, 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00, // nop
+    0x66, 0x2e, 0x0f, 0x1f, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00, // nop
+    0x0f, 0x1f, 0x40, 0x00,                                     // nop
+    0xcc,
+};
+
+_Static_assert(sizeof(prog_cb) % 32 == 0, "end of prog_cb is not bundle-aligned");
+
 static uint8_t ret[] = {
     0x4c, 0x8d, 0x1d, 0x04, 0x00, 0x00, 0x00, // lea 0x4(%rip), %r11
     0x41, 0xff, 0x66, 0x18,                   // jmp *0x18(%r14)
@@ -60,6 +72,15 @@ time_ns()
     }
     return ((long long unsigned) ts.tv_sec) * 1000000000LLU +
         (long long unsigned) ts.tv_nsec;
+}
+
+static int
+callback(int a)
+{
+#if !BENCHMARK
+    printf("callback got %d\n", a);
+#endif
+    return a;
 }
 
 int
@@ -89,11 +110,11 @@ main(void)
     assert(p != (lfiptr) -1);
     assert(lfi_box_ptrvalid(box, p));
 
-    lfiptr pret = p + sizeof(prog);
-    lfi_box_copyto(box, p, prog, sizeof(prog));
-    lfi_box_copyto(box, pret, ret, sizeof(ret));
+    lfiptr p_prog = lfi_box_copyto(box, p, prog, sizeof(prog));
+    lfiptr p_prog_cb = lfi_box_copyto(box, p + sizeof(prog), prog_cb, sizeof(prog_cb));
+    lfiptr p_ret = lfi_box_copyto(box, p + sizeof(prog) + sizeof(prog_cb), ret, sizeof(ret));
 
-    lfi_ctx_init_ret(ctx, pret);
+    lfi_ctx_init_ret(ctx, p_ret);
 
     int r = lfi_box_mprotect(box, p, pagesize, LFI_PROT_READ | LFI_PROT_EXEC);
     assert(r == 0);
@@ -107,18 +128,28 @@ main(void)
     lfi_ctx_regs(ctx)->sp = stack + pagesize;
 #endif
 
-    int x = LFI_INVOKE(ctx, p, int, (int, int), 10, 32);
+    int x = LFI_INVOKE(ctx, p_prog, int, (int, int), 10, 32);
     assert(x == 42);
     printf("add(%d, %d) = %d\n", 10, 32, x);
+
+    x = LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int), callback, 42);
+    assert(x == 42);
 
 #if BENCHMARK
     size_t iters = 100000000;
     long long unsigned start = time_ns();
     for (size_t i = 0; i < iters; i++) {
-        LFI_INVOKE(ctx, p, int, (int, int), 10, 32);
+        LFI_INVOKE(ctx, p_prog, int, (int, int), 10, 32);
     }
     long long unsigned elapsed = time_ns() - start;
     printf("time per invocation: %.1f ns\n", (float) elapsed / (float) iters);
+
+    start = time_ns();
+    for (size_t i = 0; i < iters; i++) {
+        LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int), callback, 42);
+    }
+    elapsed = time_ns() - start;
+    printf("time per invocation with callback: %.1f ns\n", (float) elapsed / (float) iters);
 #endif
 
     lfi_ctx_free(ctx);

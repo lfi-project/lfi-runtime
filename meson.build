@@ -38,9 +38,23 @@ if compiler.has_function('getdents64', prefix : '''#define _GNU_SOURCE
 #include <dirent.h>''')
   defines += '-DHAVE_GETDENTS64'
 endif
+if compiler.compiles('''#include <sys/syscall.h>
+#ifndef SYS_getdents64
+#error "no SYS_getdents64"
+#endif
+''')
+  defines += '-DHAVE_SYS_GETDENTS64'
+endif
 if compiler.has_function('memfd_create', prefix : '''#define _GNU_SOURCE
 #include <sys/mman.h>''')
   defines += '-DHAVE_MEMFD_CREATE'
+endif
+if compiler.compiles('''#include <sys/syscall.h>
+#ifndef SYS_memfd_create
+#error "no SYS_memfd_create"
+#endif
+''')
+  defines += '-DHAVE_SYS_MEMFD_CREATE'
 endif
 if compiler.has_function('getentropy', prefix : '#include <unistd.h>')
   defines += '-DHAVE_GETENTROPY'

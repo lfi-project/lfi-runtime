@@ -125,6 +125,12 @@ lfiptr
 lfi_box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd,
     off_t off);
 
+// Creates a new memory mapping in the sandbox at an arbitrary location,
+// similar to mapat, but does not perform verification (USE WITH CAUTION).
+lfiptr
+lfi_box_mapany_noverify(struct LFIBox *box, size_t size, int prot, int flags, int fd,
+    off_t off);
+
 // Unmaps a memory mapping in the sandbox. Returns -1 on failure.
 int
 lfi_box_munmap(struct LFIBox *box, lfiptr addr, size_t size);

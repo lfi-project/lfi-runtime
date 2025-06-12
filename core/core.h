@@ -6,6 +6,7 @@
 #include "lfiv.h"
 #include "log.h"
 #include "mmap.h"
+#include "arch_callback.h"
 
 #define EXPORT __attribute__((visibility("default")))
 
@@ -32,6 +33,11 @@ struct LFIBox {
     // Pointer to the page at the start of the sandbox holding runtime call
     // entrypoints.
     struct Sys *sys;
+
+    struct CallbackEntry *cbentries_alias;
+    struct CallbackEntry *cbentries_box;
+
+    void *callbacks[MAXCALLBACKS];
 
     struct LFIEngine *engine;
 };

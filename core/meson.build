@@ -20,7 +20,7 @@ liblfi_core = static_library(
   c_args: c_args + c_args_warnings + defines,
   dependencies: [lfiv, mmap, boxmap],
   install: true,
-  include_directories: include_directories('include'),
+  include_directories: include_directories('include', 'arch/' + archmap[cpu]),
 )
 
 lfi_core = declare_dependency(link_with: liblfi_core, include_directories: include_directories('include'))

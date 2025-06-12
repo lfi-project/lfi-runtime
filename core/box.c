@@ -200,9 +200,9 @@ protectverify(struct LFIBox *box, uintptr_t base, size_t size, int prot)
 // Create a new memory mapping, and verify if necessary.
 static int
 mapverify(struct LFIBox *box, uintptr_t start, size_t size, int prot, int flags,
-    int fd, off_t off)
+    int fd, off_t off, bool no_verify)
 {
-    bool no_verify = box->engine->opts.no_verify;
+    no_verify = no_verify || box->engine->opts.no_verify;
     bool allow_wx = box->engine->opts.allow_wx && no_verify;
     bool w = (prot & LFI_PROT_WRITE) != 0;
     bool x = (prot & LFI_PROT_EXEC) != 0;
@@ -229,19 +229,33 @@ mapverify(struct LFIBox *box, uintptr_t start, size_t size, int prot, int flags,
     return mprotect((void *) start, size, host_prot(prot));
 }
 
-EXPORT lfiptr
-lfi_box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd,
-    off_t off)
+static lfiptr
+box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd,
+    off_t off, bool no_verify)
 {
     uintptr_t addr = mm_mapany(&box->mm, size, prot, flags, fd, off);
     if (addr == (uintptr_t) -1)
         return (lfiptr) -1;
-    int r = mapverify(box, addr, size, prot, flags, fd, off);
+    int r = mapverify(box, addr, size, prot, flags, fd, off, no_verify);
     if (r < 0) {
         mm_unmap(&box->mm, addr, size);
         return (lfiptr) -1;
     }
     return p2l(box, addr);
+}
+
+EXPORT lfiptr
+lfi_box_mapany_noverify(struct LFIBox *box, size_t size, int prot, int flags, int fd,
+    off_t off)
+{
+    return box_mapany(box, size, prot, flags, fd, off, true);
+}
+
+EXPORT lfiptr
+lfi_box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd,
+    off_t off)
+{
+    return box_mapany(box, size, prot, flags, fd, off, false);
 }
 
 static void
@@ -263,7 +277,7 @@ lfi_box_mapat(struct LFIBox *box, lfiptr addr, size_t size, int prot, int flags,
         fd, off, cbunmap, NULL);
     if (m_addr == (uintptr_t) -1)
         return (lfiptr) -1;
-    int r = mapverify(box, m_addr, size, prot, flags, fd, off);
+    int r = mapverify(box, m_addr, size, prot, flags, fd, off, false);
     if (r < 0) {
         mm_unmap(&box->mm, m_addr, size);
         return (lfiptr) -1;

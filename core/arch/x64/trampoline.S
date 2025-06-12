@@ -115,13 +115,11 @@ lfi_trampoline:
     addq %REG_BASE, %r11
 
     // set the sandbox thread control block by saving the old value of %fs:0x0
-    // into the context and setting it to point to the context itself.
+    // into the context and setting it to point to the context itself
     movq %fs:0x0, %r12
     movq INVOKE_CTX(%r13), %r13
     movq %r12, REGS_HOST_TP(%r13)
     movq %r13, %fs:0x0
-    movq $0, %r13
-    movq $0, %r12
 
     // this function should return via a runtime call
     jmpq *%r11
