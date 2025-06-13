@@ -10,6 +10,7 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/auxv.h>
 
 // First TID, to avoid using low TID numbers.
 #define BASE_TID 10000
@@ -124,26 +125,26 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
 
     // Create the auxiliary vector.
     struct AuxvList auxv = {
-        (struct Auxv) { AT_SECURE, 0 },
-        (struct Auxv) { AT_BASE, t->proc->elfinfo.ldbase },
-        (struct Auxv) { AT_PHDR,
+        (struct Auxv) { LINUX_AT_SECURE, 0 },
+        (struct Auxv) { LINUX_AT_BASE, t->proc->elfinfo.ldbase },
+        (struct Auxv) { LINUX_AT_PHDR,
             t->proc->elfinfo.elfbase + t->proc->elfinfo.elfphoff },
-        (struct Auxv) { AT_PHNUM, t->proc->elfinfo.elfphnum },
-        (struct Auxv) { AT_PHENT, t->proc->elfinfo.elfphentsize },
-        (struct Auxv) { AT_ENTRY, t->proc->elfinfo.elfentry },
-        (struct Auxv) { AT_EXECFN, box_argv[0] },
-        (struct Auxv) { AT_PAGESZ, lfi_opts(t->proc->engine->engine).pagesize },
-        (struct Auxv) { AT_HWCAP, 0 },
-        (struct Auxv) { AT_HWCAP2, 0 },
-        (struct Auxv) { AT_RANDOM, rand_start },
-        (struct Auxv) { AT_FLAGS, 0 },
-        (struct Auxv) { AT_UID, 1000 },
-        (struct Auxv) { AT_EUID, 1000 },
-        (struct Auxv) { AT_GID, 1000 },
-        (struct Auxv) { AT_EGID, 1000 },
-        (struct Auxv) { AT_SYSINFO, 0 },
-        (struct Auxv) { AT_SYSINFO_EHDR, 0 },
-        (struct Auxv) { AT_NULL, 0 },
+        (struct Auxv) { LINUX_AT_PHNUM, t->proc->elfinfo.elfphnum },
+        (struct Auxv) { LINUX_AT_PHENT, t->proc->elfinfo.elfphentsize },
+        (struct Auxv) { LINUX_AT_ENTRY, t->proc->elfinfo.elfentry },
+        (struct Auxv) { LINUX_AT_EXECFN, box_argv[0] },
+        (struct Auxv) { LINUX_AT_PAGESZ, lfi_opts(t->proc->engine->engine).pagesize },
+        (struct Auxv) { LINUX_AT_HWCAP, getauxval(AT_HWCAP) },
+        (struct Auxv) { LINUX_AT_HWCAP2, getauxval(AT_HWCAP2) },
+        (struct Auxv) { LINUX_AT_RANDOM, rand_start },
+        (struct Auxv) { LINUX_AT_FLAGS, 0 },
+        (struct Auxv) { LINUX_AT_UID, 1000 },
+        (struct Auxv) { LINUX_AT_EUID, 1000 },
+        (struct Auxv) { LINUX_AT_GID, 1000 },
+        (struct Auxv) { LINUX_AT_EGID, 1000 },
+        (struct Auxv) { LINUX_AT_SYSINFO, 0 },
+        (struct Auxv) { LINUX_AT_SYSINFO_EHDR, 0 },
+        (struct Auxv) { LINUX_AT_NULL, 0 },
     };
 
     uint64_t box_argc = argc;
