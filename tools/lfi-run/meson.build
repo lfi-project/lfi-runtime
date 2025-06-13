@@ -5,4 +5,5 @@ executable(
   files('main.c'),
   c_args: c_args + c_args_warnings,
   dependencies: [argtable, lfi_linux],
+  install: true,
 )

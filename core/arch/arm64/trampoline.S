@@ -16,12 +16,12 @@
     mov x12, x30
 
     adrp x0, :tlsdesc:lfi_invoke_info
-    ldr x8, [x0, :tlsdesc_lo12:lfi_invoke_info]
+    ldr \reg, [x0, :tlsdesc_lo12:lfi_invoke_info]
     add x0, x0, :tlsdesc_lo12:lfi_invoke_info
     .tlsdesccall lfi_invoke_info
-    blr x8
-    mrs x8, tpidr_el0
-    add x8, x8, x0
+    blr \reg
+    mrs \reg, tpidr_el0
+    add \reg, \reg, x0
 
     mov x30, x12
     mov x0, x11
