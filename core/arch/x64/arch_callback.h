@@ -17,3 +17,8 @@ struct CallbackEntry {
 
 _Static_assert(sizeof(struct CallbackEntry) == 32,
     "invalid callback entry size");
+
+struct CallbackInfo {
+    struct CallbackEntry *cbentries_alias;
+    struct CallbackEntry *cbentries_box;
+};

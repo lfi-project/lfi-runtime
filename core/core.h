@@ -34,8 +34,7 @@ struct LFIBox {
     // entrypoints.
     struct Sys *sys;
 
-    struct CallbackEntry *cbentries_alias;
-    struct CallbackEntry *cbentries_box;
+    struct CallbackInfo cbinfo;
 
     void *callbacks[MAXCALLBACKS];
 

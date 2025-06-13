@@ -56,3 +56,7 @@ lfi_callback_userpop:
     andl $0xffffffe0, %r11d
     addq %REG_BASE, %r11
     jmpq *%r11
+
+#ifndef __APPLE__
+.section .note.GNU-stack,"",@progbits
+#endif
