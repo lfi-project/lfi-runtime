@@ -78,3 +78,9 @@ endif
 subdir('core')
 subdir('linux')
 subdir('tools')
+
+liblfi = library(
+  'lfi',
+  dependencies: lfi_linux.as_link_whole(),
+  install: true,
+)

@@ -26,5 +26,6 @@ liblfi_core = static_library(
 lfi_core = declare_dependency(link_with: liblfi_core, include_directories: include_directories('include'))
 
 install_headers('include/lfi_core.h')
+install_headers('include/lfi_arch.h')
 
 subdir('test')
