@@ -32,14 +32,14 @@ sys_openat(struct LFILinuxThread *t, int dirfd, lfiptr pathp, int flags,
     }
     int kfd = open(host_path, openflags(flags), mode);
     if (kfd < 0) {
-        free(path);
         LOG(t->proc->engine, "sys_open(\"%s\") = %d", path, kfd);
+        free(path);
         return host_err(errno);
     }
     bool isdir = host_isdir(host_path);
     fdassign(&t->proc->fdtable, kfd, kfd, isdir ? path : NULL);
+    LOG(t->proc->engine, "sys_open(\"%s\") = %d", path, kfd);
     if (!isdir)
         free(path);
-    LOG(t->proc->engine, "sys_open(\"%s\") = %d", path, kfd);
     return kfd;
 }
