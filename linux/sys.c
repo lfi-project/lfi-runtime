@@ -103,8 +103,21 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
             sys_newfstatat(t, a0, a1, a2, a3))
     SYS(fstat,
             sys_newfstatat(t, a0, 0, a1, LINUX_AT_EMPTY_PATH))
+#ifdef LINUX_SYS_stat
+    SYS(stat,
+            sys_newfstatat(t, LINUX_AT_FDCWD, a0, a1, 0))
+#endif
+#ifdef LINUX_SYS_lstat
+    // TODO: handle links properly for lstat.
+    SYS(lstat,
+            sys_newfstatat(t, LINUX_AT_FDCWD, a0, a1, 0))
+#endif
     SYS(fchmod,
             sys_fchmod(t, a0, a1))
+#ifdef LINUX_SYS_chmod
+    SYS(chmod,
+            sys_chmod(t, a0, a1))
+#endif
     SYS(truncate,
             sys_truncate(t, a0, a1))
     SYS(ftruncate,
@@ -115,14 +128,34 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
             sys_fsync(t, a0))
     SYS(mkdirat,
             sys_mkdirat(t, a0, a1, a2))
+#ifdef LINUX_SYS_mkdir
+    SYS(mkdir,
+            sys_mkdirat(t, LINUX_AT_FDCWD, a0, a1))
+#endif
     SYS(unlinkat,
             sys_unlinkat(t, a0, a1, a2))
+#ifdef LINUX_SYS_unlink
+    SYS(unlink,
+            sys_unlinkat(t, LINUX_AT_FDCWD, a0, 0))
+#endif
     SYS(renameat,
             sys_renameat(t, a0, a1, a2, a3))
+#ifdef LINUX_SYS_rename
+    SYS(rename,
+            sys_renameat(t, LINUX_AT_FDCWD, a0, LINUX_AT_FDCWD, a1))
+#endif
     SYS(faccessat,
             sys_faccessat(t, a0, a1, a2))
+#ifdef LINUX_SYS_access
+    SYS(access,
+            sys_faccessat(t, LINUX_AT_FDCWD, a0, a1))
+#endif
     SYS(readlinkat,
             sys_readlinkat(t, a0, a1, a2, a3))
+#ifdef LINUX_SYS_readlink
+    SYS(readlink,
+            sys_readlinkat(t, LINUX_AT_FDCWD, a0, a1, a2))
+#endif
 
     // Working directory syscalls.
     SYS(chdir,
@@ -137,6 +170,10 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
             sys_nanosleep(t, a0, a1))
     SYS(clock_gettime,
             sys_clock_gettime(t, a0, a1))
+#ifdef LINUX_SYS_time
+    SYS(time,
+            sys_time(t, a0))
+#endif
 
     // Other syscalls.
     SYS(getrandom,

@@ -1,0 +1,4 @@
+File 'programs/inputs/file.txt' exists.
+File 'programs/inputs/file.txt' is readable.
+File 'programs/inputs/file.txt' is writable.
+X_OK check (execute permission)

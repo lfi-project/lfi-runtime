@@ -21,15 +21,10 @@ sys_openat(struct LFILinuxThread *t, int dirfd, lfiptr pathp, int flags,
 {
     if (dirfd != LINUX_AT_FDCWD)
         return -LINUX_EBADF;
-    char *path = pathcopy(t, pathp);
+    char host_path[FILENAME_MAX];
+    char *path = pathcopyresolve(t, pathp, host_path, sizeof(host_path));
     if (!path)
         return -LINUX_EINVAL;
-    char host_path[FILENAME_MAX];
-    LOCK_WITH_DEFER(&t->proc->cwd.lk, cwd_lk);
-    if (!path_resolve(t->proc, path, host_path, sizeof(host_path))) {
-        free(path);
-        return -LINUX_ENOENT;
-    }
     int kfd = open(host_path, openflags(flags), mode);
     if (kfd < 0) {
         LOG(t->proc->engine, "sys_open(\"%s\") = %d", path, kfd);

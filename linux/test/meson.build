@@ -41,6 +41,12 @@ testdata = [
   {'bin': test_run, 'file': 'programs/random.c', 'inputs': [], 'cflags': []},
   {'bin': test_run, 'file': 'programs/chdir.c', 'inputs': ['programs/inputs', 'file.txt'], 'cflags': []},
   {'bin': test_run, 'file': 'programs/file.c', 'inputs': ['programs/inputs/file.txt'], 'cflags': []},
+  {'bin': test_run, 'file': 'programs/access.c', 'inputs': ['programs/inputs/file.txt'], 'cflags': []},
+  {'bin': test_run, 'file': 'programs/rename.c', 'inputs': ['programs/inputs/rename.txt'], 'cflags': []},
+  {'bin': test_run, 'file': 'programs/truncate.c', 'inputs': ['programs/inputs/truncate.txt'], 'cflags': []},
+  {'bin': test_run, 'file': 'programs/stat.c', 'inputs': ['programs/inputs/file.txt'], 'cflags': []},
+  # requires rmdir
+  # {'bin': test_run, 'file': 'programs/mkdir.c', 'inputs': [], 'cflags': []},
 ]
 
 foreach input : testdata

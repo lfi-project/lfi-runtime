@@ -178,7 +178,7 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
     if (ehdr->e_phoff >= elf.size) {
         LOG(proc->engine, "elf_load error: e_phoff (%ld) is too large",
             ehdr->e_phoff);
-        return false;
+        goto err1;
     }
 
     n = buf_read(elf, phdrs, sizeof(*phdrs) * ehdr->e_phnum, ehdr->e_phoff);

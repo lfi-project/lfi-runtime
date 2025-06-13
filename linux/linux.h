@@ -91,3 +91,8 @@ typedef int64_t linux_time_t;
 #define LINUX_SIGCHLD              0x11
 
 #define LINUX_PR_SET_NAME          15
+
+#define LINUX_F_OK 0
+#define LINUX_R_OK 4
+#define LINUX_W_OK 2
+#define LINUX_X_OK 1

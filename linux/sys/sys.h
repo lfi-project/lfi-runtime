@@ -8,11 +8,13 @@
 #include "linux.h"
 #include "lock.h"
 #include "proc.h"
+#include "path.h"
 
 #include <assert.h>
 #include <stdalign.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 
 // Returns true if the pointer is valid for the sandbox.
 static inline bool
@@ -75,6 +77,8 @@ copyin(struct LFILinuxThread *t, lfiptr p, void *hostp, size_t size)
     lfi_box_copyto(t->proc->box, p, hostp, size);
 }
 
+// Checks and copies the given sandbox path into host memory. The user must
+// free the returned path buffer when finished.
 static inline char *
 pathcopy(struct LFILinuxThread *t, lfiptr pathp)
 {
@@ -86,6 +90,23 @@ pathcopy(struct LFILinuxThread *t, lfiptr pathp)
     strncpy(host, (char *) lfi_box_p2l(t->proc->box, pathp), FILENAME_MAX - 1);
     host[FILENAME_MAX - 1] = 0;
     return host;
+}
+
+// Checks pathp, copies it into host memory, and resolves it to a host path.
+// Places the resolved host path in host_path, and returns the copied sandbox
+// path. The user must free the sandbox path.
+static inline char *
+pathcopyresolve(struct LFILinuxThread *t, lfiptr pathp, char *host_path, size_t host_size)
+{
+    char *path = pathcopy(t, pathp);
+    if (!path)
+        return NULL;
+    LOCK_WITH_DEFER(&t->proc->cwd.lk, lk_cwd);
+    if (!path_resolve(t->proc, path, host_path, host_size)) {
+        free(path);
+        return NULL;
+    }
+    return path;
 }
 
 uintptr_t
@@ -230,3 +251,9 @@ sys_getrandom(struct LFILinuxThread *t, lfiptr bufp, size_t buflen,
 int
 sys_fcntl(struct LFILinuxThread *t, int fd, int cmd, uintptr_t va0,
     uintptr_t va1, uintptr_t va2, uintptr_t va3);
+
+linux_time_t
+sys_time(struct LFILinuxThread *t, lfiptr tlocp);
+
+int
+sys_chmod(struct LFILinuxThread *t, lfiptr pathp, linux_mode_t mode);

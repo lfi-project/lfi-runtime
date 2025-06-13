@@ -57,7 +57,7 @@ main(int argc, const char **argv)
     struct LFILinuxEngine *linux_ = lfi_linux_new(engine,
         (struct LFILinuxOptions) {
             .stacksize = mb(2),
-            .verbose = true,
+            /* .verbose = true, */
             .exit_unknown_syscalls = true,
             .wd = "/",
             .dir_maps = maps,
