@@ -20,6 +20,8 @@ struct FDTable {
     // supporting fchdir(fd).
     const char *dirs[LINUX_NOFILE];
     pthread_mutex_t lk;
+
+    bool passthrough;
 };
 
 struct ELFLoadInfo {

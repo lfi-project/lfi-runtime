@@ -9,6 +9,8 @@
 bool
 fdassign(struct FDTable *t, int fd, int host_fd, char *dir)
 {
+    if (t->passthrough)
+        return true;
     if (fd >= LINUX_NOFILE)
         return false;
     LOCK_WITH_DEFER(&t->lk, t_lk);
@@ -21,6 +23,8 @@ fdassign(struct FDTable *t, int fd, int host_fd, char *dir)
 int
 fdget(struct FDTable *t, int fd)
 {
+    if (t->passthrough)
+        return fd;
     LOCK_WITH_DEFER(&t->lk, lk);
     return t->fds[fd];
 }
@@ -28,6 +32,8 @@ fdget(struct FDTable *t, int fd)
 bool
 fdclose(struct FDTable *t, int fd)
 {
+    if (t->passthrough)
+        return true;
     LOCK_WITH_DEFER(&t->lk, lk);
     if (t->fds[fd] == -1)
         return false;
@@ -52,4 +58,6 @@ fdinit(struct LFILinuxEngine *engine, struct FDTable *t)
     t->fds[0] = dup(STDIN_FILENO);
     t->fds[1] = dup(STDOUT_FILENO);
     t->fds[2] = dup(STDERR_FILENO);
+
+    t->passthrough = engine->opts.sys_passthrough;
 }

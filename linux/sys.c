@@ -29,18 +29,6 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
     SYS(arch_prctl,
             sys_arch_prctl(t, a0, a1))
 #endif
-    SYS(write,
-            sys_write(t, a0, a1, a2))
-    SYS(writev,
-            sys_writev(t, a0, a1, a2))
-    SYS(read,
-            sys_read(t, a0, a1, a2))
-    SYS(readv,
-            sys_readv(t, a0, a1, a2))
-    SYS(exit_group,
-            sys_exit_group(t, a0))
-    SYS(exit,
-            sys_exit(t, a0))
     SYS(brk,
             sys_brk(t, a0))
     SYS(mmap,
@@ -49,14 +37,6 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
             sys_mprotect(t, a0, a1, a2))
     SYS(munmap,
             sys_munmap(t, a0, a1))
-    SYS(openat,
-            sys_openat(t, a0, a1, a2, a3))
-#ifdef LINUX_SYS_open
-    SYS(open,
-            sys_openat(t, LINUX_AT_FDCWD, a0, a1, a2))
-#endif
-    SYS(close,
-            sys_close(t, a0))
 #if defined(LFI_ARCH_X64)
     // syscall: clone(flags, stack, ptid, ctid, tls, func)
     SYS(clone,
@@ -82,6 +62,26 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
         switch (sysno) {
         SYS(getpid,
                 0)
+        SYS(write,
+                sys_write(t, a0, a1, a2))
+        SYS(writev,
+                sys_writev(t, a0, a1, a2))
+        SYS(read,
+                sys_read(t, a0, a1, a2))
+        SYS(readv,
+                sys_readv(t, a0, a1, a2))
+        SYS(exit_group,
+                sys_exit_group(t, a0))
+        SYS(exit,
+                sys_exit(t, a0))
+        SYS(openat,
+                sys_openat(t, a0, a1, a2, a3))
+#ifdef LINUX_SYS_open
+        SYS(open,
+                sys_openat(t, LINUX_AT_FDCWD, a0, a1, a2))
+#endif
+        SYS(close,
+                sys_close(t, a0))
 
         // Thread support calls.
         SYS(gettid,
