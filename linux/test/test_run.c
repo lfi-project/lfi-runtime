@@ -6,6 +6,9 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+char *
+xasprintf(const char *fmt, ...);
+
 struct Buf {
     void *data;
     size_t size;
@@ -43,11 +46,21 @@ main(int argc, const char **argv)
         gb(32));
     assert(engine);
 
+    char cwd[FILENAME_MAX];
+    char *d = getcwd(cwd, sizeof(cwd));
+    assert(d == cwd);
+    const char *maps[] = {
+        xasprintf("/=%s", cwd),
+        NULL,
+    };
+
     struct LFILinuxEngine *linux_ = lfi_linux_new(engine,
         (struct LFILinuxOptions) {
             .stacksize = mb(2),
             .verbose = true,
             .exit_unknown_syscalls = true,
+            .wd = "/",
+            .dir_maps = maps,
         });
     assert(linux_);
 

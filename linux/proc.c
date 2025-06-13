@@ -27,6 +27,17 @@ lfi_proc_new(struct LFILinuxEngine *engine, struct LFIBox *box)
 
     pthread_mutex_init(&proc->lk_box, NULL);
     pthread_mutex_init(&proc->lk_brk, NULL);
+    pthread_mutex_init(&proc->cwd.lk, NULL);
+
+    if (engine->opts.wd) {
+        int r = proc_chdir(proc, engine->opts.wd);
+        if (r != 0) {
+            LOG(engine, "error setting working directory to %s",
+                engine->opts.wd);
+            free(proc);
+            return NULL;
+        }
+    }
 
     fdinit(engine, &proc->fdtable);
 
@@ -145,4 +156,48 @@ proc_unmap(struct LFILinuxProc *p, lfiptr start, size_t size)
 {
     LOCK_WITH_DEFER(&p->lk_box, lk_box);
     return lfi_box_munmap(p->box, start, size);
+}
+
+// Resolves a sandbox path to a host path and makes sure the host path exists
+// and is a directory.
+static int
+chdircheck(struct LFILinuxProc *p, const char *path)
+{
+    char resolved[FILENAME_MAX];
+    if (!path_resolve(p, path, resolved, sizeof(resolved)))
+        return -LINUX_ENOENT;
+    struct stat path_stat;
+    if (stat(resolved, &path_stat) != 0) {
+        return -LINUX_ENOENT;
+    }
+    if (!S_ISDIR(path_stat.st_mode))
+        return -LINUX_ENOTDIR;
+    return 0;
+}
+
+// Change the proc's cwd to the given sandbox path.
+int
+proc_chdir(struct LFILinuxProc *p, const char *path)
+{
+    int r;
+    if (cwk_path_is_absolute(path)) {
+        if ((r = chdircheck(p, path)) < 0)
+            return r;
+        LOCK_WITH_DEFER(&p->cwd.lk, lk_cwd);
+        size_t len = strnlen(path, sizeof(p->cwd.path) - 1);
+        memcpy(&p->cwd.path[0], path, len);
+        p->cwd.path[len] = 0;
+    } else {
+        if (p->cwd.path[0] == 0)
+            return -LINUX_ENOENT;
+
+        char joined[FILENAME_MAX];
+        LOCK_WITH_DEFER(&p->cwd.lk, lk_cwd);
+        cwk_path_join(p->cwd.path, path, joined, sizeof(joined));
+        if ((r = chdircheck(p, joined)) < 0)
+            return r;
+        strncpy(p->cwd.path, joined, sizeof(joined));
+        p->cwd.path[sizeof(p->cwd.path) - 1] = 0;
+    }
+    return 0;
 }

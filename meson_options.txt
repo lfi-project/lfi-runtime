@@ -12,7 +12,7 @@ option('enable_dyld',
 
 option('enable_tlsdesc',
   type: 'boolean',
-  value: true,
+  value: false,
   description: 'enable use of TLS descriptors (more efficient TLS) on x86-64; requires libc TLSDESC support')
 
 option('enable_tlsexec',

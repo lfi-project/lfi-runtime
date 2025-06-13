@@ -1,6 +1,7 @@
 #include "linux.h"
 
 #include "arch_sys.h"
+#include "cwalk.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +10,11 @@
 EXPORT struct LFILinuxEngine *
 lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
 {
+    if (opts.wd && !cwk_path_is_absolute(opts.wd)) {
+        LOG_("wd path '%s' is not absolute", opts.wd);
+        return NULL;
+    }
+
     struct LFILinuxEngine *engine = malloc(sizeof(struct LFILinuxEngine));
     if (!engine)
         return NULL;

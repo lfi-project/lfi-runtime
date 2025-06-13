@@ -120,7 +120,7 @@ main(int argc, char **argv)
             .verbose = verbose->count > 0,
             .exit_unknown_syscalls = true,
             .dir_maps = strarray(dirs),
-            .wd = wd->sval[0],
+            .wd = wd->count > 0 ? wd->sval[0] : NULL,
         });
     if (!linux_) {
         fprintf(stderr, "failed to create LFI Linux engine\n");
@@ -146,7 +146,7 @@ main(int argc, char **argv)
     }
     struct LFILinuxProc *proc = lfi_proc_new(linux_, box);
     if (!proc) {
-        fprintf(stderr, "failed to create LFI proc: %s\n", lfi_errmsg());
+        fprintf(stderr, "failed to create LFI proc\n");
         exit(1);
     }
 

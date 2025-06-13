@@ -1,15 +1,18 @@
 #pragma once
 
+#include "defer.h"
 #include "fd.h"
 #include "host.h"
 #include "lfi_arch.h"
 #include "lfi_core.h"
 #include "linux.h"
+#include "lock.h"
 #include "proc.h"
 
 #include <assert.h>
 #include <stdalign.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Returns true if the pointer is valid for the sandbox.
 static inline bool
@@ -70,6 +73,19 @@ copyin(struct LFILinuxThread *t, lfiptr p, void *hostp, size_t size)
 {
     assert(bufcheck(t, p, size, 1));
     lfi_box_copyto(t->proc->box, p, hostp, size);
+}
+
+static inline char *
+pathcopy(struct LFILinuxThread *t, lfiptr pathp)
+{
+    if (!ptrcheck(t, pathp))
+        return NULL;
+    char *host = malloc(FILENAME_MAX);
+    if (!host)
+        return NULL;
+    strncpy(host, (char *) lfi_box_p2l(t->proc->box, pathp), FILENAME_MAX - 1);
+    host[FILENAME_MAX - 1] = 0;
+    return host;
 }
 
 uintptr_t

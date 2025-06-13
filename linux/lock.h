@@ -24,6 +24,8 @@ unlock_deferred(pthread_mutex_t **l)
     unlock(*l);
 }
 
+// First argument is the lock to acquire, second argument is an unused name
+// for the lock variable.
 #define LOCK_WITH_DEFER(x, y)                                               \
     pthread_mutex_t *y __attribute__((cleanup(unlock_deferred))) = lock(x); \
     (void) y;

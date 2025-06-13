@@ -14,7 +14,11 @@
 #define BRKMAXSIZE (512UL * 1024 * 1024)
 
 struct FDTable {
+    // File descriptor conversion table.
     int fds[LINUX_NOFILE];
+    // Full sandbox path for opened directories. This is necessary for
+    // supporting fchdir(fd).
+    const char *dirs[LINUX_NOFILE];
     pthread_mutex_t lk;
 };
 
@@ -30,7 +34,7 @@ struct ELFLoadInfo {
 };
 
 struct Dir {
-    int fd;
+    char path[FILENAME_MAX];
     pthread_mutex_t lk;
 };
 
@@ -95,3 +99,6 @@ proc_unmap(struct LFILinuxProc *p, lfiptr start, size_t size);
 
 struct LFILinuxThread *
 thread_clone(struct LFILinuxThread *t);
+
+int
+proc_chdir(struct LFILinuxProc *p, const char *path);
