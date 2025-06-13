@@ -163,7 +163,7 @@ sys_futex(struct LFILinuxThread *t, lfiptr uaddrp, int op, uint32_t val,
     uint64_t timeoutp, lfiptr uaddr2p, uint32_t val3);
 
 uintptr_t
-sys_exit(struct LFILinuxThread *t, uint64_t code);
+sys_exit(struct LFILinuxThread *t, int code);
 
 int
 sys_clone(struct LFILinuxThread *t, uint64_t flags, uint64_t stack,
@@ -258,3 +258,6 @@ sys_time(struct LFILinuxThread *t, lfiptr tlocp);
 
 int
 sys_chmod(struct LFILinuxThread *t, lfiptr pathp, linux_mode_t mode);
+
+uintptr_t
+sys_passthrough(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5);

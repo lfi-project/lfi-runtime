@@ -29,6 +29,7 @@ srcs += files(
   'sys_newfstatat.c',
   'sys_none.c',
   'sys_openat.c',
+  'sys_passthrough.c',
   'sys_pread64.c',
   'sys_read.c',
   'sys_readlinkat.c',

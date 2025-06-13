@@ -15,7 +15,7 @@ clearctid(struct LFILinuxThread *t)
 }
 
 uintptr_t
-sys_exit(struct LFILinuxThread *t, uint64_t code)
+sys_exit(struct LFILinuxThread *t, int code)
 {
     clearctid(t);
     lfi_ctx_exit(t->ctx, code);

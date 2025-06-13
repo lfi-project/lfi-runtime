@@ -23,13 +23,17 @@ struct LFILinuxOptions {
 
     // Working directory that the sandbox starts in, within the sandbox FS. For
     // example, you might set wd to /work if you have mapped $PWD=/work.
-    // TODO: not implemented
     const char *wd;
 
     // Exit the entire process when an unknown syscall is executed, rather than
     // returning ENOSYS. This is useful for debugging when we want programs
     // that use unsupported syscalls to crash.
     bool exit_unknown_syscalls;
+
+    // Pass most system calls through to the host without checking them
+    // (UNSAFE). Useful for testing and benchmarking for system calls that the
+    // runtime doesn't support. Only works on Linux.
+    bool sys_passthrough;
 };
 
 // An LFILinuxEngine tracks a set of LFILinuxProcs and LFILinuxThreads.
