@@ -66,6 +66,15 @@ if compiler.has_function('arc4random_buf', prefix : '#include <stdlib.h>')
   defines += '-DHAVE_ARC4RANDOM_BUF'
 endif
 
+if get_option('enable_tlsdesc') and cpu == 'x86_64'
+  defines += '-DENABLE_TLS_DESC'
+  c_args += '-mtls-dialect=gnu2'
+endif
+
+if get_option('enable_tlsexec')
+  defines += '-DENABLE_TLS_EXEC'
+endif
+
 subdir('core')
 subdir('linux')
 subdir('tools')

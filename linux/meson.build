@@ -18,7 +18,6 @@ config_h = configure_file(
   output: 'config.h',
   configuration: {
     'CONFIG_MAX_FUTEXES': get_option('max_futexes'),
-    'CONFIG_ENABLE_THREADS': get_option('enable_threads'),
     'CONFIG_ENABLE_DYLD': get_option('enable_dyld'),
   }
 )

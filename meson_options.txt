@@ -1,13 +1,3 @@
-option('enable_threads',
-  type: 'boolean',
-  value: true,
-  description: 'enable use of threads and futexes')
-
-option('enable_syscalls',
-  type: 'string',
-  value: 'all',
-  description: 'comma-separated list of syscalls to enable')
-
 option('max_futexes',
   type: 'integer',
   min: 1,
@@ -19,3 +9,13 @@ option('enable_dyld',
   type: 'boolean',
   value: true,
   description: 'enable loading of dynamically-linked executables')
+
+option('enable_tlsdesc',
+  type: 'boolean',
+  value: true,
+  description: 'enable use of TLS descriptors (more efficient TLS) on x86-64; requires libc TLSDESC support')
+
+option('enable_tlsexec',
+  type: 'boolean',
+  value: false,
+  description: 'enable exec TLS (more efficient); liblfi will no longer be usable in a dlopened context')

@@ -25,8 +25,8 @@
     addq lfi_invoke_info@gottpoff(%rip), \reg
 #elif defined(ENABLE_TLS_DESC)
     pushq %rax
-    leaq lfi_invoke_info@tlsdesc(%rip), %rax
-    callq *lfi_invoke_info(%rax)
+    leaq lfi_invoke_info@TLSDESC(%rip), %rax
+    callq *lfi_invoke_info@TLSCALL(%rax)
     addq %fs:0x0, %rax
     movq %rax, \reg
     popq %rax
