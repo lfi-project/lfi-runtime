@@ -53,7 +53,7 @@ cbfind(struct LFIBox *box, void *fn)
     return -1;
 }
 
-bool
+EXPORT bool
 lfi_box_cbinit(struct LFIBox *box)
 {
     int fd = memfd_create("", 0);
@@ -92,7 +92,7 @@ err:
     return false;
 }
 
-void *
+EXPORT void *
 lfi_box_register_cb(struct LFIBox *box, void *fn)
 {
     assert(fn);
@@ -115,7 +115,7 @@ lfi_box_register_cb(struct LFIBox *box, void *fn)
     return &box->cbinfo.cbentries_box[slot].code[0];
 }
 
-void
+EXPORT void
 lfi_box_unregister_cb(struct LFIBox *box, void *fn)
 {
     ssize_t slot = cbfind(box, fn);

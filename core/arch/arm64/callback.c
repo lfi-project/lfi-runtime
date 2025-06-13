@@ -60,7 +60,7 @@ _Static_assert(sizeof(struct CallbackDataEntry) == sizeof(struct CallbackEntry),
 _Static_assert(MAXCALLBACKS * sizeof(struct CallbackEntry) % 16384 == 0,
     "invalid MAXCALLBACKS");
 
-bool
+EXPORT bool
 lfi_box_cbinit(struct LFIBox *box)
 {
     int fd = memfd_create("", 0);
@@ -111,7 +111,7 @@ err:
     return false;
 }
 
-void *
+EXPORT void *
 lfi_box_register_cb(struct LFIBox *box, void *fn)
 {
     assert(fn);
@@ -134,7 +134,7 @@ lfi_box_register_cb(struct LFIBox *box, void *fn)
     return &box->cbinfo.cbentries_box[slot].code[0];
 }
 
-void
+EXPORT void
 lfi_box_unregister_cb(struct LFIBox *box, void *fn)
 {
     ssize_t slot = cbfind(box, fn);
