@@ -4,7 +4,8 @@ int
 sys_newfstatat(struct LFILinuxThread *t, int dirfd, lfiptr pathp,
     lfiptr statbufp, int flags)
 {
-    struct Stat *stat_ = bufhost(t, statbufp, sizeof(struct Stat), alignof(struct Stat));
+    struct Stat *stat_ = bufhost(t, statbufp, sizeof(struct Stat),
+        alignof(struct Stat));
     if (!stat_)
         return -LINUX_EINVAL;
     if ((flags & LINUX_AT_EMPTY_PATH) == 0) {

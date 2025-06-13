@@ -7,8 +7,7 @@ accessmode(int mode)
 {
     if (mode == LINUX_F_OK)
         return F_OK;
-    return ((mode & LINUX_R_OK) ? R_OK : 0) |
-        ((mode & LINUX_W_OK) ? W_OK : 0) |
+    return ((mode & LINUX_R_OK) ? R_OK : 0) | ((mode & LINUX_W_OK) ? W_OK : 0) |
         ((mode & LINUX_X_OK) ? X_OK : 0);
 }
 

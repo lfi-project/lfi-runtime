@@ -7,14 +7,14 @@
 #include "lfi_core.h"
 #include "linux.h"
 #include "lock.h"
-#include "proc.h"
 #include "path.h"
+#include "proc.h"
 
 #include <assert.h>
+#include <fcntl.h>
 #include <stdalign.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
 
 // Returns true if the pointer is valid for the sandbox.
 static inline bool
@@ -96,7 +96,8 @@ pathcopy(struct LFILinuxThread *t, lfiptr pathp)
 // Places the resolved host path in host_path, and returns the copied sandbox
 // path. The user must free the sandbox path.
 static inline char *
-pathcopyresolve(struct LFILinuxThread *t, lfiptr pathp, char *host_path, size_t host_size)
+pathcopyresolve(struct LFILinuxThread *t, lfiptr pathp, char *host_path,
+    size_t host_size)
 {
     char *path = pathcopy(t, pathp);
     if (!path)

@@ -1,7 +1,9 @@
-#include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
 
-int main(int argc, char **argv) {
+int
+main(int argc, char **argv)
+{
     (void) argc;
     const char *original_name = argv[1];
     const char *temp_name = "temp_file.txt";

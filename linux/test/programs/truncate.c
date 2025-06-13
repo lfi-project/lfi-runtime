@@ -1,12 +1,15 @@
-#include <stdio.h>
-#include <unistd.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
-int main(int argc, char **argv) {
+int
+main(int argc, char **argv)
+{
     (void) argc;
     const char *filename = argv[1];
-    const char *original_content = "This is the original content of the file.\n";
+    const char *original_content =
+        "This is the original content of the file.\n";
     size_t original_len = strlen(original_content);
 
     // Step 1: Write original content to the file
@@ -39,4 +42,3 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-

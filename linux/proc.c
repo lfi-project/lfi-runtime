@@ -5,11 +5,11 @@
 #include "cwalk.h"
 #include "elfload.h"
 #include "fd.h"
+#include "host.h"
 #include "lfi_core.h"
 #include "linux.h"
 #include "lock.h"
 #include "path.h"
-#include "host.h"
 
 #include <assert.h>
 #include <errno.h>

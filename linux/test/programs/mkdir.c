@@ -2,7 +2,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-int main() {
+int
+main()
+{
     const char *dirname = "test_dir";
 
     // Create a directory with rwxr-xr-x permissions
@@ -23,4 +25,3 @@ int main() {
 
     return 0;
 }
-
