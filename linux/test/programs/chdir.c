@@ -18,16 +18,18 @@ main(int argc, char **argv)
     }
     printf("cwd: %s\n", getcwd(wd, sizeof(wd)));
 
-    /* FILE *f = fopen(argv[2], "r"); */
-    /* if (!f) { */
-    /*     fprintf(stderr, "%s does not exist\n", argv[2]); */
-    /*     return 1; */
-    /* } */
-    /* char buf[1024]; */
-    /* int n; */
-    /* while ((n = fread(buf, 1, sizeof(buf), f)) != 0) { */
-    /*     fwrite(buf, 1, n, stdout); */
-    /* } */
+    FILE *f = fopen(argv[2], "r");
+    if (!f) {
+        fprintf(stderr, "%s does not exist\n", argv[2]);
+        return 1;
+    }
+    char buf[1024];
+    int n;
+    while ((n = fread(buf, 1, sizeof(buf), f)) != 0) {
+        fwrite(buf, 1, n, stdout);
+    }
+
+    fclose(f);
 
     printf("going to ..\n");
     if (chdir("..") != 0) {

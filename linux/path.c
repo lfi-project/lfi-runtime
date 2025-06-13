@@ -9,16 +9,17 @@
 // Resolves a sandbox path to a host path. Returns true if successful. The
 // resolution uses the dir_maps variable from the engine to determine where
 // directories in the sandbox are mapped in the host.
+//
+// Note: The proc's cwd lock must be held.
 bool
 path_resolve(struct LFILinuxProc *proc, const char *path, char *buffer,
     size_t buffer_size)
 {
     // If the path is relative, append the process's working directory to it.
     if (!cwk_path_is_absolute(path)) {
-        assert(!"unimplemented: path_resolve for relative path");
-        /* char abs_path[FILENAME_MAX]; */
-        /* cwk_path_join(proc->wd, path, abs_path, sizeof(abs_path)); */
-        /* path = abs_path; */
+        char abs_path[FILENAME_MAX];
+        cwk_path_join(proc->cwd.path, path, abs_path, sizeof(abs_path));
+        path = abs_path;
     }
 
     // Normalize the path.

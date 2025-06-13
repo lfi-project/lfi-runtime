@@ -87,6 +87,10 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
     // File operations.
     SYS(openat,
             sys_openat(t, a0, a1, a2, a3))
+#ifdef LINUX_SYS_open
+    SYS(open,
+            sys_openat(t, LINUX_AT_FDCWD, a0, a1, a2))
+#endif
     SYS(close,
             sys_close(t, a0))
     SYS(lseek,

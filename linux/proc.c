@@ -9,6 +9,7 @@
 #include "linux.h"
 #include "lock.h"
 #include "path.h"
+#include "host.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -166,13 +167,7 @@ chdircheck(struct LFILinuxProc *p, const char *path)
     char resolved[FILENAME_MAX];
     if (!path_resolve(p, path, resolved, sizeof(resolved)))
         return -LINUX_ENOENT;
-    struct stat path_stat;
-    if (stat(resolved, &path_stat) != 0) {
-        return -LINUX_ENOENT;
-    }
-    if (!S_ISDIR(path_stat.st_mode))
-        return -LINUX_ENOTDIR;
-    return 0;
+    return host_isdir(resolved);
 }
 
 // Change the proc's cwd to the given sandbox path.
@@ -181,9 +176,9 @@ proc_chdir(struct LFILinuxProc *p, const char *path)
 {
     int r;
     if (cwk_path_is_absolute(path)) {
+        LOCK_WITH_DEFER(&p->cwd.lk, lk_cwd);
         if ((r = chdircheck(p, path)) < 0)
             return r;
-        LOCK_WITH_DEFER(&p->cwd.lk, lk_cwd);
         size_t len = strnlen(path, sizeof(p->cwd.path) - 1);
         memcpy(&p->cwd.path[0], path, len);
         p->cwd.path[len] = 0;

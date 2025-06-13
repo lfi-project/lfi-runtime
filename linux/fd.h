@@ -10,7 +10,7 @@
 
 // Assign the host file descriptor to fd.
 bool
-fdassign(struct FDTable *t, int fd, int host_fd);
+fdassign(struct FDTable *t, int fd, int host_fd, char *dir);
 
 // Returns the host file descriptor associated with fd.
 int

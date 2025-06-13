@@ -7,13 +7,14 @@
 #include <unistd.h>
 
 bool
-fdassign(struct FDTable *t, int fd, int host_fd)
+fdassign(struct FDTable *t, int fd, int host_fd, char *dir)
 {
     if (fd >= LINUX_NOFILE)
         return false;
     LOCK_WITH_DEFER(&t->lk, t_lk);
     assert(t->fds[fd] == -1);
     t->fds[fd] = host_fd;
+    t->dirs[fd] = dir;
     return true;
 }
 
@@ -32,6 +33,10 @@ fdclose(struct FDTable *t, int fd)
         return false;
     close(t->fds[fd]);
     t->fds[fd] = -1;
+    if (t->dirs[fd]) {
+        free((void *) t->dirs[fd]);
+        t->dirs[fd] = NULL;
+    }
     return true;
 }
 
@@ -39,6 +44,10 @@ void
 fdinit(struct LFILinuxEngine *engine, struct FDTable *t)
 {
     pthread_mutex_init(&t->lk, NULL);
+
+    for (size_t i = 0; i < LINUX_NOFILE; i++) {
+        t->fds[i] = -1;
+    }
 
     t->fds[0] = dup(STDIN_FILENO);
     t->fds[1] = dup(STDOUT_FILENO);

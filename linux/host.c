@@ -160,3 +160,15 @@ host_getdents64(int fd, void *dirp, size_t count)
 }
 
 #endif
+
+int
+host_isdir(const char *path)
+{
+    struct stat path_stat;
+    if (stat(path, &path_stat) != 0) {
+        return -LINUX_ENOENT;
+    }
+    if (!S_ISDIR(path_stat.st_mode))
+        return -LINUX_ENOTDIR;
+    return 0;
+}
