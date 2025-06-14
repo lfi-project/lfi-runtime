@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 static void
 logerr(char *msg, size_t size)
@@ -31,6 +32,24 @@ init_verifier(struct LFIVerifier *v, struct LFIOptions *opts)
 #else
 #error "invalid architecture: must be one of arm64, x64"
 #endif
+}
+
+static bool
+init_sigaltstack(struct LFIEngine *engine)
+{
+    engine->altstack.ss_sp = malloc(SIGSTKSZ);
+    if (engine->altstack.ss_sp == NULL) {
+        lfi_error = LFI_ERR_ALLOC;
+        return false;
+    }
+    engine->altstack.ss_size = SIGSTKSZ;
+    engine->altstack.ss_flags = 0;
+    if (sigaltstack(&engine->altstack, NULL) == -1) {
+        free(engine->altstack.ss_sp);
+        lfi_error = LFI_ERR_SIGALTSTACK;
+        return false;
+    }
+    return true;
 }
 
 EXPORT struct LFIEngine *
@@ -70,6 +89,10 @@ lfi_new(struct LFIOptions opts, size_t reserve)
         .opts = opts,
         .guardsize = kb(80),
     };
+
+    if (!engine->opts.no_init_sigaltstack)
+        if (!init_sigaltstack(engine))
+            goto err2;
 
     if (opts.no_verify)
         LOG(engine, "unsafe: verification disabled");

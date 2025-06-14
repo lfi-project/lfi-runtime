@@ -47,6 +47,15 @@ struct LFIOptions {
     //
     // If allow_wx is enabled you must also enable no_verify.
     bool allow_wx;
+
+    // Do not initialize a sigaltstack automatically. For multithreaded
+    // sandboxes, if a signal arrives during sandbox execution, the signal
+    // handler must execute on a different stack from the sandbox stack,
+    // because otherwise other sandbox threads could manipulate the stack that
+    // the host signal handler executes on. The user is responsible for making
+    // sure that signal handlers use SA_ONSTACK. If this option is enabled,
+    // the user is also responsible for creating an alternate signal stack.
+    bool no_init_sigaltstack;
 };
 
 struct LFIBoxInfo {
@@ -252,6 +261,8 @@ enum {
     LFI_ERR_RESERVE = 3,
     // Error inside libmmap (sandbox memory mapper).
     LFI_ERR_MMAP = 4,
+    // Error creating sigaltstack.
+    LFI_ERR_SIGALTSTACK = 5,
 };
 
 struct LFIInvokeInfo {

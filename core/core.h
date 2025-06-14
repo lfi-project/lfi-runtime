@@ -8,6 +8,8 @@
 #include "log.h"
 #include "mmap.h"
 
+#include <signal.h>
+
 #define EXPORT __attribute__((visibility("default")))
 
 struct LFIEngine {
@@ -18,6 +20,7 @@ struct LFIEngine {
     void (*sys_handler)(struct LFIContext *ctx);
 
     size_t guardsize;
+    stack_t altstack;
 };
 
 struct LFIBox {
