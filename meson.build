@@ -23,6 +23,14 @@ c_args_warnings = [
   '-Wno-gnu-zero-variadic-macro-arguments',
 ]
 
+if get_option('enable_analyzer')
+  if compiler.has_argument('-fanalyzer')
+    c_args_warnings += '-fanalyzer'
+  else
+    error('compiler does not support -fanalyzer')
+  endif
+endif
+
 add_global_arguments(c_args, language : 'c')
 
 cpu = target_machine.cpu_family()

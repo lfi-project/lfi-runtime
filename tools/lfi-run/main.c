@@ -36,10 +36,10 @@ readfile(const char *path)
     fseek(f, 0, SEEK_END);
     size_t sz = ftell(f);
     void *p = mmap(NULL, sz, PROT_READ, MAP_PRIVATE, fileno(f), 0);
+    fclose(f);
     if (!p) {
         return (struct Buf) { 0 };
     }
-    fclose(f);
     return (struct Buf) {
         .data = p,
         .size = sz,
@@ -174,14 +174,19 @@ main(int argc, char **argv)
         exit(1);
     }
 
+    const char **box_argv = strarray(inputs);
+    const char **box_envp = strarray(envs);
     struct LFILinuxThread *t = lfi_thread_new(proc, inputs->count,
-        strarray(inputs), strarray(envs));
+        box_argv, box_envp);
     if (!t) {
         fprintf(stderr, "failed to create LFI thread\n");
         exit(1);
     }
 
     int result = lfi_thread_run(t);
+
+    free(box_argv);
+    free(box_envp);
 
     lfi_linux_free(linux_);
 

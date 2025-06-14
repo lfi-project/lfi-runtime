@@ -12,6 +12,8 @@ sys_writev(struct LFILinuxThread *t, int fd, lfiptr iovp, size_t iovcnt)
             alignof(struct IOVec)))
         return -LINUX_EINVAL;
     struct IOVec *iov = copyout(t, iovp, iovcnt * sizeof(struct IOVec));
+    if (!iov)
+        return -LINUX_ENOMEM;
     ssize_t total = 0;
 
     for (size_t i = 0; i < iovcnt; i++) {
