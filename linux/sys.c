@@ -37,27 +37,29 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
             sys_mprotect(t, a0, a1, a2))
     SYS(munmap,
             sys_munmap(t, a0, a1))
+    // Clone signature is different on aarch64 and x86-64.
 #if defined(LFI_ARCH_X64)
     // syscall: clone(flags, stack, ptid, ctid, tls, func)
     SYS(clone,
             sys_clone(t, a0, a1, a2, a3, a4, a5))
 #elif defined(LFI_ARCH_ARM64)
     // syscall: clone(flags, stack, ptid, tls, ctid, func)
-    // Clone signature is different on aarch64 and x86-64.
     SYS(clone,
             sys_clone(t, a0, a1, a2, a4, a3, a5))
 #else
 #error "invalid arch"
 #endif
     }
-    // clang-format off
+    // clang-format on
 
     if (!handled && t->proc->engine->opts.sys_passthrough) {
         // Pass through syscalls to the host if the passthrough debug option is
         // enabled.
         r = sys_passthrough(t, sysno, a0, a1, a2, a3, a4, a5);
         return r;
-    } else if (!handled) {
+    }
+
+    if (!handled) {
         // clang-format off
         switch (sysno) {
         SYS(getpid,
