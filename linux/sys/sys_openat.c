@@ -24,10 +24,10 @@ sys_openat(struct LFILinuxThread *t, int dirfd, lfiptr pathp, int flags,
     char host_path[FILENAME_MAX];
     char *path = pathcopyresolve(t, pathp, host_path, sizeof(host_path));
     if (!path)
-        return -LINUX_EINVAL;
+        return -LINUX_ENOENT;
     int kfd = open(host_path, openflags(flags), mode);
     if (kfd < 0) {
-        LOG(t->proc->engine, "sys_open(\"%s\") = %d", path, kfd);
+        LOG(t->proc->engine, "sys_open(\"%s\") = %d", path, host_err(errno));
         free(path);
         return host_err(errno);
     }

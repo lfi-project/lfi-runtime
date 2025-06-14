@@ -19,6 +19,24 @@ host_err(int err)
         return -LINUX_ENOSYS;
     case EINVAL:
         return -LINUX_EINVAL;
+    case ENOENT:
+        return -LINUX_ENOENT;
+    case EBADF:
+        return -LINUX_EBADF;
+    case EAGAIN:
+        return -LINUX_EAGAIN;
+    case EPERM:
+        return -LINUX_EPERM;
+    case ENOMEM:
+        return -LINUX_ENOMEM;
+    case EACCES:
+        return -LINUX_EACCES;
+    case ENOTDIR:
+        return -LINUX_ENOTDIR;
+    case EMFILE:
+        return -LINUX_EMFILE;
+    case EFAULT:
+        return -LINUX_EFAULT;
     default:
         return -LINUX_EINVAL;
     }
