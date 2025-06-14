@@ -47,20 +47,13 @@ xasprintf(const char *fmt, ...)
 // This is a weak definition of __android_log_print in case it doesn't exist
 // that just prints to stderr. This is used when building for Android but when
 // liblog is not linked.
-__attribute__((weak)) int
+__attribute__((weak, visibility("default"))) int
 __android_log_print(int prio, const char *tag, const char *fmt, ...)
 {
     (void) prio;
-
-    va_list args;
-    va_start(args, fmt);
-
-    fputs(stderr, tag);
-    int result = vfprintf(stderr, fmt, args);
-    fputs(stderr, "\n");
-
-    va_end(args);
-    return result;
+    (void) tag;
+    (void) fmt;
+    return 0;
 }
 
 #endif

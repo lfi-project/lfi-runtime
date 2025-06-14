@@ -1,4 +1,4 @@
-lfiv = subproject('lfiv').get_variable('lfiv').as_link_whole()
+lfiv = subproject('lfiv', default_options: ['arch=' + archmap[cpu]]).get_variable('lfiv').as_link_whole()
 mmap = subproject('libmmap').get_variable('mmap').as_link_whole()
 boxmap = subproject('libboxmap').get_variable('boxmap').as_link_whole()
 
@@ -17,7 +17,7 @@ subdir('arch/' + archmap[cpu])
 liblfi_core = static_library(
   'lfi-core',
   srcs,
-  c_args: c_args + c_args_warnings + defines,
+  c_args: c_args_warnings + defines,
   dependencies: [lfiv, mmap, boxmap],
   install: true,
   include_directories: include_directories('include', 'arch/' + archmap[cpu]),

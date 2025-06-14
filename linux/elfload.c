@@ -177,7 +177,7 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
 
     if (ehdr->e_phoff >= elf.size) {
         LOG(proc->engine, "elf_load error: e_phoff (%ld) is too large",
-            ehdr->e_phoff);
+            (long) ehdr->e_phoff);
         goto err1;
     }
 
@@ -190,7 +190,7 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
     if (ehdr->e_entry >= CODE_MAX) {
         LOG(proc->engine,
             "elf_load error: e_entry (0x%lx) is larger than CODE_MAX (0x%lx)",
-            ehdr->e_entry, CODE_MAX);
+            (unsigned long) ehdr->e_entry, CODE_MAX);
         goto err1;
     }
 
@@ -209,7 +209,7 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
         if (p->p_align % pagesize != 0) {
             LOG(proc->engine,
                 "elf_load error: invalid p_align (%ld) not a multiple of pagesize (%ld)",
-                p->p_align, pagesize);
+                (long) p->p_align, pagesize);
             goto err1;
         }
 
@@ -220,7 +220,7 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
         if (p->p_memsz < p->p_filesz) {
             LOG(proc->engine,
                 "elf_load error: p_memsz (0x%lx) < p_filesz (0x%lx)",
-                p->p_memsz, p->p_filesz);
+                (unsigned long) p->p_memsz, (unsigned long) p->p_filesz);
             goto err1;
         }
         if (end <= start || start >= CODE_MAX || end >= CODE_MAX) {

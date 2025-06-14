@@ -23,6 +23,8 @@ c_args_warnings = [
   '-Wno-gnu-zero-variadic-macro-arguments',
 ]
 
+add_global_arguments(c_args, language : 'c')
+
 cpu = target_machine.cpu_family()
 archmap = {
   'aarch64': 'arm64',

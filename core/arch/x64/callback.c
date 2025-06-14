@@ -8,10 +8,9 @@
 #include <stdatomic.h>
 #include <string.h>
 #include <unistd.h>
-
-#if defined(HAVE_MEMFD_CREATE)
 #include <sys/mman.h>
-#elif defined(HAVE_SYS_MEMFD_CREATE)
+
+#if !defined(HAVE_MEMFD_CREATE) && defined(HAVE_SYS_MEMFD_CREATE)
 #include <sys/syscall.h>
 int
 memfd_create(const char *name, unsigned flags)

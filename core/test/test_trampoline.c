@@ -73,6 +73,7 @@ static uint8_t ret[] = {
 
 #endif
 
+#if BENCHMARK
 static inline long long unsigned
 time_ns()
 {
@@ -83,6 +84,7 @@ time_ns()
     return ((long long unsigned) ts.tv_sec) * 1000000000LLU +
         (long long unsigned) ts.tv_nsec;
 }
+#endif
 
 static int
 callback(int a)
