@@ -16,6 +16,7 @@ func run(command string, flags ...string) string {
 	buf := &bytes.Buffer{}
 	cmd := exec.Command(command, flags...)
 	cmd.Stdout = buf
+	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	err := cmd.Run()
 	if err != nil {

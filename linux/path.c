@@ -16,8 +16,8 @@ path_resolve(struct LFILinuxProc *proc, const char *path, char *buffer,
     size_t buffer_size)
 {
     // If the path is relative, append the process's working directory to it.
+    char abs_path[FILENAME_MAX];
     if (!cwk_path_is_absolute(path)) {
-        char abs_path[FILENAME_MAX];
         cwk_path_join(proc->cwd.path, path, abs_path, sizeof(abs_path));
         path = abs_path;
     }

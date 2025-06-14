@@ -24,6 +24,6 @@ jobs:
       if: matrix.os == 'ubuntu-22.04-arm'
       run: wget -q https://github.com/zyedidia/lfi/releases/download/v0.7/aarch64-lfi-clang.tar.gz && tar -xf aarch64-lfi-clang.tar.gz && echo "$PWD/aarch64-lfi-clang/lfi-bin" >> $GITHUB_PATH
 
-    - name: Build and Test
+    - name: Build and Test with sanitizers
       run: |
-        meson build && ninja -C build test
+        ASAN_OPTTIONS=detect_leaks=0 meson build-san -Db_sanitize=address,undefined -Dbuildtype=debugoptimized && ninja -C build-san test
