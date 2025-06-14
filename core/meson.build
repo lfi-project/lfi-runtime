@@ -12,6 +12,10 @@ srcs = files(
   'arch_asm.c',
 )
 
+if get_option('stores_only_trampoline')
+  defines += ['-DSTORES_ONLY_TRAMPOLINE']
+endif
+
 subdir('arch/' + archmap[cpu])
 
 liblfi_core = static_library(

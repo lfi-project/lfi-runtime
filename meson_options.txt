@@ -24,3 +24,8 @@ option('enable_analyzer',
   type: 'boolean',
   value: false,
   description: 'pass -fanalyzer to enable the GCC static analyzer')
+
+option('stores_only_trampoline',
+  type: 'boolean',
+  value: false,
+  description: 'assume stores-only mode for trampolines - disables a routine that zeroes all registers to prevent leakage')

@@ -4,6 +4,26 @@
     movq %fs:0x0, \reg
 .endm
 
+.macro zero_regs
+    xorq %rax, %rax
+    xorq %rbx, %rbx
+    xorq %rbp, %rbp
+    xorq %r10, %r10
+    // skip %r11 (target)
+    xorq %r12, %r12
+    xorq %r13, %r13
+    // skip %r14 (base)
+    xorq %r15, %r15
+    xorps %xmm8, %xmm8
+    xorps %xmm9, %xmm9
+    xorps %xmm10, %xmm10
+    xorps %xmm11, %xmm11
+    xorps %xmm12, %xmm12
+    xorps %xmm13, %xmm13
+    xorps %xmm14, %xmm14
+    xorps %xmm15, %xmm15
+.endm
+
 // We need to access the invoke info through a TLS variable. The most efficient
 // TLS access works when the TLS model is initial-exec, but this is only usable
 // when this code is in a library that is loaded at execution-time, making it
@@ -75,6 +95,7 @@
 .global lfi_trampoline
 .p2align 4
 lfi_trampoline:
+    endbr64
     // save callee-saved registers
     pushq %r15
     pushq %r14
@@ -120,6 +141,11 @@ lfi_trampoline:
     movq INVOKE_CTX(%r13), %r13
     movq %r12, REGS_HOST_TP(%r13)
     movq %r13, %fs:0x0
+
+#ifndef STORES_ONLY_TRAMPOLINE
+    // Zero non-argument registers for full LFI.
+    zero_regs
+#endif
 
     // this function should return via a runtime call
     jmpq *%r11

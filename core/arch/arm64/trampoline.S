@@ -4,6 +4,56 @@
     mrs \reg, tpidr_el0
 .endm
 
+.macro zero_regs
+    mov x8, #0
+    mov x9, #0
+    // skip x10 (target)
+    mov x11, #0
+    mov x12, #0
+    mov x13, #0
+    mov x14, #0
+    mov x15, #0
+    mov x16, #0
+    mov x17, #0
+    // skip x18 (addr)
+    mov x19, #0
+    mov x20, #0
+    // skip x21 (base)
+    mov x22, #0
+    mov x23, #0
+    mov x24, #0
+    mov x25, #0
+    mov x26, #0
+    mov x27, #0
+    mov x28, #0
+    mov x29, #0
+    // skip x30 (ret)
+    movi v8.2D, #0
+    movi v9.2D, #0
+    movi v10.2D, #0
+    movi v11.2D, #0
+    movi v12.2D, #0
+    movi v13.2D, #0
+    movi v14.2D, #0
+    movi v15.2D, #0
+    movi v16.2D, #0
+    movi v17.2D, #0
+    movi v18.2D, #0
+    movi v19.2D, #0
+    movi v20.2D, #0
+    movi v21.2D, #0
+    movi v22.2D, #0
+    movi v23.2D, #0
+    movi v24.2D, #0
+    movi v25.2D, #0
+    movi v26.2D, #0
+    movi v27.2D, #0
+    movi v28.2D, #0
+    movi v29.2D, #0
+    movi v30.2D, #0
+    movi v31.2D, #0
+.endm
+
 // Returns a pointer to lfi_invoke_info in reg.
 .macro get_invoke_info reg
 #if defined(ENABLE_TLS_EXEC)
@@ -31,6 +81,7 @@
 .global lfi_trampoline
 .p2align 4
 lfi_trampoline:
+    bti jc
     stp d8, d9,   [sp, #-16]!
     stp d10, d11, [sp, #-16]!
     stp d12, d13, [sp, #-16]!
@@ -41,8 +92,6 @@ lfi_trampoline:
     stp x25, x26, [sp, #-16]!
     stp x27, x28, [sp, #-16]!
     stp x29, x30, [sp, #-16]!
-    
-    // TODO: if LFI-full, zero the non-argument registers
 
     get_invoke_info x8
     ldr x9, [x8, #INVOKE_RETFN]
@@ -72,9 +121,14 @@ lfi_trampoline:
     ldr REG_BASE, [x8, REGS_BASE]
     // set address pointer to a valid value
     mov REG_ADDR, REG_BASE
-    // clear x8, x9
-    mov x8, #0
-    mov x9, #0
+
+#ifndef STORES_ONLY_TRAMPOLINE
+    // Zero non-argument registers for full LFI.
+    // TODO: calling convention or LFI_INVOKE should enforce that all unused
+    // argument registers are zeroed.
+    zero_regs
+#endif
+
     // enter sandbox
     add x10, REG_BASE, w10, uxtw
     br x10
