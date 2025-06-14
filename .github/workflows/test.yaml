@@ -26,4 +26,4 @@ jobs:
 
     - name: Build and Test with sanitizers
       run: |
-        ASAN_OPTTIONS=detect_leaks=0 meson build-san -Db_sanitize=address,undefined -Dbuildtype=debugoptimized && ninja -C build-san test
+        ASAN_OPTIONS=detect_leaks=0 meson build-san -Db_sanitize=address,undefined -Dbuildtype=debugoptimized && ninja -C build-san test
