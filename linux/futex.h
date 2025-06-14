@@ -6,6 +6,10 @@
 #include <pthread.h>
 #include <stdint.h>
 
+// This code is currently unused because we directly use futexes on Linux. In
+// the future if we support macOS or non-Linux OSes, this code will be used to
+// emulate Linux futexes.
+
 #define FUTEX_CONTAINER(ptr) LIST_CONTAINER(struct Futex, elem, ptr)
 
 struct Futex {

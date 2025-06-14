@@ -26,6 +26,7 @@ threadspawn(void *arg)
 #endif
     lfi_ctx_run(t->ctx, entry);
     LOG(t->proc->engine, "thread %d exited", t->tid);
+    lfi_thread_free(t);
     return NULL;
 }
 
@@ -98,11 +99,12 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
 #error "invalid arch"
 #endif
 
-    pthread_t thread;
+    pthread_t *thread = malloc(sizeof(pthread_t));
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    int err = pthread_create(&thread, &attr, threadspawn, p2);
+    p2->pthread = thread;
+    int err = pthread_create(thread, &attr, threadspawn, p2);
     pthread_attr_destroy(&attr);
     if (err) {
         lfi_thread_free(p2);

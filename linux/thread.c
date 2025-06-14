@@ -27,7 +27,7 @@ static int
 next_tid(struct LFILinuxProc *p)
 {
     return BASE_TID +
-        atomic_fetch_add_explicit(&p->threads, 1, memory_order_relaxed);
+        atomic_fetch_add_explicit(&p->total_thread_count, 1, memory_order_relaxed);
 }
 
 struct Auxv {
@@ -248,9 +248,16 @@ lfi_thread_run(struct LFILinuxThread *p)
 EXPORT void
 lfi_thread_free(struct LFILinuxThread *t)
 {
-    // Unmap the stack.
-    size_t stacksize = t->proc->engine->opts.stacksize;
-    lfi_box_munmap(t->proc->box, t->stack, stacksize);
+    // Unmap the stack (if created). If this thread was spawned by the sandbox
+    // calling clone, the stack will have been created by the sandbox and not
+    // by us, so we don't have to free it.
+    if (t->stack) {
+        size_t stacksize = t->proc->engine->opts.stacksize;
+        lfi_box_munmap(t->proc->box, t->stack, stacksize);
+    }
+    // Free pthread object (if created).
+    if (t->pthread)
+        free(t->pthread);
     // Free the context.
     lfi_ctx_free(t->ctx);
     // Free the thread.

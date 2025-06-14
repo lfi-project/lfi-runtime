@@ -65,8 +65,11 @@ struct LFILinuxProc {
     // Futexes for this process.
     struct Futexes futexes;
 
-    // Total number of threads this proc has spawned.
-    _Atomic(int) threads;
+    // Total number of threads this proc has spawned (cumulative).
+    _Atomic(int) total_thread_count;
+    // List of threads currently spawned in this process via a clone that
+    // originated in the sandbox (not via a host thread).
+    struct List *threads;
 
     struct LFILinuxEngine *engine;
 };
@@ -75,7 +78,8 @@ struct LFILinuxThread {
     // Underlying sandbox context.
     struct LFIContext *ctx;
 
-    // Pointer to base of sandbox stack.
+    // Pointer to base of sandbox stack (this will be NULL for threads that
+    // were spawned by the sandbox).
     lfiptr stack;
     size_t stack_size;
 
@@ -84,6 +88,10 @@ struct LFILinuxThread {
 
     // This thread's virtual TID.
     int tid;
+
+    // Pthread object if this thread was spawned by the LFI runtime using a
+    // pthread.
+    pthread_t *pthread;
 
     struct LFILinuxProc *proc;
 };
