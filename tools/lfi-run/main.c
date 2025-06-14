@@ -85,8 +85,8 @@ main(int argc, char **argv)
         "input command");
     struct arg_end *end = arg_end(20);
 
-    void *argtable[] = { help, verbose, perf, no_verify, sys_passthrough, pagesize, envs, dirs,
-        wd, unrestricted, inputs, end };
+    void *argtable[] = { help, verbose, perf, no_verify, sys_passthrough,
+        pagesize, envs, dirs, wd, unrestricted, inputs, end };
 
     if (arg_nullcheck(argtable) != 0) {
         fprintf(stderr, "Memory allocation error\n");
@@ -134,8 +134,11 @@ main(int argc, char **argv)
             .verbose = verbose->count > 0,
             .exit_unknown_syscalls = true,
             .dir_maps = unrestricted->count > 0 ? all : strarray(dirs),
-            .wd = unrestricted->count > 0 ? cwd : (wd->count > 0 ? wd->sval[0] : NULL),
-            .sys_passthrough = unrestricted->count > 0 || sys_passthrough->count > 0,
+            .wd = unrestricted->count > 0 ?
+                cwd :
+                (wd->count > 0 ? wd->sval[0] : NULL),
+            .sys_passthrough = unrestricted->count > 0 ||
+                sys_passthrough->count > 0,
         });
     if (!linux_) {
         fprintf(stderr, "failed to create LFI Linux engine\n");

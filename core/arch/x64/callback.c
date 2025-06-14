@@ -7,8 +7,8 @@
 #include <assert.h>
 #include <stdatomic.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 #if !defined(HAVE_MEMFD_CREATE) && defined(HAVE_SYS_MEMFD_CREATE)
 #include <sys/syscall.h>
