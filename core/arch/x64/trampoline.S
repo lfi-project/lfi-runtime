@@ -115,7 +115,11 @@ lfi_trampoline:
     // load sandbox base
     movq REGS_BASE(%r11), %REG_BASE
     // also write base to %gs
+#ifdef ENABLE_SEGUE
+# ifndef SEGUE_SINGLE_SANDBOX
     wrgsbase %REG_BASE
+# endif
+#endif
 
     // load address of the lfi_retfn function that will make the return rtcall
     movq INVOKE_RETFN(%r13), %r11

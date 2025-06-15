@@ -2,6 +2,59 @@
 
 .text
 
+.macro zero_caller_regs
+    // Skip x0 and x1 because return value could be there.
+    mov x2, #0
+    mov x3, #0
+    mov x4, #0
+    mov x5, #0
+    mov x6, #0
+    mov x7, #0
+    // TODO: can an indirect result be placed in x8?
+    mov x8, #0
+    mov x9, #0
+    // skip x10 (target)
+    mov x11, #0
+    mov x12, #0
+    mov x13, #0
+    mov x14, #0
+    mov x15, #0
+    mov x16, #0
+    mov x17, #0
+    // skip x18 (addr)
+    // Skip v0 and v1 because return value could be there.
+    movi v2.2D, #0
+    movi v3.2D, #0
+    movi v4.2D, #0
+    movi v5.2D, #0
+    movi v6.2D, #0
+    movi v7.2D, #0
+    mov v8.d[1], xzr
+    mov v9.d[1], xzr
+    mov v10.d[1], xzr
+    mov v11.d[1], xzr
+    mov v12.d[1], xzr
+    mov v13.d[1], xzr
+    mov v14.d[1], xzr
+    mov v15.d[1], xzr
+    movi v16.2D, #0
+    movi v17.2D, #0
+    movi v18.2D, #0
+    movi v19.2D, #0
+    movi v20.2D, #0
+    movi v21.2D, #0
+    movi v22.2D, #0
+    movi v23.2D, #0
+    movi v24.2D, #0
+    movi v25.2D, #0
+    movi v26.2D, #0
+    movi v27.2D, #0
+    movi v28.2D, #0
+    movi v29.2D, #0
+    movi v30.2D, #0
+    movi v31.2D, #0
+.endm
+
 .global lfi_callback
 lfi_callback:
     // REG_ADDR was used to branch here, reset it to a valid value.
@@ -44,8 +97,9 @@ lfi_callback:
     // Restore sandbox thread control block to point to context.
     write_ctx x9, x10
 
-    // TODO: zero caller-saved registers that may have secret values in LFI
-    // full mode.
+#ifndef STORES_ONLY_TRAMPOLINE
+    zero_caller_regs
+#endif
 
     add x30, x21, w30, uxtw
     ret

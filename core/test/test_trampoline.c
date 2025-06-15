@@ -9,7 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define BENCHMARK 0
+#define BENCHMARK 1
 
 #if defined(LFI_ARCH_ARM64)
 

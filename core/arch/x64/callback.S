@@ -2,6 +2,30 @@
 
 .text
 
+.macro zero_caller_regs
+    // Skip %rax and %rdx (return registers).
+    xorq %rdi, %rdi
+    xorq %rcx, %rcx
+    xorq %rsi, %rsi
+    xorq %r8, %r8
+    xorq %r9, %r9
+    // Skip %xmm0 and %xmm1 (return registers).
+    xorps %xmm2, %xmm2
+    xorps %xmm3, %xmm3
+    xorps %xmm4, %xmm4
+    xorps %xmm5, %xmm5
+    xorps %xmm6, %xmm6
+    xorps %xmm7, %xmm7
+    xorps %xmm8, %xmm8
+    xorps %xmm9, %xmm9
+    xorps %xmm10, %xmm10
+    xorps %xmm11, %xmm11
+    xorps %xmm12, %xmm12
+    xorps %xmm13, %xmm13
+    xorps %xmm14, %xmm14
+    xorps %xmm15, %xmm15
+.endm
+
 .global lfi_callback
 lfi_callback:
     // Entrypoint for callbacks, with the target in %r10.
@@ -28,6 +52,12 @@ lfi_callback:
     callq *%r10
     popq %r11
 
+#ifdef ENABLE_SEGUE
+# ifndef SEGUE_SINGLE_SANDBOX
+    wrgsbase %r14
+# endif
+#endif
+
     // Set the sandbox thread control block to the context pointer.
     write_ctx %r11
     // Move current sandbox stack pointer to %r10
@@ -41,8 +71,9 @@ lfi_callback:
     // Restore sandbox stack pointer.
     movq %r10, %rsp
 
-    // TODO: zero caller-saved registers that may have secret values in LFI
-    // full mode.
+#ifndef STORES_ONLY_TRAMPOLINE
+    zero_caller_regs
+#endif
 
     // Return to sandbox
 

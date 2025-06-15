@@ -29,3 +29,13 @@ option('stores_only_trampoline',
   type: 'boolean',
   value: false,
   description: 'assume stores-only mode for trampolines - disables a routine that zeroes all registers to prevent leakage')
+
+option('enable_segue',
+  type: 'boolean',
+  value: true,
+  description: 'use %gs for the sandbox base (x86-64 only)')
+
+option('segue_single_sandbox',
+  type: 'boolean',
+  value: false,
+  description: 'assume that %gs is never modified by the host, and there is only one sandbox (x86-64 only)')

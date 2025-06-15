@@ -42,7 +42,9 @@ lfi_ctx_entry:
     movq REGS_R14(%rdi), %r14
     movq REGS_R15(%rdi), %r15
     movq REGS_RDI(%rdi), %rdi
+#ifdef ENABLE_SEGUE
     wrgsbase %REG_BASE
+#endif
     // zero vector registers
     xorps %xmm0, %xmm0
     xorps %xmm1, %xmm1
@@ -129,6 +131,12 @@ lfi_syscall_entry:
 
     // swap thread control block back to context pointer
     write_ctx %rcx
+
+#ifdef ENABLE_SEGUE
+# ifndef SEGUE_SINGLE_SANDBOX
+    wrgsbase %r14
+# endif
+#endif
 
     // restore registers
     movq REGS_RSP(%rcx), %rsp

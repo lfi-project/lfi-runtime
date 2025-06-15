@@ -80,9 +80,14 @@ if get_option('enable_tlsdesc') and cpu == 'x86_64'
   defines += '-DENABLE_TLS_DESC'
   c_args += '-mtls-dialect=gnu2'
 endif
-
 if get_option('enable_tlsexec')
   defines += '-DENABLE_TLS_EXEC'
+endif
+if get_option('disable_segue')
+  defines += '-DENABLE_SEGUE'
+endif
+if get_option('segue_single_sandbox')
+  defines += '-DSEGUE_SINGLE_SANDBOX'
 endif
 
 subdir('core')
