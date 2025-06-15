@@ -2,10 +2,6 @@
 
 .text
 
-.macro get_ctx reg
-    mrs \reg, tpidr_el0
-.endm
-
 // lfi_ctx_entry(struct LFIContext *ctx, uintptr_t *host_sp_ptr, uintptr_t entry)
 .global lfi_ctx_entry
 .p2align 4
@@ -30,11 +26,11 @@ lfi_ctx_entry:
     mov x30, x2
 
     // set the sandbox thread control block by saving the old value of
-    // tpidr_el0 into the context and setting it to point to the context
-    // itself.
-    mrs x8, tpidr_el0
+    // [tpidr_el0, TLS_SLOT_LFI] into the context and setting it to point to
+    // the context itself.
+    get_ctx x8
     str x8, [x0, REGS_HOST_TP]
-    msr tpidr_el0, x0
+    write_ctx x0 x8
 
     // load all registers
     ldp x2, x3,   [x0, REGS_X0+16*1]
@@ -100,7 +96,7 @@ lfi_ctx_end:
     mov sp, x19
     // restore host_tp
     ldr x19, [x0, REGS_HOST_TP]
-    msr tpidr_el0, x19
+    write_ctx x19, x20
     // put val into return register
     mov x0, x1
     ldp x29, x30, [sp], 16
@@ -152,7 +148,7 @@ lfi_syscall_entry:
 
     // swap the thread control block back to the host one
     ldr x0, [REG_BASE, REGS_HOST_TP]
-    msr tpidr_el0, x0
+    write_ctx x0, x1
 
     // restore host stack and call handler
     ldr x0, [REG_BASE, REGS_HOST_SP]
@@ -163,7 +159,7 @@ lfi_syscall_entry:
     ldr x0, [sp], 16 // pop
 
     // swap thread control block back to context pointer
-    msr tpidr_el0, x0
+    write_ctx x0, x1
 
     // restore registers
     ldp x2, x3,   [x0, REGS_X0+16*1]

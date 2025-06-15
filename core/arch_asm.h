@@ -7,6 +7,20 @@
 #define REGS_HOST_TP 8
 #define REGS_TP      16
 
+// When inside the sandbox, we need a fast way to look up the current LFI
+// context in thread-local storage without using the stack (because we can't
+// execute host code on the sandbox stack). We can put a pointer to the LFI
+// context in the stack protector TLS slot when entering the sandbox, and
+// restore the stack protector when exiting so that the host application isn't
+// affected. The only case in which the host would notice is if a signal
+// arrives during sandbox execution, then the stack protector during the signal
+// handler will be a value that points to the current LFI context (not hugely
+// problematic since this is still a random value due to ASLR). The stack
+// protector is only stored in this TLS slot to begin with on x86-64 and
+// Android-Arm64. On standard Arm64 the slot is unused because the stack
+// protector is global.
+#define TLS_SLOT_LFI 5
+
 #if defined(__aarch64__) || defined(_M_ARM64)
 
 #define REGS_X0     32
@@ -17,6 +31,18 @@
 
 #define REG_BASE    x21
 #define REG_ADDR    x18
+
+#ifdef __ASSEMBLER__
+.macro get_ctx reg
+    mrs \reg, tpidr_el0
+    ldr \reg, [\reg, 8*TLS_SLOT_LFI]
+.endm
+
+.macro write_ctx reg tmp
+    mrs \tmp, tpidr_el0
+    str \reg, [\tmp, 8*TLS_SLOT_LFI]
+.endm
+#endif
 
 #elif defined(__x86_64__) || defined(_M_X64)
 
@@ -41,6 +67,16 @@
 #define REGS_BASE REGS_R14
 
 #define REG_BASE  r14
+
+#ifdef __ASSEMBLER__
+.macro get_ctx reg
+    movq %fs:(8*TLS_SLOT_LFI), \reg
+.endm
+
+.macro write_ctx reg
+    movq \reg, %fs:(8*TLS_SLOT_LFI)
+.endm
+#endif
 
 #endif
 

@@ -1,9 +1,5 @@
 #include "arch_asm.h"
 
-.macro get_ctx reg
-    mrs \reg, tpidr_el0
-.endm
-
 .macro zero_regs
     mov x8, #0
     mov x9, #0
@@ -99,11 +95,11 @@ lfi_trampoline:
     ldr x8, [x8, #INVOKE_CTX]
 
     // set the sandbox thread control block by saving the old value of
-    // tpidr_el0 into the context and setting it to point to the context
-    // itself.
-    mrs x12, tpidr_el0
+    // [tpidr_el0, TLS_SLOT_LFI] into the context and setting it to point to
+    // the context itself.
+    get_ctx x12
     str x12, [x8, REGS_HOST_TP]
-    msr tpidr_el0, x8
+    write_ctx x8, x12
 
     // save user sp to stack
     ldr x12, [x8, REGS_SP]
@@ -141,7 +137,7 @@ lfi_ret:
     get_ctx REG_BASE
     // restore host thread control block
     ldr x19, [REG_BASE, REGS_HOST_TP]
-    msr tpidr_el0, x19
+    write_ctx x19, x20
     // restore host stack
     ldr x19, [REG_BASE, REGS_HOST_SP]
     mov sp, x19

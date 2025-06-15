@@ -2,10 +2,6 @@
 
 .text
 
-.macro get_ctx reg
-    mrs \reg, tpidr_el0
-.endm
-
 .global lfi_callback
 lfi_callback:
     // REG_ADDR was used to branch here, reset it to a valid value.
@@ -15,7 +11,7 @@ lfi_callback:
 
     // Save and replace tpidr_el0 with host value.
     ldr x12, [x9, REGS_HOST_TP]
-    msr tpidr_el0, x12
+    write_ctx x12, x11
 
     // Get current sandbox sp.
     mov x12, sp
@@ -46,7 +42,10 @@ lfi_callback:
     mov sp, x12
 
     // Restore sandbox thread control block to point to context.
-    msr tpidr_el0, x9
+    write_ctx x9, x10
+
+    // TODO: zero caller-saved registers that may have secret values in LFI
+    // full mode.
 
     add x30, x21, w30, uxtw
     ret

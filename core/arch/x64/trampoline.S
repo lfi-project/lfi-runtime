@@ -1,9 +1,5 @@
 #include "arch_asm.h"
 
-.macro get_ctx reg
-    movq %fs:0x0, \reg
-.endm
-
 .macro zero_regs
     xorq %rax, %rax
     xorq %rbx, %rbx
@@ -122,7 +118,6 @@ lfi_trampoline:
     wrgsbase %REG_BASE
 
     // load address of the lfi_retfn function that will make the return rtcall
-    movq %fs:0x0, %r11
     movq INVOKE_RETFN(%r13), %r11
     // align stack
     andq $0xfffffffffffffff0, %rsp
@@ -135,12 +130,13 @@ lfi_trampoline:
     andl $0xffffffe0, %r11d
     addq %REG_BASE, %r11
 
-    // set the sandbox thread control block by saving the old value of %fs:0x0
-    // into the context and setting it to point to the context itself
-    movq %fs:0x0, %r12
+    // set the sandbox thread control block by saving the old value of
+    // %fs:TLS_SLOT_LFI into the context and setting it to point to the context
+    // itself
+    get_ctx %r12
     movq INVOKE_CTX(%r13), %r13
     movq %r12, REGS_HOST_TP(%r13)
-    movq %r13, %fs:0x0
+    write_ctx %r13
 
 #ifndef STORES_ONLY_TRAMPOLINE
     // Zero non-argument registers for full LFI.
@@ -160,7 +156,7 @@ lfi_ret:
     movq REGS_HOST_SP(%r11), %rsp
     // restore host tp
     movq REGS_HOST_TP(%r11), %rbp
-    movq %rbp, %fs:0x0
+    write_ctx %rbp
     // restore sandbox sp to its initial value
     popq %rbp
     movq %rbp, REGS_RSP(%r11)

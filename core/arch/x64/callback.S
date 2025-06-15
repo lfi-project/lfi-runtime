@@ -1,9 +1,5 @@
 #include "arch_asm.h"
 
-.macro get_ctx reg
-    movq %fs:0x0, \reg
-.endm
-
 .text
 
 .global lfi_callback
@@ -25,17 +21,15 @@ lfi_callback:
 
     // Restore host tp.
     movq REGS_HOST_TP(%r11), %r12
-    movq %r12, %fs:0x0
+    write_ctx %r12
 
     // Save %r11 across the call (and stack alignment).
     pushq %r11
     callq *%r10
     popq %r11
 
-    // TODO: for full sandboxing, zero all non-return registers.
-
     // Set the sandbox thread control block to the context pointer.
-    movq %r11, %fs:0x0
+    write_ctx %r11
     // Move current sandbox stack pointer to %r10
     movq REGS_RSP(%r11), %r10
     // Restore old sandbox stack pointer in the Regs struct.
@@ -46,6 +40,9 @@ lfi_callback:
     movq %rsp, REGS_HOST_SP(%r11)
     // Restore sandbox stack pointer.
     movq %r10, %rsp
+
+    // TODO: zero caller-saved registers that may have secret values in LFI
+    // full mode.
 
     // Return to sandbox
 
