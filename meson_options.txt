@@ -30,6 +30,8 @@ option('stores_only_trampoline',
   value: false,
   description: 'assume stores-only mode for trampolines - disables a routine that zeroes all registers to prevent leakage')
 
+# Note: disabling segue or using only one segue sandbox can roughly double the
+# speed of trampolines on x86-64. You can benchmark with test_trampoline.c.
 option('enable_segue',
   type: 'boolean',
   value: true,

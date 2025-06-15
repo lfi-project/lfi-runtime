@@ -83,7 +83,7 @@ endif
 if get_option('enable_tlsexec')
   defines += '-DENABLE_TLS_EXEC'
 endif
-if get_option('disable_segue')
+if get_option('enable_segue')
   defines += '-DENABLE_SEGUE'
 endif
 if get_option('segue_single_sandbox')

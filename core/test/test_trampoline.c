@@ -9,7 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define BENCHMARK 1
+// Use -b to run the benchmark: ./core/test/test_trampoline.c.elf -b
 
 #if defined(LFI_ARCH_ARM64)
 
@@ -73,7 +73,6 @@ static uint8_t ret[] = {
 
 #endif
 
-#if BENCHMARK
 static inline long long unsigned
 time_ns()
 {
@@ -84,20 +83,26 @@ time_ns()
     return ((long long unsigned) ts.tv_sec) * 1000000000LLU +
         (long long unsigned) ts.tv_nsec;
 }
-#endif
 
 static int
 callback(int a)
 {
-#if !BENCHMARK
     printf("callback got %d\n", a);
-#endif
+    return a;
+}
+
+static int
+callback_bench(int a)
+{
     return a;
 }
 
 int
-main(void)
+main(int argc, char **argv)
 {
+    bool bench = false;
+    if (argc >= 2 && strcmp(argv[1], "-b") == 0)
+        bench = true;
     size_t pagesize = getpagesize();
     // Initialize LFI.
     struct LFIEngine *engine = lfi_new(
@@ -150,27 +155,28 @@ main(void)
     printf("add(%d, %d) = %d\n", 10, 32, x);
 
     void *box_callback = lfi_box_register_cb(box, callback);
+    void *box_callback_bench = lfi_box_register_cb(box, callback_bench);
 
     x = LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int), box_callback, 42);
     assert(x == 42);
 
-#if BENCHMARK
-    size_t iters = 100000000;
-    long long unsigned start = time_ns();
-    for (size_t i = 0; i < iters; i++) {
-        LFI_INVOKE(ctx, p_prog, int, (int, int), 10, 32);
-    }
-    long long unsigned elapsed = time_ns() - start;
-    printf("time per invocation: %.1f ns\n", (float) elapsed / (float) iters);
+    if (bench) {
+        size_t iters = 100000000;
+        long long unsigned start = time_ns();
+        for (size_t i = 0; i < iters; i++) {
+            LFI_INVOKE(ctx, p_prog, int, (int, int), 10, 32);
+        }
+        long long unsigned elapsed = time_ns() - start;
+        printf("time per invocation: %.1f ns\n", (float) elapsed / (float) iters);
 
-    start = time_ns();
-    for (size_t i = 0; i < iters; i++) {
-        LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int), box_callback, 42);
+        start = time_ns();
+        for (size_t i = 0; i < iters; i++) {
+            LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int), box_callback_bench, 42);
+        }
+        elapsed = time_ns() - start;
+        printf("time per invocation with callback: %.1f ns\n",
+            (float) elapsed / (float) iters);
     }
-    elapsed = time_ns() - start;
-    printf("time per invocation with callback: %.1f ns\n",
-        (float) elapsed / (float) iters);
-#endif
 
     lfi_ctx_free(ctx);
 

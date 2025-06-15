@@ -132,6 +132,8 @@ lfi_syscall_entry:
     // swap thread control block back to context pointer
     write_ctx %rcx
 
+    // NOTE: consider removing this entirely if we can assume that syscall
+    // execution never modifies %gs (i.e., never calls into another sandbox).
 #ifdef ENABLE_SEGUE
 # ifndef SEGUE_SINGLE_SANDBOX
     wrgsbase %r14
