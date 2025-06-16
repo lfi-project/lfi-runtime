@@ -24,8 +24,9 @@
 #if defined(__aarch64__) || defined(_M_ARM64)
 
 #define REGS_X0     32
-#define REGS_ADDR   (REGS_X0 + 18 * 8) // x18
-#define REGS_BASE   (REGS_X0 + 21 * 8) // x21
+#define REGS_X(n)   (REGS_X0 + 8 * n)
+#define REGS_ADDR   REGS_X(18) // x18
+#define REGS_BASE   REGS_X(21) // x21
 #define REGS_SP     280
 #define REGS_VECTOR 288
 

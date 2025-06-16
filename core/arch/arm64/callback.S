@@ -77,7 +77,7 @@ lfi_callback:
     // Save context pointer in callee-saved register.
     mov x22, x9
     // Reload host x18
-    ldr x18, [x9, REGS_X18]
+    ldr x18, [x9, REGS_X(18)]
     mov x23, x18
     blr x16
     // Restore x18 and x9.
