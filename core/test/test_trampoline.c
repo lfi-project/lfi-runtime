@@ -110,7 +110,7 @@ main(int argc, char **argv)
             .boxsize = gb(4),
             .pagesize = pagesize,
             .verbose = true,
-            .no_verify = true,
+            .no_verify = false,
         },
         gb(256));
     assert(engine);
@@ -129,6 +129,11 @@ main(int argc, char **argv)
         LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
     assert(p != (lfiptr) -1);
     assert(lfi_box_ptrvalid(box, p));
+
+#if defined(LFI_ARCH_X64)
+    // Set all bytes to trap instructions, since 0 does not pass verification.
+    memset((void *) lfi_box_l2p(box, p), 0xcc, pagesize);
+#endif
 
     lfiptr p_prog = lfi_box_copyto(box, p, prog, sizeof(prog));
     lfiptr p_prog_cb = lfi_box_copyto(box, p + sizeof(prog), prog_cb,

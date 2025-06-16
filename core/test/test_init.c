@@ -12,7 +12,7 @@ main(void)
         (struct LFIOptions) {
             .boxsize = gb(4),
             .pagesize = getpagesize(),
-            .no_verify = true,
+            .no_verify = false,
         },
         gb(256));
 
