@@ -64,7 +64,9 @@ lfi_new(struct LFIOptions opts, size_t reserve)
     struct BoxMap *bm = boxmap_new((struct BoxMapOptions) {
         .minalign = gb(4),
         .maxalign = gb(4),
-        .guardsize = kb(80),
+        // This is the guard size between the edge of the boxmap region and the
+        // outer world.
+        .guardsize = gb(4),
     });
     if (!bm) {
         lfi_error = LFI_ERR_BOXMAP;
