@@ -57,9 +57,6 @@
 
 .global lfi_callback
 lfi_callback:
-    // REG_ADDR was used to branch here, reset it to a valid value.
-    mov REG_ADDR, REG_BASE
-
     get_ctx x9
 
     // Save and replace tpidr_el0 with host value.
@@ -76,10 +73,15 @@ lfi_callback:
     stp x11, x30, [sp, #-16]!
     // Save current sandbox sp to context.
     str x12, [x9, REGS_SP]
-    // Save context pointer in callee-saved register.
 
+    // Save context pointer in callee-saved register.
     mov x22, x9
+    // Reload host x18
+    ldr x18, [x9, REGS_X18]
+    mov x23, x18
     blr x16
+    // Restore x18 and x9.
+    mov x18, x23
     mov x9, x22
 
     // Read previous sandbox sp and return address from stack.
@@ -100,6 +102,9 @@ lfi_callback:
 #ifndef STORES_ONLY_TRAMPOLINE
     zero_caller_regs
 #endif
+
+    // Restore valid REG_ADDR
+    mov REG_ADDR, REG_BASE
 
     add x30, x21, w30, uxtw
     ret
