@@ -33,6 +33,7 @@
 #define REG_BASE    x21
 #define REG_ADDR    x18
 
+// clang-format off
 #ifdef __ASSEMBLER__
 .macro get_ctx reg
     mrs \reg, tpidr_el0
@@ -44,6 +45,7 @@
     str \reg, [\tmp, 8*TLS_SLOT_LFI]
 .endm
 #endif
+// clang-format on
 
 #elif defined(__x86_64__) || defined(_M_X64)
 
@@ -69,6 +71,7 @@
 
 #define REG_BASE  r14
 
+// clang-format off
 #ifdef __ASSEMBLER__
 .macro get_ctx reg
     movq %fs:(8*TLS_SLOT_LFI), \reg
@@ -78,6 +81,7 @@
     movq \reg, %fs:(8*TLS_SLOT_LFI)
 .endm
 #endif
+// clang-format on
 
 #endif
 

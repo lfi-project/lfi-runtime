@@ -27,7 +27,8 @@ static int
 next_tid(struct LFILinuxProc *p)
 {
     return BASE_TID +
-        atomic_fetch_add_explicit(&p->total_thread_count, 1, memory_order_relaxed);
+        atomic_fetch_add_explicit(&p->total_thread_count, 1,
+            memory_order_relaxed);
 }
 
 struct Auxv {

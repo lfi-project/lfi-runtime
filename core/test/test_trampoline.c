@@ -172,11 +172,13 @@ main(int argc, char **argv)
             LFI_INVOKE(ctx, p_prog, int, (int, int), 10, 32);
         }
         long long unsigned elapsed = time_ns() - start;
-        printf("time per invocation: %.1f ns\n", (float) elapsed / (float) iters);
+        printf("time per invocation: %.1f ns\n",
+            (float) elapsed / (float) iters);
 
         start = time_ns();
         for (size_t i = 0; i < iters; i++) {
-            LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int), box_callback_bench, 42);
+            LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int),
+                box_callback_bench, 42);
         }
         elapsed = time_ns() - start;
         printf("time per invocation with callback: %.1f ns\n",

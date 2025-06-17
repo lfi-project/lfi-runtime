@@ -139,6 +139,7 @@ main(int argc, char **argv)
                 (wd->count > 0 ? wd->sval[0] : NULL),
             .sys_passthrough = unrestricted->count > 0 ||
                 sys_passthrough->count > 0,
+            .perf = perf->count > 0,
         });
     if (!linux_) {
         fprintf(stderr, "failed to create LFI Linux engine\n");
@@ -176,8 +177,8 @@ main(int argc, char **argv)
 
     const char **box_argv = strarray(inputs);
     const char **box_envp = strarray(envs);
-    struct LFILinuxThread *t = lfi_thread_new(proc, inputs->count,
-        box_argv, box_envp);
+    struct LFILinuxThread *t = lfi_thread_new(proc, inputs->count, box_argv,
+        box_envp);
     if (!t) {
         fprintf(stderr, "failed to create LFI thread\n");
         exit(1);
