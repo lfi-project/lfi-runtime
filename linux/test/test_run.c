@@ -40,7 +40,7 @@ main(int argc, const char **argv)
         (struct LFIOptions) {
             .boxsize = gb(4),
             .pagesize = getpagesize(),
-            .no_verify = true,
+            .no_verify = false,
             .verbose = true,
         },
         gb(32));
