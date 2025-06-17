@@ -14,7 +14,7 @@ main(void)
             .pagesize = getpagesize(),
             .no_verify = false,
         },
-        gb(256));
+        16);
 
     if (!engine) {
         fprintf(stderr, "failed to create LFI engine: %s\n", lfi_errmsg());

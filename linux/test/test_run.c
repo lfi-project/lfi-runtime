@@ -43,7 +43,7 @@ main(int argc, const char **argv)
             .no_verify = false,
             .verbose = true,
         },
-        gb(32));
+        1);
     assert(engine);
 
     char cwd[FILENAME_MAX];

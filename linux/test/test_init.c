@@ -15,7 +15,7 @@ main(void)
             .no_verify = true,
             .verbose = true,
         },
-        gb(256));
+        1);
     assert(engine);
 
     struct LFILinuxEngine *linux_ = lfi_linux_new(engine,

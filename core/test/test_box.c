@@ -26,7 +26,7 @@ main(void)
             .boxsize = gb(4),
             .pagesize = pagesize,
         },
-        gb(256));
+        1);
 
     if (!engine) {
         fprintf(stderr, "failed to create LFI engine: %s\n", lfi_errmsg());

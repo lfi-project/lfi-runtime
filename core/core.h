@@ -82,3 +82,22 @@ gb(size_t x)
 {
     return x * 1024 * 1024 * 1024;
 }
+
+// Return the total amount of virtual address space needed for a sandbox of a
+// certain size. This depends on the architecture because it is effectively
+// reserving a guard region beyond the sandbox.
+static inline size_t
+box_footprint(size_t boxsize)
+{
+    if (boxsize != gb(4)) {
+        LOG_("warning: box_footprint does not properly support non-4GiB sandboxes");
+        return boxsize;
+    }
+#if defined(LFI_ARCH_ARM64)
+    return gb(4);
+#elif defined(LFI_ARCH_X64)
+    return gb(44);
+#else
+#error "invalid architecture"
+#endif
+}

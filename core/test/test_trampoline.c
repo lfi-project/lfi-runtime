@@ -112,7 +112,7 @@ main(int argc, char **argv)
             .verbose = true,
             .no_verify = false,
         },
-        gb(256));
+        1);
     assert(engine);
 
     // Create a new sandbox.

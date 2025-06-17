@@ -30,7 +30,7 @@ init_verifier(struct LFIVerifier *v, struct LFIOptions *opts)
 #elif defined(LFI_ARCH_X64)
     v->verify = lfiv_verify_x64;
 #else
-#error "invalid architecture: must be one of arm64, x64"
+#error "invalid architecture"
 #endif
 }
 
@@ -53,7 +53,7 @@ init_sigaltstack(struct LFIEngine *engine)
 }
 
 EXPORT struct LFIEngine *
-lfi_new(struct LFIOptions opts, size_t reserve)
+lfi_new(struct LFIOptions opts, size_t nsandboxes)
 {
     struct LFIEngine *engine = malloc(sizeof(struct LFIEngine));
     if (!engine) {
@@ -61,19 +61,24 @@ lfi_new(struct LFIOptions opts, size_t reserve)
         return NULL;
     }
 
-    struct BoxMap *bm = boxmap_new((struct BoxMapOptions) {
-        .minalign = gb(4),
-        .maxalign = gb(4),
+    struct BoxMapOptions bm_opts = (struct BoxMapOptions) {
+        .chunksize = gb(4),
         // This is the guard size between the edge of the boxmap region and the
         // outer world.
-        .guardsize = gb(4),
-    });
+        .guardsize = box_footprint(gb(4)),
+    };
+    struct BoxMap *bm = boxmap_new(bm_opts);
     if (!bm) {
         lfi_error = LFI_ERR_BOXMAP;
         goto err1;
     }
 
-    if (reserve > 0) {
+    // Reserve space for n sandboxes with appropriate footprint, 2 guard pages,
+    // and 2 chunks worth of slack because boxmap has to do internal alignment
+    // when mmap returns non-chunk-aligned region.
+    size_t reserve = nsandboxes * box_footprint(opts.boxsize) + bm_opts.chunksize * 2 + bm_opts.guardsize * 2;
+
+    if (nsandboxes > 0) {
         if (!boxmap_reserve(bm, reserve)) {
             lfi_error = LFI_ERR_RESERVE;
             lfi_error_desc = xasprintf("attempted to reserve %ld bytes",

@@ -57,7 +57,7 @@ main(void)
             .verbose = true,
             .no_verify = false,
         },
-        gb(256));
+        1);
 
     lfi_sys_handler(engine, handler);
 

@@ -63,7 +63,7 @@ lfi_box_new(struct LFIEngine *engine)
     }
 
     size_t size = engine->opts.boxsize;
-    uintptr_t base = boxmap_addspace(engine->bm, size);
+    uintptr_t base = boxmap_addspace(engine->bm, box_footprint(size));
     if (base == 0) {
         lfi_error = LFI_ERR_BOXMAP;
         goto err1;
@@ -88,7 +88,7 @@ lfi_box_new(struct LFIEngine *engine)
     return box;
 
 err2:
-    boxmap_rmspace(engine->bm, base, size);
+    boxmap_rmspace(engine->bm, base, box_footprint(size));
 err1:
     free(box);
     return NULL;
@@ -328,7 +328,7 @@ lfi_box_free(struct LFIBox *box)
     void *p = mmap((void *) box->base, box->size, PROT_NONE,
         MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
     assert(p == (void *) box->base);
-    boxmap_rmspace(box->engine->bm, box->base, box->size);
+    boxmap_rmspace(box->engine->bm, box->base, box_footprint(box->size));
     free(box);
 }
 

@@ -86,11 +86,10 @@ struct LFIBoxInfo {
 #define LFI_MAP_FIXED     16
 #define LFI_MAP_ANONYMOUS 32
 
-// Creates a new LFI engine and reserve a certain amount of virtual address
-// space for it. For future lfi_box_new calls to succeed, the reservation must
-// be large enough to allocate at least one sandbox.
+// Creates a new LFI engine and reserve enough virtual address space for 'n'
+// sandboxes.
 struct LFIEngine *
-lfi_new(struct LFIOptions opts, size_t reserve);
+lfi_new(struct LFIOptions opts, size_t nsandboxes);
 
 // Frees the LFIEngine.
 void
