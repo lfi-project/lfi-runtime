@@ -270,7 +270,7 @@ struct LFIInvokeInfo {
     lfiptr retfn;
 };
 
-extern _Thread_local struct LFIInvokeInfo lfi_invoke_info;
+extern _Thread_local struct LFIInvokeInfo lfi_invoke_info asm("lfi_invoke_info");
 
 extern const void *lfi_trampoline_addr;
 

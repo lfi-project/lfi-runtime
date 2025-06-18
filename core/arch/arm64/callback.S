@@ -56,6 +56,7 @@
 .endm
 
 .global lfi_callback
+.p2align 4
 lfi_callback:
     get_ctx x9
 

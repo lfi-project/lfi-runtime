@@ -91,11 +91,14 @@ if get_option('segue_single_sandbox')
 endif
 
 subdir('core')
-subdir('linux')
-subdir('tools')
 
-liblfi = library(
-  'lfi',
-  dependencies: lfi_linux.as_link_whole(),
-  install: true,
-)
+if get_option('enable_linux')
+  subdir('linux')
+  subdir('tools')
+
+  liblfi = library(
+    'lfi',
+    dependencies: lfi_linux.as_link_whole(),
+    install: true,
+  )
+endif

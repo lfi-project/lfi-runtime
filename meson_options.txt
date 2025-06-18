@@ -1,3 +1,8 @@
+option('enable_linux',
+  type: 'boolean',
+  value: true,
+  description: 'enable the Linux emulator (requires Linux)')
+
 option('max_futexes',
   type: 'integer',
   min: 1,

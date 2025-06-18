@@ -35,6 +35,21 @@
 
 // clang-format off
 #ifdef __ASSEMBLER__
+# if defined(__APPLE__)
+// We save and restore whatever tpidrro_el0 points to. This probably will
+// completely break behavior inside signal handlers if we receive a signal
+// during sandbox execution...
+.macro get_ctx reg
+    mrs \reg, tpidrro_el0
+    ldr \reg, [\reg, 0]
+.endm
+
+.macro write_ctx reg tmp
+    mrs \tmp, tpidrro_el0
+    str \reg, [\tmp, 0]
+.endm
+# else
+// On linux we save and restore the TLS slot offset from tpidr_el0.
 .macro get_ctx reg
     mrs \reg, tpidr_el0
     ldr \reg, [\reg, 8*TLS_SLOT_LFI]
@@ -44,6 +59,7 @@
     mrs \tmp, tpidr_el0
     str \reg, [\tmp, 8*TLS_SLOT_LFI]
 .endm
+# endif
 #endif
 // clang-format on
 

@@ -30,7 +30,7 @@ lfi_ctx_entry:
     // the context itself.
     get_ctx x8
     str x8, [x0, REGS_HOST_TP]
-    write_ctx x0 x8
+    write_ctx x0, x8
 
     // load all registers
     ldp x2, x3,   [x0, REGS_X0+16*1]

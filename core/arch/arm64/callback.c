@@ -17,10 +17,23 @@ memfd_create(const char *name, unsigned flags)
 {
     return syscall(SYS_memfd_create, name, flags);
 }
+#elif defined(__APPLE__)
+int
+memfd_create(const char *name, unsigned int flags) {
+    char template[] = "/tmp/memfd-XXXXXX";
+    int fd = mkstemp(template);
+    if (fd == -1)
+        return -1;
+    if (unlink(template) == -1) {
+        close(fd);
+        return -1;
+    }
+    return fd;
+}
 #endif
 
 extern void
-lfi_callback();
+lfi_callback() asm("lfi_callback");
 
 static ssize_t
 cbfreeslot(struct LFIBox *box)

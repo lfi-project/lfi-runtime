@@ -52,12 +52,13 @@
 
 // Returns a pointer to lfi_invoke_info in reg.
 .macro get_invoke_info reg
-#if defined(ENABLE_TLS_EXEC)
+#if defined(__linux__)
+# if defined(ENABLE_TLS_EXEC)
     adrp x11, :gottprel:lfi_invoke_info
     ldr x11, [x11, :gottprel_lo12:lfi_invoke_info]
     mrs x12, tpidr_el0
     add \reg, x12, x11
-#else
+# else
     mov x11, x0
     mov x12, x30
 
@@ -71,6 +72,22 @@
 
     mov x30, x12
     mov x0, x11
+# endif
+#elif defined(__APPLE__)
+    mov x11, x0
+    mov x12, x30
+Lloh0:
+    adrp x0, lfi_invoke_info@TLVPPAGE
+Lloh1:
+    ldr x0, [x0, lfi_invoke_info@TLVPPAGEOFF]
+    ldr \reg, [x0]
+    blr \reg
+    mov \reg, x0
+    mov x30, x12
+    mov x0, x11
+.loh AdrpLdr Lloh0, Lloh1
+#else
+#error "unsupported OS"
 #endif
 .endm
 

@@ -39,7 +39,7 @@ EXPORT int
 lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
 {
     // Enter the sandbox, saving the stack pointer to host_sp.
-    int ret = lfi_ctx_entry(ctx, &ctx->regs.host_sp, entry);
+    int ret = lfi_ctx_entry(ctx, (uintptr_t *) &ctx->regs.host_sp, entry);
     return ret;
 }
 
