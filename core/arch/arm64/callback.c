@@ -3,6 +3,7 @@
 #endif
 
 #include "core.h"
+#include <errno.h>
 
 #include <assert.h>
 #include <stdatomic.h>
@@ -90,7 +91,7 @@ lfi_box_cbinit(struct LFIBox *box)
     box->cbinfo.dataentries_alias = (struct CallbackDataEntry *) aliasmap;
     // Map the code entry region.
     lfiptr codemap = lfi_box_mapany(box, size / 2, LFI_PROT_READ |
-            LFI_PROT_WRITE, LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, fd, 0);
+            LFI_PROT_WRITE, LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
     if (codemap == (lfiptr) -1)
         goto err1;
     // Fill in the code for each entry.
