@@ -82,42 +82,38 @@ lfi_box_cbinit(struct LFIBox *box)
     int r = ftruncate(fd, size);
     if (r < 0)
         goto err;
-    // Map callback entries outside the sandbox as read/write.
-    void *aliasmap = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd,
+    // Map callback data entries outside the sandbox as read/write.
+    void *aliasmap = mmap(NULL, size / 2, PROT_READ | PROT_WRITE, MAP_SHARED, fd,
         0);
     if (aliasmap == (void *) -1)
         goto err;
-    box->cbinfo.cbentries_alias = (struct CallbackEntry *) aliasmap;
-    box->cbinfo.dataentries_alias = (struct CallbackDataEntry *) (aliasmap +
-        size / 2);
+    box->cbinfo.dataentries_alias = (struct CallbackDataEntry *) aliasmap;
+    // Map the code entry region.
+    lfiptr codemap = lfi_box_mapany(box, size / 2, LFI_PROT_READ |
+            LFI_PROT_WRITE, LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, fd, 0);
+    if (codemap == (lfiptr) -1)
+        goto err1;
     // Fill in the code for each entry.
     for (size_t i = 0; i < MAXCALLBACKS; i++) {
-        memcpy(&box->cbinfo.cbentries_alias[i].code, &cbtrampoline[0],
-            sizeof(box->cbinfo.cbentries_alias[i].code));
+        lfi_box_copyto(box, codemap + sizeof(struct CallbackEntry) * i, &cbtrampoline[0], sizeof(struct CallbackEntry));
     }
-    // Share the mapping inside the sandbox as read/exec. We disable
-    // verification because the code entries are hand-crafted and the verifier
-    // will not be able to validate their targets, which are inserted
-    // dynamically when creating callbacks.
-    lfiptr boxmap = lfi_box_mapany_noverify(box, size,
-        LFI_PROT_READ | LFI_PROT_EXEC, LFI_MAP_SHARED, fd, 0);
-    if (boxmap == (lfiptr) -1)
+    // Mark the code region as R/X. This is unverified because the code region
+    // entries are manually constructed by the runtime.
+    r = lfi_box_mprotect_noverify(box, codemap, size / 2, LFI_PROT_READ | LFI_PROT_EXEC);
+    if (r == -1)
         goto err1;
-    // Mark the data region as non-executable.
-    r = lfi_box_mprotect(box, boxmap + size / 2, size / 2, LFI_PROT_READ);
-    if (r != 0)
+    lfiptr boxmap = lfi_box_mapat(box, codemap + size / 2, size / 2, LFI_PROT_READ, LFI_MAP_SHARED, fd, 0);
+    if (boxmap == (lfiptr) -1)
         goto err2;
-    assert(boxmap + size / 2 + size / 2 == boxmap + size);
-    box->cbinfo.cbentries_box = (struct CallbackEntry *) boxmap;
-    box->cbinfo.dataentries_box = (struct CallbackDataEntry *) (boxmap +
-        size / 2);
+    box->cbinfo.cbentries = (struct CallbackEntry *) codemap;
+    box->cbinfo.dataentries_box = (struct CallbackDataEntry *) boxmap;
 
     close(fd);
     return true;
 err2:
-    lfi_box_munmap(box, boxmap, size);
+    lfi_box_munmap(box, codemap, size / 2);
 err1:
-    munmap(aliasmap, size);
+    munmap(aliasmap, size / 2);
 err:
     close(fd);
     return false;
@@ -143,7 +139,7 @@ lfi_box_register_cb(struct LFIBox *box, void *fn)
     // Mark the slot as allocated.
     box->callbacks[slot] = fn;
 
-    return &box->cbinfo.cbentries_box[slot].code[0];
+    return &box->cbinfo.cbentries[slot].code[0];
 }
 
 EXPORT void

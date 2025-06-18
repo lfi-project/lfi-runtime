@@ -166,9 +166,9 @@ verify(struct LFIBox *box, uintptr_t base, size_t size, int prot)
 
 // Set the protection for a memory mapping, and verify if necessary.
 static int
-protectverify(struct LFIBox *box, uintptr_t base, size_t size, int prot)
+protectverify(struct LFIBox *box, uintptr_t base, size_t size, int prot, bool no_verify)
 {
-    bool no_verify = box->engine->opts.no_verify;
+    no_verify = no_verify || box->engine->opts.no_verify;
     bool allow_wx = box->engine->opts.allow_wx && no_verify;
     bool w = (prot & LFI_PROT_WRITE) != 0;
     bool x = (prot & LFI_PROT_EXEC) != 0;
@@ -311,7 +311,14 @@ lfi_box_mprotect(struct LFIBox *box, lfiptr addr, size_t size, int prot)
     // TODO: we are not registering this change of protection with libmmap,
     // meaning we could get incorrect results if we try to use mm_query.
     // Currently not an issue.
-    return protectverify(box, l2p(box, addr), size, prot);
+    return protectverify(box, l2p(box, addr), size, prot, false);
+}
+
+EXPORT int
+lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size, int prot)
+{
+    // Same todo as above.
+    return protectverify(box, l2p(box, addr), size, prot, true);
 }
 
 EXPORT int

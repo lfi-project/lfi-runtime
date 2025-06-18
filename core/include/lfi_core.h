@@ -134,7 +134,7 @@ lfi_box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd,
     off_t off);
 
 // Creates a new memory mapping in the sandbox at an arbitrary location,
-// similar to mapat, but does not perform verification (USE WITH CAUTION).
+// similar to mapat, but does not perform verification (use with caution).
 lfiptr
 lfi_box_mapany_noverify(struct LFIBox *box, size_t size, int prot, int flags,
     int fd, off_t off);
@@ -147,6 +147,11 @@ lfi_box_munmap(struct LFIBox *box, lfiptr addr, size_t size);
 // verifier for executable pages.
 int
 lfi_box_mprotect(struct LFIBox *box, lfiptr addr, size_t size, int prot);
+
+// Same as lfi_box_mprotect but does not perform verification (use with
+// caution).
+int
+lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size, int prot);
 
 // Returns whether a pointer is valid within the given sandbox.
 bool

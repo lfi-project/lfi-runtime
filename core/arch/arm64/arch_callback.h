@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core.h"
+
 #include <stdint.h>
 
 #define MAXCALLBACKS 4096
@@ -21,8 +23,7 @@ struct CallbackDataEntry {
 };
 
 struct CallbackInfo {
-    struct CallbackEntry *cbentries_alias;
-    struct CallbackEntry *cbentries_box;
+    struct CallbackEntry *cbentries;
     struct CallbackDataEntry *dataentries_alias;
     struct CallbackDataEntry *dataentries_box;
 };
