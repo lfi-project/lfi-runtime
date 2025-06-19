@@ -30,3 +30,4 @@ jobs:
     - name: Build and Test with sanitizers
       run: |
         meson setup build-san -Db_sanitize=address,undefined -Dbuildtype=debugoptimized && ninja -C build-san test
+        meson setup build-tsan -Db_sanitize=thread -Dbuildtype=debugoptimized && ninja -C build-tsan test
