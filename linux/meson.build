@@ -1,4 +1,5 @@
 srcs = files(
+  'list.c',
   'linux.c',
   'fd.c',
   'sys.c',

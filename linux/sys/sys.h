@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define SIGLFI SIGUSR1
+
 // Returns true if the pointer is valid for the sandbox.
 static inline bool
 ptrcheck(struct LFILinuxThread *t, lfiptr p)

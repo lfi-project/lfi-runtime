@@ -245,6 +245,10 @@ lfi_ctx_init_ret(struct LFIContext *ctx, lfiptr ret);
 lfiptr
 lfi_ctx_ret(struct LFIContext *ctx);
 
+// Return the currently active sandbox context.
+struct LFIContext *
+lfi_cur_ctx(void);
+
 // Returns the error code for the current error.
 int
 lfi_errno(void);

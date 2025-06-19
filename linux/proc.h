@@ -70,6 +70,12 @@ struct LFILinuxProc {
     // List of threads currently spawned in this process via a clone that
     // originated in the sandbox (not via a host thread).
     struct List *threads;
+    // Lock for threads.
+    int active_threads;
+    // Lock for thread variables above.
+    pthread_mutex_t lk_threads;
+    // Conditional variable to signal when thread exits.
+    pthread_cond_t cond_threads;
 
     struct LFILinuxEngine *engine;
 };
@@ -92,6 +98,14 @@ struct LFILinuxThread {
     // Pthread object if this thread was spawned by the LFI runtime using a
     // pthread.
     pthread_t *pthread;
+
+    // Element in the parent proc's threads list.
+    struct List threads_elem;
+
+    // Used to signal the condition variable that the thread is ready.
+    bool ready;
+    pthread_mutex_t lk_ready;
+    pthread_cond_t cond_ready;
 
     struct LFILinuxProc *proc;
 };

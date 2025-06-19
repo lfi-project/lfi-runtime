@@ -26,9 +26,11 @@ lfi_proc_new(struct LFILinuxEngine *engine, struct LFIBox *box)
     proc->box = box;
     proc->box_info = lfi_box_info(box);
 
+    pthread_mutex_init(&proc->lk_threads, NULL);
     pthread_mutex_init(&proc->lk_box, NULL);
     pthread_mutex_init(&proc->lk_brk, NULL);
     pthread_mutex_init(&proc->cwd.lk, NULL);
+    pthread_cond_init(&proc->cond_threads, NULL);
 
     if (engine->opts.wd) {
         int r = proc_chdir(proc, engine->opts.wd);
@@ -114,6 +116,12 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size)
 EXPORT void
 lfi_proc_free(struct LFILinuxProc *proc)
 {
+    lock(&proc->lk_threads);
+    while (proc->active_threads != 0) {
+        pthread_cond_wait(&proc->cond_threads, &proc->lk_threads);
+    }
+    assert(proc->active_threads == 0);
+    unlock(&proc->lk_threads);
     free(proc);
 }
 

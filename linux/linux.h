@@ -9,10 +9,6 @@
 struct LFILinuxEngine {
     struct LFIEngine *engine;
     struct LFILinuxOptions opts;
-
-    struct FDFile *fstdin;
-    struct FDFile *fstdout;
-    struct FDFile *fstderr;
 };
 
 struct Dirent {

@@ -64,8 +64,5 @@ lfi_linux_lib_init(void *base, void *end, void *entry, void *phdrs,
 void
 lfi_linux_free(struct LFILinuxEngine *engine)
 {
-    free(engine->fstdout);
-    free(engine->fstderr);
-    free(engine->fstdin);
     free(engine);
 }

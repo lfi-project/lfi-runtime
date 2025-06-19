@@ -57,7 +57,7 @@ main(int argc, const char **argv)
     struct LFILinuxEngine *linux_ = lfi_linux_new(engine,
         (struct LFILinuxOptions) {
             .stacksize = mb(2),
-            /* .verbose = true, */
+            .verbose = true,
             .exit_unknown_syscalls = true,
             .wd = "/",
             .dir_maps = maps,
@@ -93,6 +93,10 @@ main(int argc, const char **argv)
 
     int result = lfi_thread_run(t);
     assert(result == 0);
+
+    lfi_thread_free(t);
+
+    lfi_proc_free(proc);
 
     lfi_linux_free(linux_);
 

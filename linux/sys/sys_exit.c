@@ -17,6 +17,10 @@ clearctid(struct LFILinuxThread *t)
 uintptr_t
 sys_exit(struct LFILinuxThread *t, int code)
 {
+    {
+        LOCK_WITH_DEFER(&t->proc->lk_threads, lk_threads);
+        list_remove(&t->proc->threads, &t->threads_elem);
+    }
     clearctid(t);
     lfi_ctx_exit(t->ctx, code);
     assert(!"unreachable");

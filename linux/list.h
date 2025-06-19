@@ -17,11 +17,21 @@ list_init(struct List *l)
     l->prev = l;
 }
 
-struct List *
-list_first(struct List *list);
+static inline struct List *
+list_first(struct List *list) {
+  struct List *first = 0;
+  if (list)
+      first = list->next;
+  return first;
+}
 
-struct List *
-list_next(struct List *list, struct List *e);
+static inline struct List *
+list_next(struct List *list, struct List *e) {
+  struct List *next = 0;
+  if (e != list)
+      next = e->next;
+  return next;
+}
 
 void
 list_make_first(struct List **list, struct List *e);

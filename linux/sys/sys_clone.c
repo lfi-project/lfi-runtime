@@ -1,6 +1,20 @@
 #include "sys/sys.h"
 
 #include <stdatomic.h>
+#include <signal.h>
+
+// Receiver for SIGLFI when the main thread wants to kill child threads.
+static void
+thread_signal(int sig)
+{
+    assert(sig == SIGLFI);
+
+    struct LFIContext *ctx = lfi_cur_ctx();
+    assert(ctx);
+    struct LFILinuxThread *t = lfi_ctx_data(ctx);
+    assert(t);
+    sys_exit(t, 0);
+}
 
 static bool
 isfork(uint64_t flags)
@@ -24,8 +38,46 @@ threadspawn(void *arg)
 #else
 #error "invalid arch"
 #endif
+
+    stack_t ss;
+    ss.ss_sp = malloc(SIGSTKSZ);
+    if (!ss.ss_sp) {
+        LOG(t->proc->engine, "failed to allocate signal stack");
+        goto end;
+    }
+    ss.ss_size = SIGSTKSZ;
+    ss.ss_flags = 0;
+
+    // Register alternate stack.
+    if (sigaltstack(&ss, NULL) == -1) {
+        LOG(t->proc->engine, "failed to register signal stack");
+        goto end;
+    }
+
+    struct sigaction sa = {0};
+    sa.sa_handler = &thread_signal;
+    sa.sa_flags = SA_ONSTACK;
+    if (sigaction(SIGLFI, &sa, NULL) == -1) {
+        LOG(t->proc->engine, "failed to register SIGLFI handler");
+        goto end;
+    }
+
+    // Signal to the parent that the thread is now ready.
+    pthread_mutex_lock(&t->lk_ready);
+    t->ready = true;
+    pthread_cond_signal(&t->cond_ready);
+    unlock(&t->lk_ready);
+
     lfi_ctx_run(t->ctx, entry);
+
+end:
+    lock(&t->lk_ready);
+    lock(&t->proc->lk_threads);
+    t->proc->active_threads--;
+    pthread_cond_signal(&t->proc->cond_threads);
     LOG(t->proc->engine, "thread %d exited", t->tid);
+    unlock(&t->proc->lk_threads);
+    unlock(&t->lk_ready);
     lfi_thread_free(t);
     return NULL;
 }
@@ -74,6 +126,7 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
     if (!p2) {
         return -LINUX_EAGAIN;
     }
+    int tid = p2->tid;
 
     struct LFIRegs *regs = lfi_ctx_regs(p2->ctx);
     if (flags & LINUX_CLONE_SETTLS) {
@@ -104,6 +157,7 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     p2->pthread = thread;
+    LOG(p->proc->engine, "creating new thread: %d", tid);
     int err = pthread_create(thread, &attr, threadspawn, p2);
     pthread_attr_destroy(&attr);
     if (err) {
@@ -111,10 +165,21 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
         return -LINUX_EAGAIN;
     }
 
-    if (flags & LINUX_CLONE_PARENT_SETTID) {
-        atomic_store_explicit(ptid, p2->tid, memory_order_release);
+    // Wait until thread is ready.
+    lock(&p2->lk_ready);
+    while (!p2->ready) {
+        pthread_cond_wait(&p2->cond_ready, &p2->lk_ready);
     }
-    return p2->tid;
+    lock(&p->proc->lk_threads);
+    list_make_first(&p->proc->threads, &p2->threads_elem);
+    p->proc->active_threads++;
+    unlock(&p->proc->lk_threads);
+    unlock(&p2->lk_ready);
+
+    if (flags & LINUX_CLONE_PARENT_SETTID) {
+        atomic_store_explicit(ptid, tid, memory_order_release);
+    }
+    return tid;
 }
 
 int

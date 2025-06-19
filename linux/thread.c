@@ -191,6 +191,9 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
     if (!t->ctx)
         goto err2;
     t->tid = next_tid(proc);
+    pthread_mutex_init(&t->lk_ready, NULL);
+    pthread_cond_init(&t->cond_ready, NULL);
+    list_init(&t->threads_elem);
 
     size_t stacksize = proc->engine->opts.stacksize;
     t->stack = lfi_box_mapat(proc->box, proc->box_info.max - stacksize,
@@ -227,6 +230,9 @@ thread_clone(struct LFILinuxThread *t)
     new_t->ctx = ctx;
     new_t->proc = t->proc;
     new_t->tid = next_tid(t->proc);
+    pthread_mutex_init(&new_t->lk_ready, NULL);
+    pthread_cond_init(&new_t->cond_ready, NULL);
+    list_init(&new_t->threads_elem);
     if (new_t->tid == -1)
         goto err2;
     // Copy all registers.
