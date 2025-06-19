@@ -25,7 +25,7 @@ jobs:
       run: wget -q https://github.com/zyedidia/lfi/releases/download/v0.8/aarch64-lfi-clang.tar.gz && tar -xf aarch64-lfi-clang.tar.gz && echo "$PWD/aarch64-lfi-clang/lfi-bin" >> $GITHUB_PATH
 
     - name: Set env
-      run: echo "ASAN_OPTIONS=detect_leaks=0" >> $GITHUB_ENV
+      run: echo "ASAN_OPTIONS=use_sigaltstack=0,detect_leaks=0" >> $GITHUB_ENV
 
     - name: Build and Test with sanitizers
       run: |
