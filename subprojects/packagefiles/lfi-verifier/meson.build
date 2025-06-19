@@ -42,7 +42,7 @@ if 'x64' in arch
   srcs += files(
     'src/x64/verify.c',
     'src/x64/bdd.c',
-    'src/x64/bddinc.s',
+    'src/x64/bddinc.S',
   )
   c_defines += '-DARCH_X64'
 endif
