@@ -106,18 +106,17 @@ lfi_trampoline:
     stp x27, x28, [sp, #-16]!
     stp x29, x30, [sp, #-16]!
 
-    get_invoke_info x9
-    ldr x10, [x9, #INVOKE_TARGETFN]
-    ldr x19, [x9, #INVOKE_CTX]
+    get_invoke_info x19
+    ldr x20, [x19, #INVOKE_CTX]
     // Load the context pointer from the LFIContext **.
-    ldr x9, [x19]
+    ldr x8, [x20]
     // If NULL, initialize the context pointer.
-    cbnz x9, 1f
+    cbnz x8, 1f
     bl .trampoline_clone
-    ldr x9, [x19]
+    ldr x8, [x20]
 1:
-    ldr x9, [x9, #REGS_RETADDR]
-    mov x8, x19
+    ldr x9, [x8, #REGS_RETADDR]
+    ldr x10, [x19, #INVOKE_TARGETFN]
 
     // set the sandbox thread control block by saving the old value of
     // [tpidr_el0, TLS_SLOT_LFI] into the context and setting it to point to
