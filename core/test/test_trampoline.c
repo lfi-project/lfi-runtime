@@ -155,21 +155,21 @@ main(int argc, char **argv)
     lfi_ctx_regs(ctx)->sp = stack + pagesize;
 #endif
 
-    int x = LFI_INVOKE(ctx, p_prog, int, (int, int), 10, 32);
+    int x = LFI_INVOKE(&ctx, p_prog, int, (int, int), 10, 32);
     assert(x == 42);
     printf("add(%d, %d) = %d\n", 10, 32, x);
 
     void *box_callback = lfi_box_register_cb(box, callback);
     void *box_callback_bench = lfi_box_register_cb(box, callback_bench);
 
-    x = LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int), box_callback, 42);
+    x = LFI_INVOKE(&ctx, p_prog_cb, int, (int (*)(int), int), box_callback, 42);
     assert(x == 42);
 
     if (bench) {
         size_t iters = 100000000;
         long long unsigned start = time_ns();
         for (size_t i = 0; i < iters; i++) {
-            LFI_INVOKE(ctx, p_prog, int, (int, int), 10, 32);
+            LFI_INVOKE(&ctx, p_prog, int, (int, int), 10, 32);
         }
         long long unsigned elapsed = time_ns() - start;
         printf("time per invocation: %.1f ns\n",
@@ -177,7 +177,7 @@ main(int argc, char **argv)
 
         start = time_ns();
         for (size_t i = 0; i < iters; i++) {
-            LFI_INVOKE(ctx, p_prog_cb, int, (int (*)(int), int),
+            LFI_INVOKE(&ctx, p_prog_cb, int, (int (*)(int), int),
                 box_callback_bench, 42);
         }
         elapsed = time_ns() - start;

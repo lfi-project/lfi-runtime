@@ -101,7 +101,18 @@ lfi_trampoline:
     pushq %rbp
 
     get_invoke_info %r13
+    // Loads a pointer to the context pointer.
     movq INVOKE_CTX(%r13), %r11
+
+    // Check if the context pointer is zero.
+    cmpq $0, (%r11)
+    jne 1f
+    // Initialize the context pointer with the clone callback.
+    call .trampoline_clone
+    movq %rax, (%r11)
+1:
+    // Load the context pointer from struct LFIContext **ctx.
+    movq (%r11), %r11
 
     // dummy push to keep the stack aligned
     pushq %rbp
@@ -122,7 +133,7 @@ lfi_trampoline:
 #endif
 
     // load address of the lfi_retfn function that will make the return rtcall
-    movq INVOKE_RETFN(%r13), %r11
+    movq REGS_RETADDR(%r11), %r11
     // align stack
     andq $0xfffffffffffffff0, %rsp
     // push this as the return address onto the sandbox stack
@@ -139,6 +150,7 @@ lfi_trampoline:
     // itself
     get_ctx %r12
     movq INVOKE_CTX(%r13), %r13
+    movq (%r13), %r13
     movq %r12, REGS_HOST_TP(%r13)
     write_ctx %r13
 
@@ -172,6 +184,56 @@ lfi_ret:
     popq %r13
     popq %r14
     popq %r15
+    ret
+
+// TODO: we can make this more efficient with one rsp subtraction.
+.macro pushx xmm
+    subq $16, %rsp
+    movdqu \xmm, (%rsp)
+.endm
+
+.macro popx xmm
+    movdqu (%rsp), \xmm
+    addq $16, %rsp
+.endm
+
+// Slowpath taken when the sandbox context needs to be initialized.
+.p2align 4
+.trampoline_clone:
+    pushq %rdi
+    pushq %rsi
+    pushq %rdx
+    pushq %rcx
+    pushq %r8
+    pushq %r9
+    pushq %r10
+    pushq %r11
+    pushx %xmm0
+    pushx %xmm1
+    pushx %xmm2
+    pushx %xmm3
+    pushx %xmm4
+    pushx %xmm5
+    pushx %xmm6
+    pushx %xmm7
+    movq %r11, %rdi
+    callq lfi_clone
+    popx %xmm0
+    popx %xmm1
+    popx %xmm2
+    popx %xmm3
+    popx %xmm4
+    popx %xmm5
+    popx %xmm6
+    popx %xmm7
+    popq %r11
+    popq %r10
+    popq %r9
+    popq %r8
+    popq %rcx
+    popq %rdx
+    popq %rsi
+    popq %rdi
     ret
 
 #ifndef __APPLE__

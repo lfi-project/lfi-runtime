@@ -11,6 +11,8 @@ _Static_assert(offsetof(struct LFIRegs, host_tp) == REGS_HOST_TP,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, tp) == REGS_TP,
     "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, retaddr) == REGS_RETADDR,
+    "incorrect REGS offset");
 
 #if defined(LFI_ARCH_ARM64)
 
@@ -75,6 +77,4 @@ _Static_assert(offsetof(struct LFIRegs, xmm) % 16 == 0,
 _Static_assert(offsetof(struct LFIInvokeInfo, ctx) == INVOKE_CTX,
     "incorrect INVOKE offset");
 _Static_assert(offsetof(struct LFIInvokeInfo, targetfn) == INVOKE_TARGETFN,
-    "incorrect INVOKE offset");
-_Static_assert(offsetof(struct LFIInvokeInfo, retfn) == INVOKE_RETFN,
     "incorrect INVOKE offset");

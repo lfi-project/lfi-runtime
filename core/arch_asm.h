@@ -6,6 +6,7 @@
 #define REGS_HOST_SP 0
 #define REGS_HOST_TP 8
 #define REGS_TP      16
+#define REGS_RETADDR 24
 
 // When inside the sandbox, we need a fast way to look up the current LFI
 // context in thread-local storage without using the stack (because we can't
@@ -105,4 +106,3 @@
 
 #define INVOKE_CTX      0
 #define INVOKE_TARGETFN 8
-#define INVOKE_RETFN    16

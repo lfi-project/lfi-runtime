@@ -106,10 +106,18 @@ lfi_trampoline:
     stp x27, x28, [sp, #-16]!
     stp x29, x30, [sp, #-16]!
 
-    get_invoke_info x8
-    ldr x9, [x8, #INVOKE_RETFN]
-    ldr x10, [x8, #INVOKE_TARGETFN]
-    ldr x8, [x8, #INVOKE_CTX]
+    get_invoke_info x9
+    ldr x10, [x9, #INVOKE_TARGETFN]
+    ldr x19, [x9, #INVOKE_CTX]
+    // Load the context pointer from the LFIContext **.
+    ldr x9, [x19]
+    // If NULL, initialize the context pointer.
+    cbnz x9, 1f
+    bl .trampoline_clone
+    ldr x9, [x19]
+1:
+    ldr x9, [x9, #REGS_RETADDR]
+    mov x8, x19
 
     // set the sandbox thread control block by saving the old value of
     // [tpidr_el0, TLS_SLOT_LFI] into the context and setting it to point to
@@ -172,6 +180,31 @@ lfi_ret:
     ldp d12, d13, [sp], 16
     ldp d10, d11, [sp], 16
     ldp d8, d9,   [sp], 16
+    ret
+
+// Slowpath taken when the sandbox context needs to be initialized.
+.p2align 4
+.trampoline_clone:
+    stp x0, x1, [sp, #-16]!
+    stp x2, x3, [sp, #-16]!
+    stp x4, x5, [sp, #-16]!
+    stp x6, x7, [sp, #-16]!
+    stp x10, xzr, [sp, #-16]!
+    stp q0, q1, [sp, #-32]!
+    stp q2, q3, [sp, #-32]!
+    stp q4, q5, [sp, #-32]!
+    stp q6, q7, [sp, #-32]!
+    mov x0, x19
+    bl lfi_clone
+    ldp q6, q7, [sp], 32
+    ldp q4, q5, [sp], 32
+    ldp q2, q3, [sp], 32
+    ldp q0, q1, [sp], 32
+    ldp x10, xzr, [sp], 16
+    ldp x6, x7, [sp], 16
+    ldp x4, x5, [sp], 16
+    ldp x2, x3, [sp], 16
+    ldp x0, x1, [sp], 16
     ret
 
 #ifndef __APPLE__

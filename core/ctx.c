@@ -39,7 +39,7 @@ EXPORT int
 lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
 {
     // Save the ctx in invoke info so it can be retrieved via lfi_cur_ctx.
-    lfi_invoke_info.ctx = ctx;
+    lfi_invoke_info.ctx = &ctx;
     // Enter the sandbox, saving the stack pointer to host_sp.
     int ret = lfi_ctx_entry(ctx, (uintptr_t *) &ctx->regs.host_sp, entry);
     return ret;
@@ -73,17 +73,11 @@ lfi_ctx_box(struct LFIContext *ctx)
 EXPORT void
 lfi_ctx_init_ret(struct LFIContext *ctx, lfiptr ret)
 {
-    ctx->retfn = ret;
-}
-
-EXPORT lfiptr
-lfi_ctx_ret(struct LFIContext *ctx)
-{
-    return ctx->retfn;
+    ctx->regs.retaddr = ret;
 }
 
 EXPORT struct LFIContext *
 lfi_cur_ctx(void)
 {
-    return lfi_invoke_info.ctx;
+    return *lfi_invoke_info.ctx;
 }

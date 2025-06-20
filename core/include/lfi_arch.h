@@ -16,7 +16,9 @@ struct LFIRegs {
     uint64_t host_tp;
     // Sandbox thread pointer.
     uint64_t tp;
-    uint64_t _pad0;
+    // Return address for lfi_trampoline invocations (generally this should be
+    // a pointer to a function in the sandbox that calls lfi_ret).
+    uint64_t retaddr;
 
     uint64_t x0;
     uint64_t x1;
@@ -65,7 +67,7 @@ struct LFIRegs {
     // a slow operation: wrfsbase can take up to 40 cycles.
     uint64_t host_tp;
     uint64_t tp;
-    uint64_t _pad0;
+    uint64_t retaddr;
 
     uint64_t rsp;
     uint64_t rax;
