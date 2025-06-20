@@ -72,7 +72,7 @@ clone_cb(struct LFIBox *box)
 #elif defined(LFI_ARCH_ARM64)
     lfi_ctx_regs(ctx)->sp = stack + pagesize;
 #endif
-    printf("clone_cb initialized ctx %p\n", ctx);
+    printf("clone_cb initialized ctx: %p, stack: %lx\n", ctx, stack);
 
     return ctx;
 }

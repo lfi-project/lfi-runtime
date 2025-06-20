@@ -109,7 +109,6 @@ lfi_trampoline:
     jne 1f
     // Initialize the context pointer with the clone callback.
     call .trampoline_clone
-    movq %rax, (%r11)
 1:
     // Load the context pointer from struct LFIContext **ctx.
     movq (%r11), %r11
