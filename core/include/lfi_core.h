@@ -239,14 +239,14 @@ lfi_ctx_box(struct LFIContext *ctx);
 // sandbox that calls the lfi_ret runtime call. Initializing this is necessary
 // if you use LFI_INVOKE, but otherwise is not necessary.
 void
-lfi_ctx_init_ret(struct LFIContext *ctx, lfiptr ret);
+lfi_box_init_ret(struct LFIBox *box, lfiptr ret);
 
 // Register a clone callback. This callback will be called when transferring
 // control to a NULL LFI context through the LFI trampoline (e.g., via
 // LFI_INVOKE). The callback should return a newly initialized LFI context that
 // will be used for the invocation.
 void
-lfi_set_clone_cb(struct LFIContext *(*clone_cb)(void));
+lfi_set_clone_cb(struct LFIEngine *engine, struct LFIContext *(*clone_cb)(struct LFIBox *));
 
 // Return the currently active sandbox context.
 struct LFIContext *
@@ -279,6 +279,7 @@ enum {
 struct LFIInvokeInfo {
     struct LFIContext **ctx;
     lfiptr targetfn;
+    struct LFIBox *box;
 };
 
 extern _Thread_local struct LFIInvokeInfo lfi_invoke_info asm("lfi_invoke_info");
@@ -286,11 +287,12 @@ extern _Thread_local struct LFIInvokeInfo lfi_invoke_info asm("lfi_invoke_info")
 extern const void *lfi_trampoline_addr;
 
 // LFI_INVOKE(struct LFIContext **ctx, lfiptr fn, return type, arg types, ...)
-#define LFI_INVOKE(ctxp, fn, ret_type, args, ...)                             \
+#define LFI_INVOKE(box_, ctxp, fn, ret_type, args, ...)                             \
     ({                                                                        \
         lfi_invoke_info = (struct LFIInvokeInfo) {                            \
             .ctx = ctxp,                                                      \
             .targetfn = fn,                                                   \
+            .box = box_, \
         };                                                                    \
         ret_type(*_trampoline) args = (ret_type(*) args) lfi_trampoline_addr; \
         _trampoline(__VA_ARGS__);                                             \

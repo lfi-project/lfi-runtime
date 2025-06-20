@@ -216,7 +216,8 @@ lfi_ret:
     pushx %xmm5
     pushx %xmm6
     pushx %xmm7
-    movq %r11, %rdi
+    movq INVOKE_BOX(%r13), %rdi
+    movq %r11, %rsi
     callq lfi_clone
     popx %xmm0
     popx %xmm1

@@ -106,3 +106,4 @@
 
 #define INVOKE_CTX      0
 #define INVOKE_TARGETFN 8
+#define INVOKE_BOX      16

@@ -78,3 +78,5 @@ _Static_assert(offsetof(struct LFIInvokeInfo, ctx) == INVOKE_CTX,
     "incorrect INVOKE offset");
 _Static_assert(offsetof(struct LFIInvokeInfo, targetfn) == INVOKE_TARGETFN,
     "incorrect INVOKE offset");
+_Static_assert(offsetof(struct LFIInvokeInfo, box) == INVOKE_BOX,
+    "incorrect INVOKE offset");

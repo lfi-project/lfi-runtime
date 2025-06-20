@@ -380,3 +380,9 @@ lfi_box_p2l(struct LFIBox *box, uintptr_t p)
 {
     return p2l(box, p);
 }
+
+EXPORT void
+lfi_box_init_ret(struct LFIBox *box, lfiptr ret)
+{
+    box->retaddr = ret;
+}

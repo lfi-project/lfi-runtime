@@ -113,6 +113,7 @@ lfi_trampoline:
     // If NULL, initialize the context pointer.
     cbnz x8, 1f
     bl .trampoline_clone
+.trampoline_clone_ret:
     ldr x8, [x20]
 1:
     ldr x9, [x8, #REGS_RETADDR]
@@ -193,7 +194,8 @@ lfi_ret:
     stp q2, q3, [sp, #-32]!
     stp q4, q5, [sp, #-32]!
     stp q6, q7, [sp, #-32]!
-    mov x0, x19
+    ldr x0, [x19, #INVOKE_BOX]
+    mov x1, x20
     bl lfi_clone
     ldp q6, q7, [sp], 32
     ldp q4, q5, [sp], 32
@@ -204,7 +206,7 @@ lfi_ret:
     ldp x4, x5, [sp], 16
     ldp x2, x3, [sp], 16
     ldp x0, x1, [sp], 16
-    ret
+    b .trampoline_clone_ret
 
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits

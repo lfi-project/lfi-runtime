@@ -25,6 +25,7 @@ lfi_ctx_new(struct LFIBox *box, void *ctxp)
     };
 
     lfi_ctx_regs_init(ctx);
+    ctx->regs.retaddr = box->retaddr;
 
     return ctx;
 }
@@ -68,12 +69,6 @@ EXPORT struct LFIBox *
 lfi_ctx_box(struct LFIContext *ctx)
 {
     return ctx->box;
-}
-
-EXPORT void
-lfi_ctx_init_ret(struct LFIContext *ctx, lfiptr ret)
-{
-    ctx->regs.retaddr = ret;
 }
 
 EXPORT struct LFIContext *

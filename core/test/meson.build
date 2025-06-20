@@ -3,6 +3,7 @@ tests = [
   'test_box.c',
   'test_ctx.c',
   'test_trampoline.c',
+  'test_trampoline_clone.c',
 ]
 
 foreach t : tests

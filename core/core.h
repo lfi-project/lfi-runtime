@@ -18,6 +18,7 @@ struct LFIEngine {
     struct LFIVerifier verifier;
 
     void (*sys_handler)(struct LFIContext *ctx);
+    struct LFIContext *(*clone_cb)(struct LFIBox *box);
 
     size_t guardsize;
     stack_t altstack;
@@ -36,6 +37,9 @@ struct LFIBox {
     // Pointer to the page at the start of the sandbox holding runtime call
     // entrypoints.
     struct Sys *sys;
+
+    // Address of return function in this sandbox.
+    lfiptr retaddr;
 
     struct CallbackInfo cbinfo;
 
