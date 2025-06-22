@@ -97,6 +97,11 @@ lfi_thread_run(struct LFILinuxThread *t);
 void
 lfi_thread_free(struct LFILinuxThread *t);
 
+// Initialize the ability to dynamically spawn new sandbox threads when
+// invoking from new host threads.
+void
+lfi_linux_init_clone(struct LFILinuxThread *main_thread);
+
 #ifdef __cplusplus
 }
 #endif

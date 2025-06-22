@@ -10,6 +10,7 @@ srcs = files(
   'host.c',
   'perf.c',
   'path.c',
+  'trampoline.c',
 )
 
 subdir('arch/' + archmap[cpu])

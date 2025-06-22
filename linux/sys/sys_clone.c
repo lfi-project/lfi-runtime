@@ -1,4 +1,5 @@
 #include "sys/sys.h"
+#include "trampoline.h"
 
 #include <signal.h>
 #include <stdatomic.h>
@@ -152,29 +153,37 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
 #error "invalid arch"
 #endif
 
-    pthread_t *thread = malloc(sizeof(pthread_t));
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    p2->pthread = thread;
-    LOG(p->proc->engine, "creating new thread: %d", tid);
-    int err = pthread_create(thread, &attr, threadspawn, p2);
-    pthread_attr_destroy(&attr);
-    if (err) {
-        lfi_thread_free(p2);
-        return -LINUX_EAGAIN;
-    }
+    if (p->ctx == clone_ctx) {
+        // TODO: do we need to save/restore the current context before we enter
+        // this new context?
+        // TODO: save/restore lfi_invoke_info
+        threadspawn(p2);
+        lfi_newctx = p2->ctx;
+    } else {
+        pthread_t *thread = malloc(sizeof(pthread_t));
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+        p2->pthread = thread;
+        LOG(p->proc->engine, "creating new thread: %d", tid);
+        int err = pthread_create(thread, &attr, threadspawn, p2);
+        pthread_attr_destroy(&attr);
+        if (err) {
+            lfi_thread_free(p2);
+            return -LINUX_EAGAIN;
+        }
 
-    // Wait until thread is ready.
-    lock(&p2->lk_ready);
-    while (!p2->ready) {
-        pthread_cond_wait(&p2->cond_ready, &p2->lk_ready);
+        // Wait until thread is ready.
+        lock(&p2->lk_ready);
+        while (!p2->ready) {
+            pthread_cond_wait(&p2->cond_ready, &p2->lk_ready);
+        }
+        lock(&p->proc->lk_threads);
+        list_make_first(&p->proc->threads, &p2->threads_elem);
+        p->proc->active_threads++;
+        unlock(&p->proc->lk_threads);
+        unlock(&p2->lk_ready);
     }
-    lock(&p->proc->lk_threads);
-    list_make_first(&p->proc->threads, &p2->threads_elem);
-    p->proc->active_threads++;
-    unlock(&p->proc->lk_threads);
-    unlock(&p2->lk_ready);
 
     if (flags & LINUX_CLONE_PARENT_SETTID) {
         atomic_store_explicit(ptid, tid, memory_order_release);
