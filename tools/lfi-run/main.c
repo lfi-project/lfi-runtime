@@ -67,10 +67,9 @@ main(int argc, char **argv)
     struct arg_lit *help = arg_lit0("h", "help", "show help");
     struct arg_lit *verbose = arg_lit0("V", "verbose", "verbose output");
     struct arg_lit *perf = arg_lit0(NULL, "perf", "enable perf support");
-    struct arg_lit *no_verify = arg_lit0(NULL, "no-verify",
-        "disable verification (unsafe)");
-    struct arg_lit *sys_passthrough = arg_lit0(NULL, "sys-passthrough",
-        "pass most system calls directly to the host (unsafe)");
+    struct arg_lit *verify = arg_lit0("v", "verify", "enable verification");
+    struct arg_lit *sys_passthrough = arg_lit0("p", "sys-passthrough",
+        "pass most system calls directly to the host");
     struct arg_int *pagesize = arg_intn(NULL, "pagesize", "<int>", 0, 1,
         "system page size");
     struct arg_str *envs = arg_strn(NULL, "env", "<var=val>", 0, 100,
@@ -79,14 +78,14 @@ main(int argc, char **argv)
         "map sandbox path to host directory");
     struct arg_str *wd = arg_strn(NULL, "wd", "<dir>", 0, 1,
         "working directory within sandbox");
-    struct arg_lit *unrestricted = arg_lit0("u", "unrestricted",
-        "same as --sys-passthrough --no-verify --dir /=/ --wd $PWD (unsafe)");
+    struct arg_lit *restricted = arg_lit0("r", "restricted",
+        "apply --dir and --wd flags (default is --dir /=/ --wd $PWD for testing)");
     struct arg_str *inputs = arg_strn(NULL, NULL, "<input>", 0, 1000,
         "input command");
     struct arg_end *end = arg_end(20);
 
-    void *argtable[] = { help, verbose, perf, no_verify, sys_passthrough,
-        pagesize, envs, dirs, wd, unrestricted, inputs, end };
+    void *argtable[] = { help, verbose, perf, verify, sys_passthrough, pagesize,
+        envs, dirs, wd, restricted, inputs, end };
 
     if (arg_nullcheck(argtable) != 0) {
         fprintf(stderr, "Memory allocation error\n");
@@ -110,7 +109,7 @@ main(int argc, char **argv)
         (struct LFIOptions) {
             .boxsize = gb(4),
             .pagesize = pagesize->count > 0 ? pagesize->ival[0] : getpagesize(),
-            .no_verify = no_verify->count > 0 || unrestricted->count > 0,
+            .no_verify = verify->count == 0,
             .verbose = verbose->count > 0,
         },
         gb(32));
@@ -133,12 +132,10 @@ main(int argc, char **argv)
             .stacksize = mb(2),
             .verbose = verbose->count > 0,
             .exit_unknown_syscalls = true,
-            .dir_maps = unrestricted->count > 0 ? all : strarray(dirs),
-            .wd = unrestricted->count > 0 ?
-                cwd :
-                (wd->count > 0 ? wd->sval[0] : NULL),
-            .sys_passthrough = unrestricted->count > 0 ||
-                sys_passthrough->count > 0,
+            .dir_maps = restricted->count > 0 ? strarray(dirs) : all,
+            .wd = restricted->count > 0 ? (wd->count > 0 ? wd->sval[0] : NULL) :
+                                          cwd,
+            .sys_passthrough = sys_passthrough->count > 0,
             .perf = perf->count > 0,
         });
     if (!linux_) {
