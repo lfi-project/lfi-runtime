@@ -20,7 +20,8 @@ lfi_linux_init_clone(struct LFILinuxThread *main)
     // main.
     clone_ctx = main->ctx;
     // Invoke thread_create in main_thread.
-    LFI_INVOKE(main->proc->box, &main->ctx, main->proc->fn_thread_create, void *, (void *), main->proc->fn_pause);
+    LFI_INVOKE(main->proc->box, &main->ctx, main->proc->fn_thread_create,
+        void *, (void *), main->proc->fn_pause);
     // Store the resulting new_ctx in clone_ctx to use for future clones.
     clone_ctx = new_ctx;
 
@@ -30,7 +31,9 @@ lfi_linux_init_clone(struct LFILinuxThread *main)
 void
 lfi_linux_clone_cb(struct LFIBox *box, struct LFIContext **ctxp)
 {
-    // Invoke thread_create in clone_ctx and store the resulting new_ctx in ctxp.
-    LFI_INVOKE(box, &clone_ctx, lookup(fn_thread_create), void *, (void *), lookup(fn_pause));
+    // Invoke thread_create in clone_ctx and store the resulting new_ctx in
+    // ctxp.
+    LFI_INVOKE(box, &clone_ctx, lookup(fn_thread_create), void *, (void *),
+        lookup(fn_pause));
     *ctxp = new_ctx;
 }
