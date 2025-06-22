@@ -26,13 +26,13 @@
 
 #define REGS_X0     32
 #define REGS_X(n)   (REGS_X0 + 8 * n)
-#define REGS_ADDR   REGS_X(18) // x18
-#define REGS_BASE   REGS_X(21) // x21
+#define REGS_ADDR   REGS_X(28) // x28
+#define REGS_BASE   REGS_X(27) // x27
 #define REGS_SP     280
 #define REGS_VECTOR 288
 
-#define REG_BASE    x21
-#define REG_ADDR    x18
+#define REG_BASE    x27
+#define REG_ADDR    x28
 
 // clang-format off
 #ifdef __ASSEMBLER__

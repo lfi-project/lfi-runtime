@@ -11,17 +11,18 @@
     mov x15, #0
     mov x16, #0
     mov x17, #0
-    // skip x18 (addr)
+    // TODO: consider skipping x18 because it is platform-reserved.
+    mov x18, #0
     mov x19, #0
     mov x20, #0
-    // skip x21 (base)
+    mov x21, #0
     mov x22, #0
     mov x23, #0
     mov x24, #0
     mov x25, #0
     mov x26, #0
-    mov x27, #0
-    mov x28, #0
+    // skip x27 (base)
+    // skip x28 (addr)
     mov x29, #0
     // skip x30 (ret)
     movi v8.2D, #0
