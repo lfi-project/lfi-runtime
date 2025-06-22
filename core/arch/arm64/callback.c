@@ -60,12 +60,12 @@ cbfind(struct LFIBox *box, void *fn)
 #define LDRLIT(reg, lit) ((0b01011000 << 24) | (((lit) >> 2) << 5) | (reg))
 
 // Code entry for a callback. The target goes in x16 and the trampoline (actual
-// branch target out of the sandbox) goes in x18.
+// branch target out of the sandbox) goes in x28.
 static uint32_t cbtrampoline[4] = {
     LDRLIT(16, MAXCALLBACKS * sizeof(struct CallbackEntry)), // ldr x16, .+X
-    LDRLIT(18,
-        4 + MAXCALLBACKS * sizeof(struct CallbackEntry)), // ldr x18, .+X+4
-    0xd61f0240,                                           // br x18
+    LDRLIT(28,
+        4 + MAXCALLBACKS * sizeof(struct CallbackEntry)), // ldr x28, .+X+4
+    0xd61f0380,                                           // br x28
     0xd503201f,                                           // nop
 };
 

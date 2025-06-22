@@ -21,7 +21,8 @@
     mov x15, #0
     mov x16, #0
     mov x17, #0
-    // skip x18 (addr)
+    // TODO: consider skipping x18 because it is platform-reserved.
+    mov x18, #0
     // Skip v0 and v1 because return value could be there.
     movi v2.2D, #0
     movi v3.2D, #0
@@ -107,7 +108,7 @@ lfi_callback:
     // Restore valid REG_ADDR
     mov REG_ADDR, REG_BASE
 
-    add x30, x21, w30, uxtw
+    add x30, REG_BASE, w30, uxtw
     ret
 
 #ifndef __APPLE__

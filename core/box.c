@@ -404,7 +404,7 @@ lfi_box_p2l(struct LFIBox *box, uintptr_t p)
 #if defined(LFI_ARCH_ARM64)
 
 static uint8_t ret[] = {
-    0xbe, 0x0e, 0x40, 0xf9, // ldr x30, [x21, #24]
+    0x7e, 0x0f, 0x40, 0xf9, // ldr x30, [x27, #24]
     0xc0, 0x03, 0x3f, 0xd6, // blr x30
 };
 
