@@ -61,4 +61,3 @@ static uint8_t ret[] = {
 #error "architecture not supported"
 
 #endif
-

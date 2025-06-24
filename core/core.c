@@ -76,7 +76,8 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
     // Reserve space for n sandboxes with appropriate footprint, 2 guard pages,
     // and 2 chunks worth of slack because boxmap has to do internal alignment
     // when mmap returns non-chunk-aligned region.
-    size_t reserve = nsandboxes * box_footprint(opts.boxsize) + bm_opts.chunksize * 2 + bm_opts.guardsize * 2;
+    size_t reserve = nsandboxes * box_footprint(opts.boxsize) +
+        bm_opts.chunksize * 2 + bm_opts.guardsize * 2;
 
     if (nsandboxes > 0) {
         if (!boxmap_reserve(bm, reserve)) {

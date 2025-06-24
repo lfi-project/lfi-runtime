@@ -18,19 +18,21 @@ list_init(struct List *l)
 }
 
 static inline struct List *
-list_first(struct List *list) {
-  struct List *first = 0;
-  if (list)
-      first = list->next;
-  return first;
+list_first(struct List *list)
+{
+    struct List *first = 0;
+    if (list)
+        first = list->next;
+    return first;
 }
 
 static inline struct List *
-list_next(struct List *list, struct List *e) {
-  struct List *next = 0;
-  if (e != list)
-      next = e->next;
-  return next;
+list_next(struct List *list, struct List *e)
+{
+    struct List *next = 0;
+    if (e != list)
+        next = e->next;
+    return next;
 }
 
 void

@@ -1,7 +1,7 @@
 #include "sys/sys.h"
 
-#include <stdatomic.h>
 #include <signal.h>
+#include <stdatomic.h>
 
 // Receiver for SIGLFI when the main thread wants to kill child threads.
 static void
@@ -54,7 +54,7 @@ threadspawn(void *arg)
         goto end;
     }
 
-    struct sigaction sa = {0};
+    struct sigaction sa = { 0 };
     sa.sa_handler = &thread_signal;
     sa.sa_flags = SA_ONSTACK;
     if (sigaction(SIGLFI, &sa, NULL) == -1) {

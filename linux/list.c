@@ -17,19 +17,18 @@
 // TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 // PERFORMANCE OF THIS SOFTWARE.
 
-
 #include "list.h"
 
 static void
 splice_after(struct List *elem, struct List *succ)
 {
-  struct List *tmp1, *tmp2;
-  tmp1 = elem->next;
-  tmp2 = succ->prev;
-  elem->next = succ;
-  succ->prev = elem;
-  tmp2->next = tmp1;
-  tmp1->prev = tmp2;
+    struct List *tmp1, *tmp2;
+    tmp1 = elem->next;
+    tmp2 = succ->prev;
+    elem->next = succ;
+    succ->prev = elem;
+    tmp2->next = tmp1;
+    tmp1->prev = tmp2;
 }
 
 void
@@ -59,4 +58,3 @@ list_make_first(struct List **list, struct List *elem)
         }
     }
 }
-

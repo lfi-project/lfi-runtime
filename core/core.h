@@ -91,7 +91,8 @@ static inline size_t
 box_footprint(size_t boxsize)
 {
     if (boxsize != gb(4)) {
-        LOG_("warning: box_footprint does not properly support non-4GiB sandboxes");
+        LOG_(
+            "warning: box_footprint does not properly support non-4GiB sandboxes");
         return boxsize;
     }
 #if defined(LFI_ARCH_ARM64)

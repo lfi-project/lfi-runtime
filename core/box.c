@@ -166,7 +166,8 @@ verify(struct LFIBox *box, uintptr_t base, size_t size, int prot)
 
 // Set the protection for a memory mapping, and verify if necessary.
 static int
-protectverify(struct LFIBox *box, uintptr_t base, size_t size, int prot, bool no_verify)
+protectverify(struct LFIBox *box, uintptr_t base, size_t size, int prot,
+    bool no_verify)
 {
     no_verify = no_verify || box->engine->opts.no_verify;
     bool allow_wx = box->engine->opts.allow_wx && no_verify;
@@ -315,7 +316,8 @@ lfi_box_mprotect(struct LFIBox *box, lfiptr addr, size_t size, int prot)
 }
 
 EXPORT int
-lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size, int prot)
+lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size,
+    int prot)
 {
     // Same todo as above.
     return protectverify(box, l2p(box, addr), size, prot, true);

@@ -102,7 +102,8 @@ main(int argc, char **argv)
     void *box_callback = lfi_box_register_cb(box, callback);
     void *box_callback_bench = lfi_box_register_cb(box, callback_bench);
 
-    x = LFI_INVOKE(box, &ctx, p_prog_cb, int, (int (*)(int), int), box_callback, 42);
+    x = LFI_INVOKE(box, &ctx, p_prog_cb, int, (int (*)(int), int), box_callback,
+        42);
     assert(x == 42);
 
     if (bench) {

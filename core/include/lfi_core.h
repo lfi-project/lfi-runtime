@@ -151,7 +151,8 @@ lfi_box_mprotect(struct LFIBox *box, lfiptr addr, size_t size, int prot);
 // Same as lfi_box_mprotect but does not perform verification (use with
 // caution).
 int
-lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size, int prot);
+lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size,
+    int prot);
 
 // Returns whether a pointer is valid within the given sandbox.
 bool
@@ -246,7 +247,8 @@ lfi_box_init_ret(struct LFIBox *box, lfiptr ret);
 // LFI_INVOKE). The callback should return a newly initialized LFI context that
 // will be used for the invocation.
 void
-lfi_set_clone_cb(struct LFIEngine *engine, struct LFIContext *(*clone_cb)(struct LFIBox *));
+lfi_set_clone_cb(struct LFIEngine *engine,
+    struct LFIContext *(*clone_cb)(struct LFIBox *) );
 
 // Return the currently active sandbox context.
 struct LFIContext *
@@ -282,17 +284,18 @@ struct LFIInvokeInfo {
     struct LFIBox *box;
 };
 
-extern _Thread_local struct LFIInvokeInfo lfi_invoke_info asm("lfi_invoke_info");
+extern _Thread_local struct LFIInvokeInfo lfi_invoke_info asm(
+    "lfi_invoke_info");
 
 extern const void *lfi_trampoline_addr;
 
 // LFI_INVOKE(struct LFIContext **ctx, lfiptr fn, return type, arg types, ...)
-#define LFI_INVOKE(box_, ctxp, fn, ret_type, args, ...)                             \
+#define LFI_INVOKE(box_, ctxp, fn, ret_type, args, ...)                       \
     ({                                                                        \
         lfi_invoke_info = (struct LFIInvokeInfo) {                            \
             .ctx = ctxp,                                                      \
             .targetfn = fn,                                                   \
-            .box = box_, \
+            .box = box_,                                                      \
         };                                                                    \
         ret_type(*_trampoline) args = (ret_type(*) args) lfi_trampoline_addr; \
         _trampoline(__VA_ARGS__);                                             \

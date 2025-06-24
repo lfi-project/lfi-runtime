@@ -3,12 +3,12 @@
 #include "test.h"
 
 #include <assert.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <pthread.h>
 
 // Use -b to run the benchmark: ./core/test/test_trampoline.c.elf -b
 
@@ -37,10 +37,12 @@ thread_function(void *arg)
     printf("new thread\n");
     // The first invocation on a separate thread will automatically initialize
     // lib_ctx using clone_cb.
-    int x = LFI_INVOKE(args->box, &lib_ctx, args->prog, int, (int, int), 10, 32);
+    int x = LFI_INVOKE(args->box, &lib_ctx, args->prog, int, (int, int), 10,
+        32);
     assert(x == 42);
 
-    x = LFI_INVOKE(args->box, &lib_ctx, args->prog_cb, int, (int (*)(int), int), args->box_callback, 42);
+    x = LFI_INVOKE(args->box, &lib_ctx, args->prog_cb, int, (int (*)(int), int),
+        args->box_callback, 42);
     assert(x == 42);
     printf("OK\n");
     return NULL;
@@ -151,7 +153,8 @@ main(void)
     assert(x == 42);
     printf("add(%d, %d) = %d\n", 10, 32, x);
 
-    x = LFI_INVOKE(box, &lib_ctx, p_prog_cb, int, (int (*)(int), int), box_callback, 42);
+    x = LFI_INVOKE(box, &lib_ctx, p_prog_cb, int, (int (*)(int), int),
+        box_callback, 42);
     assert(x == 42);
 
     lfi_ctx_free(lib_ctx);

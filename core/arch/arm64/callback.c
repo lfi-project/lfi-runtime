@@ -3,9 +3,9 @@
 #endif
 
 #include "core.h"
-#include <errno.h>
 
 #include <assert.h>
+#include <errno.h>
 #include <stdatomic.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -20,7 +20,8 @@ memfd_create(const char *name, unsigned flags)
 }
 #elif defined(__APPLE__)
 int
-memfd_create(const char *name, unsigned int flags) {
+memfd_create(const char *name, unsigned int flags)
+{
     char template[] = "/tmp/memfd-XXXXXX";
     int fd = mkstemp(template);
     if (fd == -1)
@@ -84,26 +85,30 @@ lfi_box_cbinit(struct LFIBox *box)
     if (r < 0)
         goto err;
     // Map callback data entries outside the sandbox as read/write.
-    void *aliasmap = mmap(NULL, size / 2, PROT_READ | PROT_WRITE, MAP_SHARED, fd,
-        0);
+    void *aliasmap = mmap(NULL, size / 2, PROT_READ | PROT_WRITE, MAP_SHARED,
+        fd, 0);
     if (aliasmap == (void *) -1)
         goto err;
     box->cbinfo.dataentries_alias = (struct CallbackDataEntry *) aliasmap;
     // Map the code entry region.
-    lfiptr codemap = lfi_box_mapany(box, size / 2, LFI_PROT_READ |
-            LFI_PROT_WRITE, LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
+    lfiptr codemap = lfi_box_mapany(box, size / 2,
+        LFI_PROT_READ | LFI_PROT_WRITE, LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1,
+        0);
     if (codemap == (lfiptr) -1)
         goto err1;
     // Fill in the code for each entry.
     for (size_t i = 0; i < MAXCALLBACKS; i++) {
-        lfi_box_copyto(box, codemap + sizeof(struct CallbackEntry) * i, &cbtrampoline[0], sizeof(struct CallbackEntry));
+        lfi_box_copyto(box, codemap + sizeof(struct CallbackEntry) * i,
+            &cbtrampoline[0], sizeof(struct CallbackEntry));
     }
     // Mark the code region as R/X. This is unverified because the code region
     // entries are manually constructed by the runtime.
-    r = lfi_box_mprotect_noverify(box, codemap, size / 2, LFI_PROT_READ | LFI_PROT_EXEC);
+    r = lfi_box_mprotect_noverify(box, codemap, size / 2,
+        LFI_PROT_READ | LFI_PROT_EXEC);
     if (r == -1)
         goto err1;
-    lfiptr boxmap = lfi_box_mapat(box, codemap + size / 2, size / 2, LFI_PROT_READ, LFI_MAP_SHARED, fd, 0);
+    lfiptr boxmap = lfi_box_mapat(box, codemap + size / 2, size / 2,
+        LFI_PROT_READ, LFI_MAP_SHARED, fd, 0);
     if (boxmap == (lfiptr) -1)
         goto err2;
     box->cbinfo.cbentries = (struct CallbackEntry *) codemap;

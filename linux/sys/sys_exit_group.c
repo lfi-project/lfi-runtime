@@ -1,5 +1,5 @@
-#include "sys/sys.h"
 #include "list.h"
+#include "sys/sys.h"
 
 #include <signal.h>
 #include <unistd.h>
@@ -12,7 +12,8 @@ sys_exit_group(struct LFILinuxThread *t, int code)
         // Kill all child threads by sending them SIGLFI.
         struct List *e;
         for (e = list_first(t->proc->threads); e;) {
-            struct LFILinuxThread *child = LIST_CONTAINER(struct LFILinuxThread, threads_elem, e);
+            struct LFILinuxThread *child = LIST_CONTAINER(struct LFILinuxThread,
+                threads_elem, e);
             LOG(t->proc->engine, "killing thread %d", child->tid);
             // TODO: check if thread actually exited?
             pthread_kill(*child->pthread, SIGLFI);
