@@ -102,6 +102,87 @@
 
 #endif
 
+#elif defined(__riscv) && (__riscv_xlen == 64)
+
+#define REGS_X0   32
+#define REGS_X1   40
+#define REGS_X2   48
+#define REGS_X3   56
+#define REGS_X4   64
+#define REGS_X5   72
+#define REGS_X6   80
+#define REGS_X7   88
+#define REGS_X8   96
+#define REGS_X9   104
+#define REGS_X10  112
+#define REGS_X11  120
+#define REGS_X12  128
+#define REGS_X13  136
+#define REGS_X14  144
+#define REGS_X15  152
+#define REGS_X16  160  
+#define REGS_X17  168  
+#define REGS_X18  176  
+#define REGS_X19  184  
+#define REGS_X20  192  
+#define REGS_X21  200  
+#define REGS_X22  208  
+#define REGS_X23  216  
+#define REGS_X24  224  
+#define REGS_X25  232  
+#define REGS_X26  240  
+#define REGS_X27  248  
+#define REGS_X28  256  
+#define REGS_X29  264  
+#define REGS_X30  272  
+#define REGS_X31  280  
+
+#define REGs_F    288
+
+#define REGS_RSP  REGS_X2   
+#define REGS_RAX  REGS_X10  
+#define REGS_RCX  REGS_X11  
+#define REGS_RDX  REGS_X12  
+#define REGS_RBX  REGS_X9   
+#define REGS_RBP  REGS_X8   
+#define REGS_RSI  REGS_X13  
+#define REGS_RDI  REGS_X14  
+#define REGS_R8   REGS_X15  
+#define REGS_R9   REGS_X16  
+#define REGS_R10  REGS_X17  
+#define REGS_R11  REGS_X5   
+#define REGS_R12  REGS_X6   
+#define REGS_R13  REGS_X7   
+#define REGS_R14  REGS_X28  
+#define REGS_R15  REGS_X29  
+
+// Map XMM to floating point registers
+#define REGS_XMM  REGS_F
+
+// Use a saved register as the base register (similar to ARM64 using x21)
+#define REGS_BASE REGS_X18  // s2 (saved register)
+#define REG_BASE  s2        // Assembly register name for s2
+
+// clang-format off
+#ifdef __ASSEMBLER__
+// RISC-V specific context handling
+// This is a placeholder - you'll need to implement based on your TLS setup
+.macro get_ctx reg
+    // Load from thread pointer offset - adjust based on your TLS implementation
+    // This is similar to the ARM64/x86 approach but uses RISC-V instructions
+    csrr \reg, 0x4c1  // Read thread pointer (if available)
+    ld \reg, (8*TLS_SLOT_LFI)(\reg)
+.endm
+
+.macro write_ctx reg tmp
+    csrr \tmp, 0x4c1  // Read thread pointer
+    sd \reg, (8*TLS_SLOT_LFI)(\tmp)
+.endm
+#endif
+// clang-format on
+
+#endif
+
 // Offsets for the LFIInvokeInfo struct
 
 #define INVOKE_CTX      0
