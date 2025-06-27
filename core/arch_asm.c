@@ -74,8 +74,17 @@ _Static_assert(offsetof(struct LFIRegs, xmm) % 16 == 0,
 
 #elif defined(LFI_ARCH_RISCV64)
 
-
-
+_Static_assert(offsetof(struct LFIRegs, x0) == REGS_X0,
+    "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, sp) == REGS_SP,
+    "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, REG_BASE) == REGS_BASE,
+    "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, REG_ADDR) == REGS_ADDR,
+    "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, f) == REGS_F,
+    "incorrect REGS offset");
+    
 #endif
 
 _Static_assert(offsetof(struct LFIInvokeInfo, ctx) == INVOKE_CTX,

@@ -137,7 +137,7 @@
 #define REGS_X30  272  
 #define REGS_X31  280  
 
-#define REGs_F    288
+#define REGS_F    288
 
 
 // Use a saved register as the base register (similar to ARM64 using x21)
