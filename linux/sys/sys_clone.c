@@ -158,7 +158,7 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
         // this new context?
         // TODO: save/restore lfi_invoke_info
         threadspawn(p2);
-        lfi_newctx = p2->ctx;
+        new_ctx = p2->ctx;
     } else {
         pthread_t *thread = malloc(sizeof(pthread_t));
         pthread_attr_t attr;

@@ -90,5 +90,8 @@
 #define LINUX_SYS_statx             332
 #define LINUX_SYS_rseq              334
 
+// Should always match the largest syscall number.
+#define LINUX_SYS_LAST 334
+
 void
 arch_syshandle(struct LFIContext *ctx);

@@ -6,6 +6,7 @@ srcs = files(
   'proc.c',
   'buf.c',
   'elfload.c',
+  'elfsym.c',
   'thread.c',
   'host.c',
   'perf.c',

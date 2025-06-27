@@ -24,6 +24,7 @@ struct FDTable {
     bool passthrough;
 };
 
+// Information from loading the ELF image.
 struct ELFLoadInfo {
     lfiptr lastva;
     lfiptr elfentry;
@@ -35,9 +36,26 @@ struct ELFLoadInfo {
     uint16_t elfphentsize;
 };
 
+// Used for tracking the current working directory.
 struct Dir {
     char path[FILENAME_MAX];
     pthread_mutex_t lk;
+};
+
+// Used for tracking sections loaded from the ELF image (dynsym/dynstr).
+struct ElfSection {
+    uint8_t *data;
+    size_t size;
+};
+
+// Symbols in the sandbox that are used for library sandboxing.
+struct LibSymbols {
+    lfiptr thread_create;
+    lfiptr thread_destroy;
+    lfiptr malloc;
+    lfiptr realloc;
+    lfiptr calloc;
+    lfiptr free;
 };
 
 struct LFILinuxProc {
@@ -76,6 +94,17 @@ struct LFILinuxProc {
     pthread_mutex_t lk_threads;
     // Conditional variable to signal when thread exits.
     pthread_cond_t cond_threads;
+
+    // After the ELF image is loaded, these ELF sections are tracked (if they
+    // exist) to look up dynamic symbols for library calls.
+    struct ElfSection dynsym;
+    struct ElfSection dynstr;
+
+    struct LibSymbols libsyms;
+
+    // Generic lock that guards everything not covered by a more fine-grained
+    // lock.
+    pthread_mutex_t lk_proc;
 
     struct LFILinuxEngine *engine;
 };

@@ -4,6 +4,7 @@
 #include "config.h"
 #include "cwalk.h"
 #include "elfload.h"
+#include "elfsym.h"
 #include "fd.h"
 #include "host.h"
 #include "lfi_core.h"
@@ -26,6 +27,7 @@ lfi_proc_new(struct LFILinuxEngine *engine, struct LFIBox *box)
     proc->box = box;
     proc->box_info = lfi_box_info(box);
 
+    pthread_mutex_init(&proc->lk_proc, NULL);
     pthread_mutex_init(&proc->lk_threads, NULL);
     pthread_mutex_init(&proc->lk_box, NULL);
     pthread_mutex_init(&proc->lk_brk, NULL);
@@ -41,6 +43,8 @@ lfi_proc_new(struct LFILinuxEngine *engine, struct LFIBox *box)
             return NULL;
         }
     }
+
+    lfi_box_setdata(box, proc);
 
     fdinit(engine, &proc->fdtable);
 
@@ -95,6 +99,16 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size)
     if (!elf_load(proc, prog, prog_size, interp.data, interp.size, true, &info))
         return false;
 
+    lfiptr entry = info.elfentry;
+    if (interp.data != NULL)
+        entry = info.ldentry;
+    proc->entry = entry;
+    proc->elfinfo = info;
+
+    bool ok = elf_loadsyms(proc, prog, prog_size);
+    if (!ok)
+        LOG(proc->engine, "could not find .dynsym/.dynstr: dynamic symbol lookup will be unavailable");
+
     proc->brkbase = info.lastva;
     proc->brksize = 0;
 
@@ -104,24 +118,22 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size)
     if (brkregion == (lfiptr) -1)
         return false;
 
-    lfiptr entry = info.elfentry;
-    if (interp.data != NULL)
-        entry = info.ldentry;
-    proc->entry = entry;
-    proc->elfinfo = info;
-
     return true;
 }
 
 EXPORT void
 lfi_proc_free(struct LFILinuxProc *proc)
 {
+    lock(&proc->lk_proc);
     lock(&proc->lk_threads);
     while (proc->active_threads != 0) {
         pthread_cond_wait(&proc->cond_threads, &proc->lk_threads);
     }
     assert(proc->active_threads == 0);
     unlock(&proc->lk_threads);
+    free(proc->dynsym.data);
+    free(proc->dynstr.data);
+    unlock(&proc->lk_proc);
     free(proc);
 }
 

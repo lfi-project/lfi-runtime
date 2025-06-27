@@ -80,6 +80,11 @@ lfi_proc_box(struct LFILinuxProc *proc);
 bool
 lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size);
 
+// Look up the address of the given symbol name. Must be called after an ELF
+// image has been loaded in proc. Returns 0 if not found.
+uint64_t
+lfi_proc_sym(struct LFILinuxProc *proc, const char *symname);
+
 // Frees an LFILinuxProc.
 void
 lfi_proc_free(struct LFILinuxProc *proc);
@@ -96,6 +101,9 @@ lfi_thread_run(struct LFILinuxThread *t);
 // Frees an LFILinuxThread.
 void
 lfi_thread_free(struct LFILinuxThread *t);
+
+struct LFIContext **
+lfi_thread_ctxp(struct LFILinuxThread *t);
 
 // Initialize the ability to dynamically spawn new sandbox threads when
 // invoking from new host threads.

@@ -309,5 +309,8 @@
 #define LINUX_SYS_cachestat               451
 #define LINUX_SYS_fchmodat2               452
 
+// Should always match the largest syscall number.
+#define LINUX_SYS_LAST 452
+
 void
 arch_syshandle(struct LFIContext *ctx);

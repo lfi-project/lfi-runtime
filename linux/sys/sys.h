@@ -31,6 +31,8 @@ bufcheck(struct LFILinuxThread *t, lfiptr p, size_t size, size_t align)
 {
     if (!ptrcheck(t, p))
         return false;
+    if (!ptrcheck(t, p + size - 1))
+        return false;
     if (p % align != 0)
         return false;
     return true;
@@ -264,3 +266,9 @@ sys_chmod(struct LFILinuxThread *t, lfiptr pathp, linux_mode_t mode);
 uintptr_t
 sys_passthrough(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0,
     uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5);
+
+uintptr_t
+sys_lfi_pause(struct LFILinuxThread *t);
+
+long
+sys_lfi_register(struct LFILinuxThread *t, lfiptr box_funcs, size_t n);

@@ -1,6 +1,9 @@
 #include "trampoline.h"
+#include "proc.h"
 
-// TODO: should these globals belong to the engine?
+#include <assert.h>
+
+// TODO: should clone_ctx belong to the proc?
 
 // The clone context is the context used for cloning new sandbox threads
 // dynamically. To create a new thread, invoke thread_create via the clone_ctx.
@@ -16,24 +19,65 @@ _Thread_local struct LFIContext *new_ctx;
 EXPORT void
 lfi_linux_init_clone(struct LFILinuxThread *main)
 {
+    // Make sure the _lfi_thread_create symbol exists.
+    assert(main->proc->libsyms.thread_create);
+
     // Set clone_ctx to main's ctx to indicate that we are fake-cloning from
     // main.
     clone_ctx = main->ctx;
     // Invoke thread_create in main_thread.
-    LFI_INVOKE(main->proc->box, &main->ctx, main->proc->fn_thread_create,
-        void *, (void *), main->proc->fn_pause);
+    LFI_INVOKE(main->proc->box, &main->ctx, main->proc->libsyms.thread_create,
+        void *, (void));
     // Store the resulting new_ctx in clone_ctx to use for future clones.
     clone_ctx = new_ctx;
 
-    // TODO: register lfi_linux_clone_cb as the clone_cb
+    // Register lfi_linux_clone_cb as the clone_cb.
+    lfi_set_clone_cb(lfi_box_engine(main->proc->box), lfi_linux_clone_cb);
 }
 
-void
-lfi_linux_clone_cb(struct LFIBox *box, struct LFIContext **ctxp)
+struct LFIContext *
+lfi_linux_clone_cb(struct LFIBox *box)
 {
+    struct LFILinuxProc *proc = lfi_box_data(box);
+    assert(proc->libsyms.thread_create);
+
     // Invoke thread_create in clone_ctx and store the resulting new_ctx in
     // ctxp.
-    LFI_INVOKE(box, &clone_ctx, lookup(fn_thread_create), void *, (void *),
-        lookup(fn_pause));
-    *ctxp = new_ctx;
+    LFI_INVOKE(box, &clone_ctx, proc->libsyms.thread_create, void *, (void));
+    return new_ctx;
+}
+
+static inline bool
+bufcheck(struct LFIBox *box, lfiptr p, size_t size, size_t align)
+{
+    if (!lfi_box_ptrvalid(box, p))
+        return false;
+    if (!lfi_box_ptrvalid(box, p + size - 1))
+        return false;
+    if (p % align != 0)
+        return false;
+    return true;
+}
+
+EXPORT void *
+lfi_lib_malloc(struct LFIContext **ctxp, size_t size)
+{
+    struct LFILinuxProc *proc = lfi_box_data(lfi_ctx_box(*ctxp));
+    assert(proc->libsyms.malloc);
+
+    lfiptr p = LFI_INVOKE(proc->box, ctxp, proc->libsyms.malloc, lfiptr, (size_t), size);
+    if (!bufcheck(proc->box, p, size, 16)) {
+        LOG(proc->engine, "sandbox malloc returned invalid pointer: %lx", p);
+        return NULL;
+    }
+    return (void *) lfi_box_l2p(proc->box, p);
+}
+
+EXPORT void
+lfi_lib_free(struct LFIContext **ctxp, void *p)
+{
+    struct LFILinuxProc *proc = lfi_box_data(lfi_ctx_box(*ctxp));
+    assert(proc->libsyms.free);
+
+    LFI_INVOKE(proc->box, ctxp, proc->libsyms.free, void, (lfiptr), lfi_box_p2l(proc->box, (uintptr_t) p));
 }

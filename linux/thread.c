@@ -270,3 +270,9 @@ lfi_thread_free(struct LFILinuxThread *t)
     // Free the thread.
     free(t);
 }
+
+EXPORT struct LFIContext **
+lfi_thread_ctxp(struct LFILinuxThread *t)
+{
+    return &t->ctx;
+}

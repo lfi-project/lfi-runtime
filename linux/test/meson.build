@@ -63,3 +63,25 @@ foreach input : testdata
     suite: ['linux']
   )
 endforeach
+
+test_lib = executable(
+  'test_lib.elf',
+  'test_lib.c',
+  dependencies: [lfi_linux],
+)
+
+lib = custom_target( 'lib.lfi',
+  output: 'lib.lfi',
+  input: [
+    'library/main.c',
+    'library/tls.c',
+    'library/add.c',
+    'library/hello.c',
+  ],
+  command: [lficc, '-O2', '-o', '@OUTPUT@', '@INPUT@', '-static-pie', '-Wl,--export-dynamic'],
+)
+
+test('lib.lfi',
+  test_lib, args: [lib],
+  suite: ['linux'],
+)

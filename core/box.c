@@ -94,6 +94,24 @@ err1:
     return NULL;
 }
 
+EXPORT struct LFIEngine *
+lfi_box_engine(struct LFIBox *box)
+{
+    return box->engine;
+}
+
+EXPORT void
+lfi_box_setdata(struct LFIBox *box, void *userdata)
+{
+    box->userdata = userdata;
+}
+
+EXPORT void *
+lfi_box_data(struct LFIBox *box)
+{
+    return box->userdata;
+}
+
 EXPORT struct LFIBoxInfo
 lfi_box_info(struct LFIBox *box)
 {

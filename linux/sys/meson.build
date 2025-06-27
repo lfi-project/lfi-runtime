@@ -20,6 +20,7 @@ srcs += files(
   'sys_getrandom.c',
   'sys_gettid.c',
   'sys_ioctl.c',
+  'sys_lfi_pause.c',
   'sys_lseek.c',
   'sys_mkdirat.c',
   'sys_mmap.c',

@@ -11,7 +11,7 @@ extern void
 lfi_ctx_end(struct LFIContext *ctx, int val) asm("lfi_ctx_end");
 
 EXPORT struct LFIContext *
-lfi_ctx_new(struct LFIBox *box, void *ctxp)
+lfi_ctx_new(struct LFIBox *box, void *userdata)
 {
     struct LFIContext *ctx = malloc(sizeof(struct LFIContext));
     if (!ctx) {
@@ -20,7 +20,7 @@ lfi_ctx_new(struct LFIBox *box, void *ctxp)
     }
 
     *ctx = (struct LFIContext) {
-        .ctxp = ctxp,
+        .userdata = userdata,
         .box = box,
     };
 
@@ -33,7 +33,7 @@ lfi_ctx_new(struct LFIBox *box, void *ctxp)
 EXPORT void *
 lfi_ctx_data(struct LFIContext *ctx)
 {
-    return ctx->ctxp;
+    return ctx->userdata;
 }
 
 EXPORT int

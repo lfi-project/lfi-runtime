@@ -108,6 +108,18 @@ lfi_opts(struct LFIEngine *lfi);
 struct LFIBox *
 lfi_box_new(struct LFIEngine *lfi);
 
+// Return the engine that this box belongs to.
+struct LFIEngine *
+lfi_box_engine(struct LFIBox *box);
+
+// Set this box's associated user data.
+void
+lfi_box_setdata(struct LFIBox *box, void *userdata);
+
+// Return this box's associated user data.
+void *
+lfi_box_data(struct LFIBox *box);
+
 // Returns information about the sandbox (base and size).
 struct LFIBoxInfo
 lfi_box_info(struct LFIBox *box);
@@ -203,7 +215,7 @@ lfi_box_free(struct LFIBox *box);
 // Creates a new LFIContext for a given sandbox, along with a user-provided
 // data pointer.
 struct LFIContext *
-lfi_ctx_new(struct LFIBox *box, void *ctxp);
+lfi_ctx_new(struct LFIBox *box, void *userdata);
 
 // Returns the ctxp user data pointer for ctx.
 void *

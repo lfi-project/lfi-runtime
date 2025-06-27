@@ -46,6 +46,8 @@ struct LFIBox {
     void *callbacks[MAXCALLBACKS];
 
     struct LFIEngine *engine;
+
+    void *userdata;
 };
 
 struct Sys {
@@ -57,7 +59,7 @@ struct LFIContext {
     struct LFIRegs regs;
 
     // User-provided data pointer.
-    void *ctxp;
+    void *userdata;
 
     // Sandbox that this context is associated with.
     struct LFIBox *box;

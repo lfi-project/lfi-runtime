@@ -112,7 +112,7 @@ main(int argc, char **argv)
             .no_verify = verify->count == 0,
             .verbose = verbose->count > 0,
         },
-        gb(32));
+        4);
     if (!engine) {
         fprintf(stderr, "failed to create LFI engine: %s\n", lfi_errmsg());
         exit(1);
