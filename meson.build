@@ -37,6 +37,7 @@ cpu = target_machine.cpu_family()
 archmap = {
   'aarch64': 'arm64',
   'x86_64': 'x64',
+  'riscv64': 'riscv64'
 }
 if not archmap.has_key(cpu)
   warning('unsupported architecture: ' + cpu)

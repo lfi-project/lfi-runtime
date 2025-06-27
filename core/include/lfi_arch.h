@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if defined(__aarch64__) || defined(_M_ARM64) || (defined(__riscv) && (__riscv_xlen == 64))
 
 struct LFIRegs {
     // The host sp and tp slots are used for saving/restoring host information
@@ -57,7 +57,7 @@ struct LFIRegs {
 
 #define LFI_ARCH_ARM64
 
-#elif defined(__x86_64__) || defined(_M_X64)
+#elif defined(__x86_64__) || defined(_M_X64) || (defined(__riscv) && (__riscv_xlen == 64))
 
 struct LFIRegs {
     uint64_t host_sp;
