@@ -9,7 +9,8 @@ lfi_pause(void *arg)
 {
     (void) arg;
     syscall(LFI_SYS_pause);
-    while (1) {}
+    while (1) {
+    }
 }
 
 void *

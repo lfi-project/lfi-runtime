@@ -4,9 +4,9 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <string.h>
 
 #if defined(LFI_ARCH_ARM64)
 
@@ -136,8 +136,10 @@ main(int argc, const char **argv)
 
     printf("hello address: %lx\n", lfi_proc_sym(proc, "hello"));
 
-    LFI_INVOKE(lfi_proc_box(proc), lfi_thread_ctxp(t), lfi_proc_sym(proc, "hello"), void, (void));
-    int x = LFI_INVOKE(lfi_proc_box(proc), lfi_thread_ctxp(t), lfi_proc_sym(proc, "add"), int, (int, int), 40, 2);
+    LFI_INVOKE(lfi_proc_box(proc), lfi_thread_ctxp(t),
+        lfi_proc_sym(proc, "hello"), void, (void) );
+    int x = LFI_INVOKE(lfi_proc_box(proc), lfi_thread_ctxp(t),
+        lfi_proc_sym(proc, "add"), int, (int, int), 40, 2);
     assert(x == 42);
 
     lfi_thread_free(t);

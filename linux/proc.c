@@ -107,7 +107,8 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size)
 
     bool ok = elf_loadsyms(proc, prog, prog_size);
     if (!ok)
-        LOG(proc->engine, "could not find .dynsym/.dynstr: dynamic symbol lookup will be unavailable");
+        LOG(proc->engine,
+            "could not find .dynsym/.dynstr: dynamic symbol lookup will be unavailable");
 
     proc->brkbase = info.lastva;
     proc->brksize = 0;

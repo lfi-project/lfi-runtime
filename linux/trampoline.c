@@ -1,4 +1,5 @@
 #include "trampoline.h"
+
 #include "proc.h"
 
 #include <assert.h>
@@ -27,7 +28,7 @@ lfi_linux_init_clone(struct LFILinuxThread *main)
     clone_ctx = main->ctx;
     // Invoke thread_create in main_thread.
     LFI_INVOKE(main->proc->box, &main->ctx, main->proc->libsyms.thread_create,
-        void *, (void));
+        void *, (void) );
     // Store the resulting new_ctx in clone_ctx to use for future clones.
     clone_ctx = new_ctx;
 
@@ -43,7 +44,7 @@ lfi_linux_clone_cb(struct LFIBox *box)
 
     // Invoke thread_create in clone_ctx and store the resulting new_ctx in
     // ctxp.
-    LFI_INVOKE(box, &clone_ctx, proc->libsyms.thread_create, void *, (void));
+    LFI_INVOKE(box, &clone_ctx, proc->libsyms.thread_create, void *, (void) );
     return new_ctx;
 }
 
@@ -65,7 +66,8 @@ lfi_lib_malloc(struct LFIContext **ctxp, size_t size)
     struct LFILinuxProc *proc = lfi_box_data(lfi_ctx_box(*ctxp));
     assert(proc->libsyms.malloc);
 
-    lfiptr p = LFI_INVOKE(proc->box, ctxp, proc->libsyms.malloc, lfiptr, (size_t), size);
+    lfiptr p = LFI_INVOKE(proc->box, ctxp, proc->libsyms.malloc, lfiptr,
+        (size_t), size);
     if (!bufcheck(proc->box, p, size, 16)) {
         LOG(proc->engine, "sandbox malloc returned invalid pointer: %lx", p);
         return NULL;
@@ -79,5 +81,6 @@ lfi_lib_free(struct LFIContext **ctxp, void *p)
     struct LFILinuxProc *proc = lfi_box_data(lfi_ctx_box(*ctxp));
     assert(proc->libsyms.free);
 
-    LFI_INVOKE(proc->box, ctxp, proc->libsyms.free, void, (lfiptr), lfi_box_p2l(proc->box, (uintptr_t) p));
+    LFI_INVOKE(proc->box, ctxp, proc->libsyms.free, void, (lfiptr),
+        lfi_box_p2l(proc->box, (uintptr_t) p));
 }

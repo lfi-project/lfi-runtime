@@ -1,4 +1,5 @@
 #include "elfsym.h"
+
 #include "proc.h"
 
 #include <elf.h>
@@ -56,11 +57,12 @@ load_libsyms(struct LFILinuxProc *proc)
 }
 
 bool
-elf_loadsyms(struct LFILinuxProc* proc, uint8_t* elfdat, size_t elfsize)
+elf_loadsyms(struct LFILinuxProc *proc, uint8_t *elfdat, size_t elfsize)
 {
-    Elf64_Ehdr* ehdr = (Elf64_Ehdr*) elfdat;
+    Elf64_Ehdr *ehdr = (Elf64_Ehdr *) elfdat;
 
-    if (elfsize < sizeof(Elf64_Ehdr) || memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0) {
+    if (elfsize < sizeof(Elf64_Ehdr) ||
+        memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0) {
         return false;
     }
 
@@ -111,7 +113,7 @@ elf_loadsyms(struct LFILinuxProc* proc, uint8_t* elfdat, size_t elfsize)
     if (!proc->dynstr.data)
         goto err1;
     memcpy(proc->dynstr.data, &elfdat[dynstr_sh->sh_offset], proc->dynstr.size);
-    
+
     if (!load_libsyms(proc))
         goto err2;
 
@@ -119,9 +121,9 @@ elf_loadsyms(struct LFILinuxProc* proc, uint8_t* elfdat, size_t elfsize)
 
 err2:
     free(proc->dynstr.data);
-    proc->dynstr = (struct ElfSection) {0};
+    proc->dynstr = (struct ElfSection) { 0 };
 err1:
     free(proc->dynsym.data);
-    proc->dynsym = (struct ElfSection) {0};
+    proc->dynsym = (struct ElfSection) { 0 };
     return false;
 }
