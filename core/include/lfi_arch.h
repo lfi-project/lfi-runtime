@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-#if defined(__aarch64__) || defined(_M_ARM64) || (defined(__riscv) && (__riscv_xlen == 64))
+#if defined(__aarch64__) || defined(_M_ARM64) 
 
 struct LFIRegs {
     // The host sp and tp slots are used for saving/restoring host information
@@ -57,7 +57,7 @@ struct LFIRegs {
 
 #define LFI_ARCH_ARM64
 
-#elif defined(__x86_64__) || defined(_M_X64) || (defined(__riscv) && (__riscv_xlen == 64))
+#elif defined(__x86_64__) || defined(_M_X64) 
 
 struct LFIRegs {
     uint64_t host_sp;
@@ -87,6 +87,55 @@ struct LFIRegs {
     uint64_t r15;
     uint64_t _pad[4];
     uint64_t xmm[32];
+};
+
+#elif defined(__riscv) && (__riscv_xlen == 64)
+
+struct LFIRegs {
+    // Host context saving
+    uint64_t host_sp;
+    uint64_t host_tp;
+    // Sandbox thread pointer
+    uint64_t tp;
+    // Return address for lfi_trampoline invocations
+    uint64_t retaddr;
+
+    // RISC-V general purpose registers
+    uint64_t x0;   // zero (hardwired zero)
+    uint64_t x1;   // ra (return address)
+    uint64_t x2;   // sp (stack pointer) 
+    uint64_t x3;   // gp (global pointer)
+    uint64_t x4;   // tp (thread pointer)
+    uint64_t x5;   // t0 (temporary)
+    uint64_t x6;   // t1 (temporary)
+    uint64_t x7;   // t2 (temporary)
+    uint64_t x8;   // s0/fp (saved/frame pointer)
+    uint64_t x9;   // s1 (saved)
+    uint64_t x10;  // a0 (argument/return value)
+    uint64_t x11;  // a1 (argument/return value)
+    uint64_t x12;  // a2 (argument)
+    uint64_t x13;  // a3 (argument)
+    uint64_t x14;  // a4 (argument)
+    uint64_t x15;  // a5 (argument)
+    uint64_t x16;  // a6 (argument)
+    uint64_t x17;  // a7 (argument)
+    uint64_t x18;  // s2 (saved)
+    uint64_t x19;  // s3 (saved)
+    uint64_t x20;  // s4 (saved)
+    uint64_t x21;  // s5 (saved)
+    uint64_t x22;  // s6 (saved)
+    uint64_t x23;  // s7 (saved)
+    uint64_t x24;  // s8 (saved)
+    uint64_t x25;  // s9 (saved)
+    uint64_t x26;  // s10 (saved)
+    uint64_t x27;  // s11 (saved)
+    uint64_t x28;  // t3 (temporary)
+    uint64_t x29;  // t4 (temporary)
+    uint64_t x30;  // t5 (temporary)
+    uint64_t x31;  // t6 (temporary)
+    
+    // Floating point registers 
+    uint64_t f[32]; // f0-f31 (stored as 64-bit even for single precision)
 };
 
 #define LFI_ARCH_X64
