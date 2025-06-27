@@ -102,7 +102,7 @@
 
 #endif
 
-#elif defined(__riscv) && (__riscv_xlen == 64)
+#if defined(__riscv) && (__riscv_xlen == 64)
 
 #define REGS_X0   32
 #define REGS_X1   40
