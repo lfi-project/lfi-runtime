@@ -139,25 +139,6 @@
 
 #define REGs_F    288
 
-#define REGS_RSP  REGS_X2   
-#define REGS_RAX  REGS_X10  
-#define REGS_RCX  REGS_X11  
-#define REGS_RDX  REGS_X12  
-#define REGS_RBX  REGS_X9   
-#define REGS_RBP  REGS_X8   
-#define REGS_RSI  REGS_X13  
-#define REGS_RDI  REGS_X14  
-#define REGS_R8   REGS_X15  
-#define REGS_R9   REGS_X16  
-#define REGS_R10  REGS_X17  
-#define REGS_R11  REGS_X5   
-#define REGS_R12  REGS_X6   
-#define REGS_R13  REGS_X7   
-#define REGS_R14  REGS_X28  
-#define REGS_R15  REGS_X29  
-
-// Map XMM to floating point registers
-#define REGS_XMM  REGS_F
 
 // Use a saved register as the base register (similar to ARM64 using x21)
 #define REGS_BASE REGS_X18  // s2 (saved register)

@@ -72,6 +72,10 @@ _Static_assert(offsetof(struct LFIRegs, REG_BASE) == REGS_BASE,
 _Static_assert(offsetof(struct LFIRegs, xmm) % 16 == 0,
     "incorrect xmm alignment");
 
+#elif defined(LFI_ARCH_RISCV64)
+
+
+
 #endif
 
 _Static_assert(offsetof(struct LFIInvokeInfo, ctx) == INVOKE_CTX,

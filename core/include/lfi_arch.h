@@ -138,7 +138,7 @@ struct LFIRegs {
     uint64_t f[32]; // f0-f31 (stored as 64-bit even for single precision)
 };
 
-#define LFI_ARCH_X64
+#define LFI_ARCH_RISCV64
 
 #endif
 
