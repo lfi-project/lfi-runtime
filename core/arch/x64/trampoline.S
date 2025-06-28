@@ -101,8 +101,11 @@ lfi_trampoline:
     pushq %rbp
 
     get_invoke_info %r13
+    movq INVOKE_TARGETFN(%r13), %r12
     // Loads a pointer to the context pointer.
-    movq INVOKE_CTX(%r13), %r11
+    movq INVOKE_BOX(%r13), %r14
+    movq INVOKE_CTX(%r13), %r13
+    movq %r13, %r11
 
     // Check if the context pointer is zero.
     cmpq $0, (%r11)
@@ -139,7 +142,7 @@ lfi_trampoline:
     pushq %r11
 
     // load address of the target function
-    movq INVOKE_TARGETFN(%r13), %r11
+    movq %r12, %r11
     // apply mask just to be safe
     andl $0xffffffe0, %r11d
     addq %REG_BASE, %r11
@@ -148,7 +151,6 @@ lfi_trampoline:
     // %fs:TLS_SLOT_LFI into the context and setting it to point to the context
     // itself
     get_ctx %r12
-    movq INVOKE_CTX(%r13), %r13
     movq (%r13), %r13
     movq %r12, REGS_HOST_TP(%r13)
     write_ctx %r13
@@ -215,7 +217,7 @@ lfi_ret:
     pushx %xmm5
     pushx %xmm6
     pushx %xmm7
-    movq INVOKE_BOX(%r13), %rdi
+    movq %r14, %rdi
     movq %r11, %rsi
     callq lfi_clone
     popx %xmm0

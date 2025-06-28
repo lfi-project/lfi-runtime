@@ -2,9 +2,9 @@
 
 _Thread_local int i;
 
-void
-tls(char *msg)
+int
+tls(void)
 {
-    printf("%d: %s\n", i, msg);
-    i++;
+    printf("i: %d\n", i);
+    return i++;
 }

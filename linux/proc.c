@@ -28,6 +28,7 @@ lfi_proc_new(struct LFILinuxEngine *engine, struct LFIBox *box)
     proc->box_info = lfi_box_info(box);
 
     pthread_mutex_init(&proc->lk_proc, NULL);
+    pthread_mutex_init(&proc->lk_clone, NULL);
     pthread_mutex_init(&proc->lk_threads, NULL);
     pthread_mutex_init(&proc->lk_box, NULL);
     pthread_mutex_init(&proc->lk_brk, NULL);

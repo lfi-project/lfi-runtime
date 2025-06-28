@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #if defined(LFI_ARCH_ARM64)
 
@@ -30,6 +31,31 @@ static uint8_t ret[] = {
 
 char *
 xasprintf(const char *fmt, ...);
+
+struct ThreadArgs {
+    struct LFILinuxProc *proc;
+};
+
+static void *
+thread_function(void *arg)
+{
+    struct ThreadArgs *args = (struct ThreadArgs *) arg;
+    printf("new thread\n");
+
+    struct LFIContext *ctx = NULL;
+
+    int x = LFI_INVOKE(lfi_proc_box(args->proc), &ctx,
+        lfi_proc_sym(args->proc, "add"), int, (int, int), 40, 2);
+    assert(x == 42);
+    x = LFI_INVOKE(lfi_proc_box(args->proc), &ctx,
+        lfi_proc_sym(args->proc, "tls"), int, (void));
+    assert(x == 0);
+    x = LFI_INVOKE(lfi_proc_box(args->proc), &ctx,
+        lfi_proc_sym(args->proc, "tls"), int, (void));
+    assert(x == 1);
+
+    return NULL;
+}
 
 struct Buf {
     void *data;
@@ -141,6 +167,22 @@ main(int argc, const char **argv)
     int x = LFI_INVOKE(lfi_proc_box(proc), lfi_thread_ctxp(t),
         lfi_proc_sym(proc, "add"), int, (int, int), 40, 2);
     assert(x == 42);
+
+    lfi_linux_init_clone(t);
+
+    struct ThreadArgs args = (struct ThreadArgs) {
+        .proc = proc,
+    };
+
+    pthread_t t1, t2;
+    r = pthread_create(&t1, NULL, thread_function, (void *) &args);
+    assert(r == 0);
+    r = pthread_create(&t2, NULL, thread_function, (void *) &args);
+    assert(r == 0);
+    r = pthread_join(t1, NULL);
+    assert(r == 0);
+    r = pthread_join(t2, NULL);
+    assert(r == 0);
 
     lfi_thread_free(t);
 

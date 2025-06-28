@@ -26,6 +26,23 @@ isfork(uint64_t flags)
         (LINUX_CLONE_VM | LINUX_CLONE_VFORK | LINUX_SIGCHLD);
 }
 
+static void
+threadspawn_fake(struct LFILinuxThread *t)
+{
+    struct LFIRegs *regs = lfi_ctx_regs(t->ctx);
+    uintptr_t entry;
+#if defined(LFI_ARCH_X64)
+    entry = regs->r11;
+#elif defined(LFI_ARCH_ARM64)
+    entry = regs->x30;
+#else
+#error "invalid arch"
+#endif
+
+    int code = lfi_ctx_run(t->ctx, entry);
+    assert(code == 0);
+}
+
 static void *
 threadspawn(void *arg)
 {
@@ -153,11 +170,12 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
 #error "invalid arch"
 #endif
 
-    if (p->ctx == clone_ctx) {
-        // TODO: do we need to save/restore the current context before we enter
-        // this new context?
-        // TODO: save/restore lfi_invoke_info
-        threadspawn(p2);
+    if (p->ctx == p->proc->clone_ctx) {
+        // TODO: rethink whether this save/restore is necessary and how it
+        // interacts with signals?
+        struct LFIInvokeInfo old = lfi_invoke_info;
+        threadspawn_fake(p2);
+        lfi_invoke_info = old;
         new_ctx = p2->ctx;
     } else {
         pthread_t *thread = malloc(sizeof(pthread_t));
