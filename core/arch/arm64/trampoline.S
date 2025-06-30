@@ -117,13 +117,11 @@ lfi_trampoline:
 // sp+16: lfiptr target
 // sp+8: struct LFIBox *box
 // sp: struct LFIContext **ctxp
-.global lfi_trampoline
+.global lfi_trampoline_direct
 .p2align 4
 lfi_trampoline_direct:
-    bti jc
-
-    ldp x11, x12, [sp], #16
-    ldp x10, xzr, [sp], #16
+    ldp x22, xzr, [sp], #16
+    ldp x20, x21, [sp], #16
 
     stp d8, d9,   [sp, #-16]!
     stp d10, d11, [sp, #-16]!

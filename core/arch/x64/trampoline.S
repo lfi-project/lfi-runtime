@@ -118,7 +118,6 @@ lfi_trampoline:
 .global lfi_trampoline_direct
 .p2align 4
 lfi_trampoline_direct:
-    endbr64
     // ctxp
     popq %r11
     // box
