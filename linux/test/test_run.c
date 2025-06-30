@@ -72,9 +72,7 @@ main(int argc, const char **argv)
     struct Buf prog = readfile(argv[1]);
     assert(prog.data);
 
-    struct LFIBox *box = lfi_box_new(engine);
-    assert(box);
-    struct LFILinuxProc *proc = lfi_proc_new(linux_, box);
+    struct LFILinuxProc *proc = lfi_proc_new(linux_);
     assert(proc);
 
     bool ok = lfi_proc_load(proc, prog.data, prog.size);

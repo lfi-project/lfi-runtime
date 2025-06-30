@@ -248,11 +248,11 @@ lfi_ctx_exit(struct LFIContext *ctx, int code);
 struct LFIBox *
 lfi_ctx_box(struct LFIContext *ctx);
 
-// Set the context's ret function to ret, which should be a function inside the
-// sandbox that calls the lfi_ret runtime call. Initializing this is necessary
-// if you use LFI_INVOKE, but otherwise is not necessary.
+// Initialize the sandbox's return function. This will create a function inside
+// the sandbox that calls lfi_ret, and will be used as the return address for
+// LFI_INVOKE calls into the sandbox.
 void
-lfi_box_init_ret(struct LFIBox *box, lfiptr ret);
+lfi_box_init_ret(struct LFIBox *box);
 
 // Register a clone callback. This callback will be called when transferring
 // control to a NULL LFI context through the LFI trampoline (e.g., via

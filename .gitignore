@@ -11,4 +11,6 @@ subprojects/lfi-verifier
 subprojects/cwalk
 subprojects/argtable3
 
+install
+
 todo.txt

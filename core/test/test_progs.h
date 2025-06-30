@@ -14,13 +14,6 @@ static uint8_t prog_cb[] = {
     0x40, 0x02, 0x1f, 0xd6, // br x18
 };
 
-static uint8_t ret[] = {
-    0xf6, 0x03, 0x1e, 0xaa, // mov x22, x30
-    0xbe, 0x0e, 0x40, 0xf9, // ldr x30, [x21, #24]
-    0xc0, 0x03, 0x3f, 0xd6, // blr x30
-    0xbe, 0x42, 0x36, 0x8b, // add x30, x21, w22, uxtw
-};
-
 #elif defined(LFI_ARCH_X64)
 
 static uint8_t prog[] = {
@@ -50,11 +43,6 @@ static uint8_t prog_cb[] = {
 
 _Static_assert(sizeof(prog_cb) % 32 == 0,
     "end of prog_cb is not bundle-aligned");
-
-static uint8_t ret[] = {
-    0x4c, 0x8d, 0x1d, 0x04, 0x00, 0x00, 0x00, // lea 0x4(%rip), %r11
-    0x41, 0xff, 0x66, 0x18,                   // jmp *0x18(%r14)
-};
 
 #else
 

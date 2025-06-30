@@ -18,8 +18,10 @@
 #include <stdlib.h>
 
 EXPORT struct LFILinuxProc *
-lfi_proc_new(struct LFILinuxEngine *engine, struct LFIBox *box)
+lfi_proc_new(struct LFILinuxEngine *engine)
 {
+    struct LFIBox *box = lfi_box_new(engine->engine);
+
     struct LFILinuxProc *proc = calloc(sizeof(struct LFILinuxProc), 1);
     if (!proc)
         return NULL;

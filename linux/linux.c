@@ -35,14 +35,17 @@ lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
     return engine;
 }
 
+// Global engine for libraries.
 static struct LFILinuxEngine *lib_engine;
 
+// Total number of procs (libraries) that the lib_engine is initialized for.
+#define MAX_LIBRARIES 8
+
 EXPORT bool
-lfi_linux_lib_init(void *base, void *end, void *entry, void *phdrs,
-    struct LFIOptions opts, struct LFILinuxOptions linux_opts)
+lfi_linux_lib_init(struct LFIOptions opts, struct LFILinuxOptions linux_opts)
 {
     if (!lib_engine) {
-        struct LFIEngine *engine = lfi_new(opts, 0);
+        struct LFIEngine *engine = lfi_new(opts, MAX_LIBRARIES);
         if (!engine) {
             LOG_("fatal error initializing LFI: %s\n", lfi_errmsg());
             return false;
@@ -54,11 +57,13 @@ lfi_linux_lib_init(void *base, void *end, void *entry, void *phdrs,
         }
     }
 
-    // TODO:
-    // Initialize a context/thread/proc with a stack and stuff
-    // run the entrypoint
-
     return true;
+}
+
+EXPORT struct LFILinuxEngine *
+lfi_linux_lib_engine(void)
+{
+    return lib_engine;
 }
 
 void

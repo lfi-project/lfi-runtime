@@ -52,25 +52,22 @@ struct LFILinuxThread;
 struct LFILinuxEngine *
 lfi_linux_new(struct LFIEngine *engine, struct LFILinuxOptions opts);
 
-// Initialize a sandbox with the Linux library engine. The library engine is
-// used for sandboxes that are loaded by the dynamic loader rather than by
-// liblfi itself. In this model, a sandbox region exists as a set of PT_LOAD
-// segments inside a .so file. When that .so is loaded, the dynamic loader
-// automatically maps the sandbox and then runs the .so's constructor. The
-// constructor should call this function to register the sandbox with the
-// 'library engine.'
+// Initialize a global engine for use with libraries.
 bool
-lfi_linux_lib_init(void *base, void *end, void *entry, void *phdrs,
-    struct LFIOptions opts, struct LFILinuxOptions linux_opts);
+lfi_linux_lib_init(struct LFIOptions opts, struct LFILinuxOptions linux_opts);
+
+// Return a pointer to the library engine.
+struct LFILinuxEngine *
+lfi_linux_lib_engine(void);
 
 // Frees the resources allocated for the linux engine (but not the underlying
 // LFIEngine).
 void
 lfi_linux_free(struct LFILinuxEngine *engine);
 
-// Creates a new LFILinuxProc for the given LFIBox.
+// Creates a new LFILinuxProc.
 struct LFILinuxProc *
-lfi_proc_new(struct LFILinuxEngine *engine, struct LFIBox *box);
+lfi_proc_new(struct LFILinuxEngine *engine);
 
 // Returns the LFIBox associated with the given proc.
 struct LFIBox *

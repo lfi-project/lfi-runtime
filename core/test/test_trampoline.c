@@ -75,10 +75,8 @@ main(int argc, char **argv)
     lfiptr p_prog = lfi_box_copyto(box, p, prog, sizeof(prog));
     lfiptr p_prog_cb = lfi_box_copyto(box, p + sizeof(prog), prog_cb,
         sizeof(prog_cb));
-    lfiptr p_ret = lfi_box_copyto(box, p + sizeof(prog) + sizeof(prog_cb), ret,
-        sizeof(ret));
 
-    lfi_box_init_ret(box, p_ret);
+    lfi_box_init_ret(box);
 
     int r = lfi_box_mprotect(box, p, pagesize, LFI_PROT_READ | LFI_PROT_EXEC);
     assert(r == 0);

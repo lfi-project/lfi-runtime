@@ -401,8 +401,44 @@ lfi_box_p2l(struct LFIBox *box, uintptr_t p)
     return p2l(box, p);
 }
 
+#if defined(LFI_ARCH_ARM64)
+
+static uint8_t ret[] = {
+    0xbe, 0x0e, 0x40, 0xf9, // ldr x30, [x21, #24]
+    0xc0, 0x03, 0x3f, 0xd6, // blr x30
+};
+
+#elif defined(LFI_ARCH_X64)
+
+static uint8_t ret[] = {
+    0x4c, 0x8d, 0x1d, 0x04, 0x00, 0x00, 0x00, // lea 0x4(%rip), %r11
+    0x41, 0xff, 0x66, 0x18,                   // jmp *0x18(%r14)
+};
+
+#else
+
+#error "architecture not supported"
+
+#endif
+
 EXPORT void
-lfi_box_init_ret(struct LFIBox *box, lfiptr ret)
+lfi_box_init_ret(struct LFIBox *box)
 {
-    box->retaddr = ret;
+    size_t pagesize = box->engine->opts.pagesize;
+    lfiptr p = lfi_box_mapany(box, pagesize, LFI_PROT_READ | LFI_PROT_WRITE,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
+    assert(p != (lfiptr) -1);
+    assert(lfi_box_ptrvalid(box, p));
+
+#if defined(LFI_ARCH_X64)
+    // Set all bytes to trap instructions, since 0 does not pass verification.
+    memset((void *) lfi_box_l2p(box, p), 0xcc, pagesize);
+#endif
+
+    lfiptr p_ret = lfi_box_copyto(box, p, ret, sizeof(ret));
+
+    int r = lfi_box_mprotect(box, p, pagesize, LFI_PROT_READ | LFI_PROT_EXEC);
+    assert(r == 0);
+
+    box->retaddr = p_ret;
 }

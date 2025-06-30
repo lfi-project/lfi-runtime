@@ -155,12 +155,7 @@ main(int argc, char **argv)
         exit(1);
     }
 
-    struct LFIBox *box = lfi_box_new(engine);
-    if (!box) {
-        fprintf(stderr, "failed to create sandbox: %s\n", lfi_errmsg());
-        exit(1);
-    }
-    struct LFILinuxProc *proc = lfi_proc_new(linux_, box);
+    struct LFILinuxProc *proc = lfi_proc_new(linux_);
     if (!proc) {
         fprintf(stderr, "failed to create LFI proc\n");
         exit(1);

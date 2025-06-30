@@ -113,14 +113,18 @@ lfi_trampoline:
 
     b .lfi_trampoline_common
 
-// Alternate trampoline with register-based calling convention:
-// x10: lfiptr target
-// x11: struct LFIContext **ctxp
-// x12: struct LFIBox *box
+// Alternate trampoline with stack-based calling convention:
+// sp+16: lfiptr target
+// sp+8: struct LFIBox *box
+// sp: struct LFIContext **ctxp
 .global lfi_trampoline
 .p2align 4
 lfi_trampoline_direct:
     bti jc
+
+    ldp x11, x12, [sp], #16
+    ldp x10, xzr, [sp], #16
+
     stp d8, d9,   [sp, #-16]!
     stp d10, d11, [sp, #-16]!
     stp d12, d13, [sp, #-16]!
