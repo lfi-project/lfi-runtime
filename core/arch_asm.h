@@ -107,6 +107,7 @@
 #define REGS_X0   32
 #define REGS_X1   40
 #define REGS_X2   48
+#define REGS_SP   REGS_X2
 #define REGS_X3   56
 #define REGS_X4   64
 #define REGS_X5   72
@@ -142,8 +143,9 @@
 
 // Use a saved register as the base register (similar to ARM64 using x21)
 #define REGS_BASE REGS_X18  // s2 (saved register)
+#define REGS_ADDR REGS_X19
 #define REG_BASE  s2        // Assembly register name for s2
-
+#define REG_ADDR  s3 
 // clang-format off
 #ifdef __ASSEMBLER__
 // RISC-V specific context handling

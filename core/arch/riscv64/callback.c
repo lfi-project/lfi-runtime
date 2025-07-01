@@ -1,6 +1,5 @@
-#if defined(HAVE_MEMFD_CREATE)
+// Define _GNU_SOURCE unconditionally at the very top
 #define _GNU_SOURCE
-#endif
 
 #include "core.h"
 
@@ -19,13 +18,21 @@ memfd_create(const char *name, unsigned flags)
 }
 #endif
 
-// The callback entry code loads the target into %r10 and then jumps to the
-// trampoline address stored in the callback.
-static uint8_t cbentry_code[16] = {
+// The callback entry code for RISC-V
+static uint8_t cbentry_code[24] = {
     // clang-format off
-    0x4c, 0x8b, 0x15, 0x09, 0x00, 0x00, 0x00, // mov    0x9(%rip),%r10
-    0xff, 0x25, 0x0b, 0x00, 0x00, 0x00,       // jmp    *0xb(%rip)
-    0x0f, 0x01f, 0x00,                        // nop
+    // auipc t0, 0      ; Load PC + immediate into t0 (for position-independent addressing)
+    0x97, 0x02, 0x00, 0x00,
+    // ld t0, 16(t0)    ; Load target from offset 16 (after this code block)
+    0x83, 0x32, 0x02, 0x01,
+    // auipc t1, 0      ; Load PC + immediate into t1
+    0x17, 0x03, 0x00, 0x00,
+    // ld t1, 12(t1)    ; Load trampoline address from offset 12
+    0x03, 0x33, 0xc3, 0x00,
+    // jr t1            ; Jump to trampoline address
+    0x67, 0x00, 0x30, 0x00,
+    // nop              ; Padding
+    0x13, 0x00, 0x00, 0x00,
     // clang-format on
 };
 
