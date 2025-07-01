@@ -20,7 +20,7 @@ lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
         return NULL;
 
     const char *verbose = getenv("LFI_VERBOSE");
-    if (verbose && strcmp(verbose, "1"))
+    if (verbose && strcmp(verbose, "1") == 0)
         opts.verbose = true;
 
     lfi_sys_handler(lfi_engine, arch_syshandle);
@@ -39,7 +39,7 @@ lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
 static struct LFILinuxEngine *lib_engine;
 
 // Total number of procs (libraries) that the lib_engine is initialized for.
-#define MAX_LIBRARIES 8
+#define MAX_LIBRARIES 16
 
 EXPORT bool
 lfi_linux_lib_init(struct LFIOptions opts, struct LFILinuxOptions linux_opts)
