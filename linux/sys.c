@@ -59,6 +59,10 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
 #else
 #error "invalid arch"
 #endif
+    SYS(exit_group,
+            sys_exit_group(t, a0))
+    SYS(exit,
+            sys_exit(t, a0))
 
     // LFI syscall for pausing execution.
     LFI(pause,
@@ -86,10 +90,6 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
                 sys_read(t, a0, a1, a2))
         SYS(readv,
                 sys_readv(t, a0, a1, a2))
-        SYS(exit_group,
-                sys_exit_group(t, a0))
-        SYS(exit,
-                sys_exit(t, a0))
         SYS(openat,
                 sys_openat(t, a0, a1, a2, a3))
 #ifdef LINUX_SYS_open
@@ -213,6 +213,8 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
                 sys_ioctl(t, a0, a1, a2, a3, a4, a5))
         SYS(fcntl,
                 sys_ignore(t, "fcntl"))
+        SYS(prctl,
+                sys_prctl(t, a0, a1, a2, a3, a4))
 
         // Unsupported syscalls that we ignore or purposefully return ENOSYS for.
         SYS(set_robust_list,
