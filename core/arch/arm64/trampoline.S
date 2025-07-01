@@ -120,8 +120,8 @@ lfi_trampoline:
 .global lfi_trampoline_direct
 .p2align 4
 lfi_trampoline_direct:
-    ldp x22, xzr, [sp], #16
-    ldp x20, x21, [sp], #16
+    ldp x10, xzr, [sp], #16
+    ldp x11, x12, [sp], #16
 
     stp d8, d9,   [sp, #-16]!
     stp d10, d11, [sp, #-16]!
@@ -133,6 +133,10 @@ lfi_trampoline_direct:
     stp x25, x26, [sp, #-16]!
     stp x27, x28, [sp, #-16]!
     stp x29, x30, [sp, #-16]!
+
+    mov x22, x10
+    mov x20, x11
+    mov x21, x12
 
 .lfi_trampoline_common:
     // Load the context pointer from the LFIContext **.
