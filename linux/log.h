@@ -23,9 +23,15 @@
 #define LOG_(...) \
     ((void) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__))
 
+#define ERROR(...) \
+    ((void) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__))
+
 #else
 
 #define LOG_(fmt, ...) \
-    fprintf(stderr, "[" LOG_TAG "] " fmt "\n", ##__VA_ARGS__);
+    fprintf(stderr, "[" LOG_TAG "] " fmt "\n", ##__VA_ARGS__)
+
+#define ERROR(fmt, ...) \
+    fprintf(stderr, "[" LOG_TAG "]" fmt "\n", ##__VA_ARGS__)
 
 #endif

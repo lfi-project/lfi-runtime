@@ -11,7 +11,7 @@ EXPORT struct LFILinuxEngine *
 lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
 {
     if (opts.wd && !cwk_path_is_absolute(opts.wd)) {
-        LOG_("wd path '%s' is not absolute", opts.wd);
+        ERROR("wd path '%s' is not absolute", opts.wd);
         return NULL;
     }
 
@@ -47,12 +47,12 @@ lfi_linux_lib_init(struct LFIOptions opts, struct LFILinuxOptions linux_opts)
     if (!lib_engine) {
         struct LFIEngine *engine = lfi_new(opts, MAX_LIBRARIES);
         if (!engine) {
-            LOG_("fatal error initializing LFI: %s\n", lfi_errmsg());
+            ERROR("fatal error initializing LFI: %s\n", lfi_errmsg());
             return false;
         }
         lib_engine = lfi_linux_new(engine, linux_opts);
         if (!lib_engine) {
-            LOG_("fatal error initializing LFI linux\n");
+            ERROR("fatal error initializing LFI linux\n");
             return false;
         }
     }

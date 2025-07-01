@@ -144,12 +144,12 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
 {
     size_t n = buf_read(elf, ehdr, sizeof(*ehdr), 0);
     if (n != sizeof(*ehdr)) {
-        LOG(proc->engine, "elf_load error: buf_read ehdr failed");
+        ERROR("elf_load error: buf_read ehdr failed");
         return false;
     }
 
     if (!elf_check(ehdr)) {
-        LOG(proc->engine, "elf_load error: elf_check failed");
+        ERROR("elf_load error: elf_check failed");
         return false;
     }
 
@@ -159,37 +159,36 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
     // instead of static-pie and supporting it adds some complexity. As a
     // result, we require binaries to be position-independent (ET_DYN).
     if (ehdr->e_type != ET_DYN) {
-        LOG(proc->engine, "elf_load error: elf binary is not PIE");
+        ERROR("elf_load error: elf binary is not PIE (did you compile with -static-pie?)");
         return false;
     }
 
     if (ehdr->e_phnum > PHNUM_MAX) {
-        LOG(proc->engine, "elf_load error: e_phnum (%d) is too large",
+        ERROR("elf_load error: e_phnum (%d) is too large",
             ehdr->e_phnum);
         return false;
     }
 
     Elf64_Phdr *phdrs = malloc(sizeof(Elf64_Phdr) * ehdr->e_phnum);
     if (!phdrs) {
-        LOG(proc->engine, "elf_load error: out of memory");
+        ERROR("elf_load error: out of memory");
         return false;
     }
 
     if (ehdr->e_phoff >= elf.size) {
-        LOG(proc->engine, "elf_load error: e_phoff (%ld) is too large",
+        ERROR("elf_load error: e_phoff (%ld) is too large",
             (long) ehdr->e_phoff);
         goto err1;
     }
 
     n = buf_read(elf, phdrs, sizeof(*phdrs) * ehdr->e_phnum, ehdr->e_phoff);
     if (n != sizeof(*phdrs) * ehdr->e_phnum) {
-        LOG(proc->engine, "elf_load error: buf_read phdrs failed");
+        ERROR("elf_load error: buf_read phdrs failed");
         goto err1;
     }
 
     if (ehdr->e_entry >= CODE_MAX) {
-        LOG(proc->engine,
-            "elf_load error: e_entry (0x%lx) is larger than CODE_MAX (0x%lx)",
+        ERROR("elf_load error: e_entry (0x%lx) is larger than CODE_MAX (0x%lx)",
             (unsigned long) ehdr->e_entry, CODE_MAX);
         goto err1;
     }
@@ -207,8 +206,7 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
             continue;
 
         if (p->p_align % pagesize != 0) {
-            LOG(proc->engine,
-                "elf_load error: invalid p_align (%ld) not a multiple of pagesize (%ld)",
+            ERROR("elf_load error: invalid p_align (%ld) not a multiple of pagesize (%ld)",
                 (long) p->p_align, pagesize);
             goto err1;
         }
@@ -218,14 +216,12 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
         uintptr_t offset = p->p_vaddr - start;
 
         if (p->p_memsz < p->p_filesz) {
-            LOG(proc->engine,
-                "elf_load error: p_memsz (0x%lx) < p_filesz (0x%lx)",
+            ERROR("elf_load error: p_memsz (0x%lx) < p_filesz (0x%lx)",
                 (unsigned long) p->p_memsz, (unsigned long) p->p_filesz);
             goto err1;
         }
         if (end <= start || start >= CODE_MAX || end >= CODE_MAX) {
-            LOG(proc->engine,
-                "elf_load error: segment start (0x%lx) or end (0x%lx) is invalid",
+            ERROR("elf_load error: segment start (0x%lx) or end (0x%lx) is invalid",
                 start, end);
             goto err1;
         }
@@ -244,7 +240,7 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
         if (!buf_read_elfseg(proc, base + start, offset, base + end,
                 p->p_offset, p->p_filesz, pflags(p->p_flags), elf, pagesize,
                 perform_map)) {
-            LOG(proc->engine, "elf_load error: reading elf segment failed");
+            ERROR("elf_load error: reading elf segment failed");
             goto err1;
         }
 
@@ -299,7 +295,7 @@ elf_load(struct LFILinuxProc *proc, uint8_t *prog_data, size_t prog_size,
 
     if (proc->engine->opts.perf)
         if (!perf_output_jit_interface_file(prog_data, prog_size, p_first))
-            LOG(proc->engine, "failed to generated perf map");
+            ERROR("failed to generate perf map");
 
     struct LFIBox *box = proc->box;
     *info = (struct ELFLoadInfo) {

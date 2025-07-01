@@ -248,7 +248,7 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
             LOG(t->proc->engine, "unknown syscall: %ld", sysno);
 
             if (t->proc->engine->opts.exit_unknown_syscalls) {
-                LOG_("terminating due to unknown syscall: %ld", sysno);
+                ERROR("terminating due to unknown syscall: %ld", sysno);
                 exit(1);
             }
         }

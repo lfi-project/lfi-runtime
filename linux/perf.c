@@ -47,15 +47,14 @@ perf_output_jit_interface_file(uint8_t *elf_data, size_t size, uintptr_t offset)
         getpid());
     FILE *out = fopen(output_file, "w");
     if (!out) {
-        LOG_("failed to create output file %s: %s", output_file,
+        ERROR("failed to create output file %s: %s", output_file,
             strerror(errno));
         goto err;
     }
-    LOG_("successfully created output file %s", output_file);
 
     // Ensure the buffer is large enough for an ELF header
     if (size < sizeof(Elf64_Ehdr)) {
-        LOG_("Buffer too small for ELF header.\n");
+        ERROR("Buffer too small for ELF header.\n");
         goto err;
     }
 
@@ -64,13 +63,13 @@ perf_output_jit_interface_file(uint8_t *elf_data, size_t size, uintptr_t offset)
 
     // Verify ELF magic number
     if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0) {
-        LOG_("Not an ELF file.\n");
+        ERROR("Not an ELF file.\n");
         goto err;
     }
 
     // Ensure section headers fit within the buffer
     if (ehdr->e_shoff + (ehdr->e_shnum * sizeof(Elf64_Shdr)) > size) {
-        LOG_("Invalid ELF section headers.\n");
+        ERROR("Invalid ELF section headers.\n");
         goto err;
     }
 
@@ -88,14 +87,14 @@ perf_output_jit_interface_file(uint8_t *elf_data, size_t size, uintptr_t offset)
     }
 
     if (!symtab || !strtab) {
-        LOG_("No symbol table found.\n");
+        ERROR("No symbol table found.\n");
         goto err;
     }
 
     // Ensure symbol and string tables fit within the buffer
     if (symtab->sh_offset + symtab->sh_size > size ||
         strtab->sh_offset + strtab->sh_size > size) {
-        LOG_("Invalid symbol or string table offsets.\n");
+        ERROR("Invalid symbol or string table offsets.\n");
         goto err;
     }
 
