@@ -32,6 +32,6 @@
     fprintf(stderr, "[" LOG_TAG "] " fmt "\n", ##__VA_ARGS__)
 
 #define ERROR(fmt, ...) \
-    fprintf(stderr, "[" LOG_TAG "]" fmt "\n", ##__VA_ARGS__)
+    fprintf(stderr, "[" LOG_TAG "] " fmt "\n", ##__VA_ARGS__)
 
 #endif
