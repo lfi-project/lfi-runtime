@@ -46,6 +46,12 @@ if 'x64' in arch
   )
   c_defines += '-DARCH_X64'
 endif
+if 'riscv64' in arch
+  srcs += files(
+    'src/riscv64/verify.c',
+  )
+  c_defines += '-DARCH_RISCV64'
+endif
 
 liblfiv = static_library(
   'lfiv',
