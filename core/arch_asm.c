@@ -76,9 +76,9 @@ _Static_assert(offsetof(struct LFIRegs, xmm) % 16 == 0,
 
 _Static_assert(offsetof(struct LFIRegs, x0) == REGS_X0,
     "incorrect REGS offset");
-_Static_assert(offsetof(struct LFIRegs, sp) == REGS_SP,
+_Static_assert(offsetof(struct LFIRegs, x2) == REGS_SP,
     "incorrect REGS offset");
-_Static_assert(offsetof(struct LFIRegs, REG_BASE) == REGS_BASE,
+_Static_assert(offsetof(struct LFIRegs, s2) == REGS_BASE,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, REG_ADDR) == REGS_ADDR,
     "incorrect REGS offset");

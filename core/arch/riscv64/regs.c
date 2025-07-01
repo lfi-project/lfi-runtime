@@ -5,5 +5,5 @@ EXPORT void
 lfi_ctx_regs_init(struct LFIContext *ctx)
 {
     ctx->regs.REG_BASE = ctx->box->base;
-    ctx->regs.rsp = ctx->box->base;
+    ctx->regs.x2 = ctx->box->base;
 }
