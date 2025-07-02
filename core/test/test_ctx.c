@@ -26,6 +26,14 @@ static uint8_t prog[] = {
     0x41, 0xff, 0x26,                         // jmp *(%r14)
 };
 
+#elif defined(LFI_ARCH_RISCV64)
+
+static uint8_t prog[] = {
+    0x93, 0x08, 0xa0, 0x02, // li a7, 42
+    0x83, 0xb0, 0x0a, 0x00, // ld ra, 0(x21)
+    0xe7, 0x80, 0x00, 0x00, // jalr ra
+};
+
 #else
 
 #error "architecture not supported"
@@ -39,6 +47,8 @@ handler(struct LFIContext *ctx)
     int arg = (int) lfi_ctx_regs(ctx)->x8;
 #elif defined(LFI_ARCH_X64)
     int arg = (int) lfi_ctx_regs(ctx)->rax;
+#elif defined(LFI_ARCH_RISCV64)
+    int arg = (int) lfi_ctx_regs(ctx)->x17;
 #endif
     assert(arg == 42);
     printf("success: received %d\n", 42);

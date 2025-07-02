@@ -102,6 +102,67 @@
 
 #endif
 
+#if defined(__riscv) && (__riscv_xlen == 64)
+
+#define REGS_X0   32
+#define REGS_X1   40
+#define REGS_X2   48
+#define REGS_SP   REGS_X2
+#define REGS_X3   56
+#define REGS_X4   64
+#define REGS_X5   72
+#define REGS_X6   80
+#define REGS_X7   88
+#define REGS_X8   96
+#define REGS_X9   104
+#define REGS_X10  112
+#define REGS_X11  120
+#define REGS_X12  128
+#define REGS_X13  136
+#define REGS_X14  144
+#define REGS_X15  152
+#define REGS_X16  160  
+#define REGS_X17  168  
+#define REGS_X18  176  
+#define REGS_X19  184  
+#define REGS_X20  192  
+#define REGS_X21  200  
+#define REGS_X22  208  
+#define REGS_X23  216  
+#define REGS_X24  224  
+#define REGS_X25  232  
+#define REGS_X26  240  
+#define REGS_X27  248  
+#define REGS_X28  256  
+#define REGS_X29  264  
+#define REGS_X30  272  
+#define REGS_X31  280  
+
+#define REGS_F    288
+
+
+// Use a saved register as the base register (similar to ARM64 using x21)
+#define REGS_BASE REGS_X18  // s2 (saved register)
+#define REGS_ADDR REGS_X19
+#define REG_BASE  s2        // Assembly register name for s2
+#define REG_ADDR  s3 
+// clang-format off
+#ifdef __ASSEMBLER__
+// RISC-V specific context handling
+// This is a placeholder - you'll need to implement based on your TLS setup
+.macro get_ctx reg
+    // Load from thread pointer offset - adjust based on your TLS implementation
+    // This is similar to the ARM64/x86 approach but uses RISC-V instructions
+    csrr \reg, 0x4c1  // Read thread pointer (if available)
+    ld \reg, (8*TLS_SLOT_LFI)(\reg)
+.endm
+
+
+#endif
+// clang-format on
+
+#endif
+
 // Offsets for the LFIInvokeInfo struct
 
 #define INVOKE_CTX      0

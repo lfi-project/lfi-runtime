@@ -1,12 +1,12 @@
 [binaries]
 c = 'clang'
 cpp = 'clang++'
-ar = 'riscv64-linux-gnu-ar'
-strip = 'riscv64-linux-gnu-strip'
+ar = 'llvm-ar'
+strip = 'llvm-strip'
 
 [built-in options]
 c_args = '-target riscv64-linux-gnu'
-c_link_args = '-target riscv64-linux-gnu'
+c_link_args = '-target riscv64-linux-gnu -fuse-ld=lld'
 
 [host_machine]
 system = 'linux'
