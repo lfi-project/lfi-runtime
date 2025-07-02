@@ -107,6 +107,19 @@ lfi_thread_ctxp(struct LFILinuxThread *t);
 void
 lfi_linux_init_clone(struct LFILinuxThread *main_thread);
 
+// Memory management functions for sandboxed libraries.
+void *
+lfi_lib_malloc(struct LFIContext **ctxp, size_t size);
+
+void *
+lfi_lib_realloc(struct LFIContext **ctxp, size_t size);
+
+void *
+lfi_lib_calloc(struct LFIContext **ctxp, size_t count, size_t size);
+
+void
+lfi_lib_free(struct LFIContext **ctxp, void *p);
+
 #ifdef __cplusplus
 }
 #endif
