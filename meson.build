@@ -97,7 +97,12 @@ if get_option('enable_linux')
   subdir('linux')
   subdir('tools')
 
-  liblfi = library(
+  liblfi_so = shared_library(
+    'lfi',
+    dependencies: lfi_linux.as_link_whole(),
+    install: true,
+  )
+  liblfi_a = static_library(
     'lfi',
     dependencies: lfi_linux.as_link_whole(),
     install: true,
