@@ -12,13 +12,13 @@
 .p2align 4
 lfi_trampoline:
     #TODO: Implement RISC-V trampoline
-    ret
+    ebreak
 
 .global lfi_ret
 .p2align 4
 lfi_ret:
     #TODO: Implement RISC-V return
-    ret
+    ebreak
 
 .macro pushx reg
     #TODO: Implement RISC-V register push
@@ -31,7 +31,7 @@ lfi_ret:
 .p2align 4
 .trampoline_clone:
     #TODO: Implement RISC-V trampoline clone
-    ret
+    ebreak
 
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits

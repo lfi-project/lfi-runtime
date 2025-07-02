@@ -9,12 +9,9 @@
 .global lfi_callback
 lfi_callback:
     #TODO: Implement RISC-V callback
-    ret
+    ebreak
 
 .global lfi_callback_userpop
-lfi_callback_userpop:
-    #TODO: Implement RISC-V userpop
-    ret
 
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits

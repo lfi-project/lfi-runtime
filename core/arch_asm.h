@@ -157,10 +157,7 @@
     ld \reg, (8*TLS_SLOT_LFI)(\reg)
 .endm
 
-.macro write_ctx reg tmp
-    csrr \tmp, 0x4c1  // Read thread pointer
-    sd \reg, (8*TLS_SLOT_LFI)(\tmp)
-.endm
+
 #endif
 // clang-format on
 

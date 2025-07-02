@@ -124,12 +124,5 @@ lfi_box_register_cb(struct LFIBox *box, void *fn)
 EXPORT void
 lfi_box_unregister_cb(struct LFIBox *box, void *fn)
 {
-    ssize_t slot = cbfind(box, fn);
-    if (slot == -1)
-        return;
-    box->callbacks[slot] = NULL;
-    atomic_store_explicit(&box->cbinfo.cbentries_alias[slot].target, 0,
-        memory_order_seq_cst);
-    atomic_store_explicit(&box->cbinfo.cbentries_alias[slot].trampoline, 0,
-        memory_order_seq_cst);
+    assert(!"unimplemented");
 }

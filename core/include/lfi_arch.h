@@ -89,6 +89,8 @@ struct LFIRegs {
     uint64_t xmm[32];
 };
 
+#define LFI_ARCH_X64
+
 #elif defined(__riscv) && (__riscv_xlen == 64)
 
 struct LFIRegs {
