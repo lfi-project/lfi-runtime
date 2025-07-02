@@ -415,6 +415,13 @@ static uint8_t ret[] = {
     0x41, 0xff, 0x66, 0x18,                   // jmp *0x18(%r14)
 };
 
+#elif defined(LFI_ARCH_RISCV64)
+
+static uint8_t ret[] = {
+    0x83, 0xb0, 0x8a, 0x01, // la ra, 24(x21)
+    0xe7, 0x80, 0x00, 0x00, // jalr ra
+};
+
 #else
 
 #error "architecture not supported"
