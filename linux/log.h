@@ -28,8 +28,7 @@
 
 #else
 
-#define LOG_(fmt, ...) \
-    fprintf(stderr, "[" LOG_TAG "] " fmt "\n", ##__VA_ARGS__)
+#define LOG_(fmt, ...) fprintf(stderr, "[" LOG_TAG "] " fmt "\n", ##__VA_ARGS__)
 
 #define ERROR(fmt, ...) \
     fprintf(stderr, "[" LOG_TAG "] " fmt "\n", ##__VA_ARGS__)

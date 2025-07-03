@@ -54,7 +54,8 @@ futex_wake(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val)
 }
 
 static long
-futex_requeue(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val, uint32_t val2, uint32_t *uaddr2)
+futex_requeue(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val,
+    uint32_t val2, uint32_t *uaddr2)
 {
     return host_futex_requeue(t, uaddr, op, val, val2, uaddr2);
 }

@@ -3,11 +3,11 @@
 #include "test.h"
 
 #include <assert.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
-#include <pthread.h>
 
 char *
 xasprintf(const char *fmt, ...);
@@ -28,10 +28,10 @@ thread_function(void *arg)
         lfi_proc_sym(args->proc, "add"), int, (int, int), 40, 2);
     assert(x == 42);
     x = LFI_INVOKE(lfi_proc_box(args->proc), &ctx,
-        lfi_proc_sym(args->proc, "tls"), int, (void));
+        lfi_proc_sym(args->proc, "tls"), int, (void) );
     assert(x == 0);
     x = LFI_INVOKE(lfi_proc_box(args->proc), &ctx,
-        lfi_proc_sym(args->proc, "tls"), int, (void));
+        lfi_proc_sym(args->proc, "tls"), int, (void) );
     assert(x == 1);
 
     return NULL;

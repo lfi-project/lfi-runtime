@@ -1,7 +1,7 @@
 #include "trampoline.h"
 
-#include "proc.h"
 #include "lock.h"
+#include "proc.h"
 
 #include <assert.h>
 
@@ -16,7 +16,8 @@ lfi_linux_clone_cb(struct LFIBox *box)
 
     // Invoke thread_create in clone_ctx and return the resulting new_ctx.
     LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
-    LFI_INVOKE(box, &proc->clone_ctx, proc->libsyms.thread_create, void *, (void) );
+    LFI_INVOKE(box, &proc->clone_ctx, proc->libsyms.thread_create, void *,
+        (void) );
     return new_ctx;
 }
 

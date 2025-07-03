@@ -32,7 +32,7 @@ init_verifier(struct LFIVerifier *v, struct LFIOptions *opts)
 #elif defined(LFI_ARCH_RISCV64)
     v->verify = lfiv_verify_riscv64;
 #else
-    #error "invalid architecture"
+#error "invalid architecture"
 #endif
 }
 

@@ -103,11 +103,11 @@ struct LFILinuxProc {
     struct LibSymbols libsyms;
 
     // The clone context is the context used for cloning new sandbox threads
-    // dynamically. To create a new thread, invoke thread_create via the clone_ctx.
-    // The sandbox will execute pthread_create inside thread_create, which will make
-    // a clone syscall, which will not create a new thread but will instead place
-    // the newly created context into new_ctx. The newly created context can then
-    // be retrieved from new_ctx by the caller.
+    // dynamically. To create a new thread, invoke thread_create via the
+    // clone_ctx. The sandbox will execute pthread_create inside thread_create,
+    // which will make a clone syscall, which will not create a new thread but
+    // will instead place the newly created context into new_ctx. The newly
+    // created context can then be retrieved from new_ctx by the caller.
     struct LFIContext *clone_ctx;
     pthread_mutex_t lk_clone;
 

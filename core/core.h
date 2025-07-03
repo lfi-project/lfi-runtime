@@ -104,6 +104,6 @@ box_footprint(size_t boxsize)
 #elif defined(LFI_ARCH_RISCV64)
     return gb(4);
 #else
-    #error "invalid architecture"
+#error "invalid architecture"
 #endif
 }

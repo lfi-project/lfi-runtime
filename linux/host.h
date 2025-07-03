@@ -5,10 +5,10 @@
 #include <errno.h>
 #include <stdio.h>
 
-#define HOST_ERR(type, expr)                               \
-    ({                                                     \
-        type _ret = (type) expr;                           \
-        _ret == (type) -1 ? (type) host_err(errno) : _ret; \
+#define HOST_ERR(type, expr)                                \
+    ({                                                      \
+        type _ret = (type) expr;                            \
+        _ret == (type) - 1 ? (type) host_err(errno) : _ret; \
     })
 
 int

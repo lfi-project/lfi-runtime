@@ -19,5 +19,5 @@ _Static_assert(sizeof(struct CallbackEntry) == 32,
     "invalid callback entry size");
 
 struct CallbackInfo {
-   int _dummy; 
+    int _dummy;
 };

@@ -159,13 +159,13 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
     // instead of static-pie and supporting it adds some complexity. As a
     // result, we require binaries to be position-independent (ET_DYN).
     if (ehdr->e_type != ET_DYN) {
-        ERROR("elf_load error: elf binary is not PIE (did you compile with -static-pie?)");
+        ERROR(
+            "elf_load error: elf binary is not PIE (did you compile with -static-pie?)");
         return false;
     }
 
     if (ehdr->e_phnum > PHNUM_MAX) {
-        ERROR("elf_load error: e_phnum (%d) is too large",
-            ehdr->e_phnum);
+        ERROR("elf_load error: e_phnum (%d) is too large", ehdr->e_phnum);
         return false;
     }
 
@@ -206,7 +206,8 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
             continue;
 
         if (p->p_align % pagesize != 0) {
-            ERROR("elf_load error: invalid p_align (%ld) not a multiple of pagesize (%ld)",
+            ERROR(
+                "elf_load error: invalid p_align (%ld) not a multiple of pagesize (%ld)",
                 (long) p->p_align, pagesize);
             goto err1;
         }
@@ -221,7 +222,8 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
             goto err1;
         }
         if (end <= start || start >= CODE_MAX || end >= CODE_MAX) {
-            ERROR("elf_load error: segment start (0x%lx) or end (0x%lx) is invalid",
+            ERROR(
+                "elf_load error: segment start (0x%lx) or end (0x%lx) is invalid",
                 start, end);
             goto err1;
         }
