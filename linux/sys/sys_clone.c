@@ -89,13 +89,11 @@ threadspawn(void *arg)
     lfi_ctx_run(t->ctx, entry);
 
 end:
-    lock(&t->lk_ready);
     lock(&t->proc->lk_threads);
     t->proc->active_threads--;
     pthread_cond_signal(&t->proc->cond_threads);
     LOG(t->proc->engine, "thread %d exited", t->tid);
     unlock(&t->proc->lk_threads);
-    unlock(&t->lk_ready);
     lfi_thread_free(t);
     return NULL;
 }
@@ -184,23 +182,18 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
         pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
         p2->pthread = thread;
         LOG(p->proc->engine, "creating new thread: %d", tid);
+
+        lock(&p->proc->lk_threads);
+        list_make_first(&p->proc->threads, &p2->threads_elem);
+        p->proc->active_threads++;
+        unlock(&p->proc->lk_threads);
+
         int err = pthread_create(thread, &attr, threadspawn, p2);
         pthread_attr_destroy(&attr);
         if (err) {
             lfi_thread_free(p2);
             return -LINUX_EAGAIN;
         }
-
-        // Wait until thread is ready.
-        lock(&p2->lk_ready);
-        while (!p2->ready) {
-            pthread_cond_wait(&p2->cond_ready, &p2->lk_ready);
-        }
-        lock(&p->proc->lk_threads);
-        list_make_first(&p->proc->threads, &p2->threads_elem);
-        p->proc->active_threads++;
-        unlock(&p->proc->lk_threads);
-        unlock(&p2->lk_ready);
     }
 
     if (flags & LINUX_CLONE_PARENT_SETTID) {
