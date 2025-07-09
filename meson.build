@@ -31,8 +31,6 @@ if get_option('enable_analyzer')
   endif
 endif
 
-add_global_arguments(c_args, language : 'c')
-
 cpu = target_machine.cpu_family()
 archmap = {
   'aarch64': 'arm64',
@@ -89,6 +87,10 @@ if get_option('enable_segue')
 endif
 if get_option('segue_single_sandbox')
   defines += '-DSEGUE_SINGLE_SANDBOX'
+endif
+
+if not meson.is_subproject()
+  add_global_arguments(c_args, language: 'c')
 endif
 
 subdir('core')
