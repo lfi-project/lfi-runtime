@@ -28,10 +28,10 @@ struct LFIBox {
     // Address space information.
     uintptr_t base;
     size_t size;
-    lfiptr min;
-    lfiptr max;
+    lfiptr min; //smallest pointer (up to guard page(s))
+    lfiptr max; //largest pointer (up to guard page(s))
 
-    // Memory mapper object.
+    // Memory mapper object. (used by libmmap)
     MMAddrSpace mm;
 
     // Pointer to the page at the start of the sandbox holding runtime call
@@ -55,10 +55,10 @@ struct Sys {
 };
 
 struct LFIContext {
-    // Registers, including saved host stack and thread pointers.
+    // Registers of sandbox and associated host thread (stack, TLS pointer) are stored here.
     struct LFIRegs regs;
 
-    // User-provided data pointer.
+    // User-provided data pointer -- tracks per-sandbox context for runtime.
     void *userdata;
 
     // Sandbox that this context is associated with.

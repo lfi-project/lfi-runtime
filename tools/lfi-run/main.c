@@ -94,7 +94,7 @@ main(int argc, char **argv)
 
     int nerrors = arg_parse(argc, argv, argtable);
 
-    if (help->count > 0) {
+    if (help->count > 0 || argc == 1) {
         printf("Usage: %s [OPTION...] INPUT...\n\n", argv[0]);
         arg_print_glossary(stdout, argtable, "  %-25s %s\n");
         return 0;
