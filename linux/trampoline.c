@@ -53,9 +53,9 @@ bufcheck(struct LFIBox *box, lfiptr p, size_t size, size_t align)
 }
 
 EXPORT void *
-lfi_lib_malloc(struct LFIContext **ctxp, size_t size)
+lfi_lib_malloc(struct LFIBox *box, struct LFIContext **ctxp, size_t size)
 {
-    struct LFILinuxProc *proc = lfi_box_data(lfi_ctx_box(*ctxp));
+    struct LFILinuxProc *proc = lfi_box_data(box);
     assert(proc->libsyms.malloc);
 
     lfiptr p = LFI_INVOKE(proc->box, ctxp, proc->libsyms.malloc, lfiptr,
@@ -68,9 +68,9 @@ lfi_lib_malloc(struct LFIContext **ctxp, size_t size)
 }
 
 EXPORT void *
-lfi_lib_realloc(struct LFIContext **ctxp, size_t size)
+lfi_lib_realloc(struct LFIBox *box, struct LFIContext **ctxp, size_t size)
 {
-    struct LFILinuxProc *proc = lfi_box_data(lfi_ctx_box(*ctxp));
+    struct LFILinuxProc *proc = lfi_box_data(box);
     assert(proc->libsyms.realloc);
 
     lfiptr p = LFI_INVOKE(proc->box, ctxp, proc->libsyms.realloc, lfiptr,
@@ -83,9 +83,9 @@ lfi_lib_realloc(struct LFIContext **ctxp, size_t size)
 }
 
 EXPORT void *
-lfi_lib_calloc(struct LFIContext **ctxp, size_t count, size_t size)
+lfi_lib_calloc(struct LFIBox *box, struct LFIContext **ctxp, size_t count, size_t size)
 {
-    struct LFILinuxProc *proc = lfi_box_data(lfi_ctx_box(*ctxp));
+    struct LFILinuxProc *proc = lfi_box_data(box);
     assert(proc->libsyms.calloc);
 
     lfiptr p = LFI_INVOKE(proc->box, ctxp, proc->libsyms.calloc, lfiptr,
@@ -98,9 +98,9 @@ lfi_lib_calloc(struct LFIContext **ctxp, size_t count, size_t size)
 }
 
 EXPORT void
-lfi_lib_free(struct LFIContext **ctxp, void *p)
+lfi_lib_free(struct LFIBox *box, struct LFIContext **ctxp, void *p)
 {
-    struct LFILinuxProc *proc = lfi_box_data(lfi_ctx_box(*ctxp));
+    struct LFILinuxProc *proc = lfi_box_data(box);
     assert(proc->libsyms.free);
 
     LFI_INVOKE(proc->box, ctxp, proc->libsyms.free, void, (lfiptr),

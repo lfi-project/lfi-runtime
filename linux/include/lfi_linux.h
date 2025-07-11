@@ -109,16 +109,16 @@ lfi_linux_init_clone(struct LFILinuxThread *main_thread);
 
 // Memory management functions for sandboxed libraries.
 void *
-lfi_lib_malloc(struct LFIContext **ctxp, size_t size);
+lfi_lib_malloc(struct LFIBox *box, struct LFIContext **ctxp, size_t size);
 
 void *
-lfi_lib_realloc(struct LFIContext **ctxp, size_t size);
+lfi_lib_realloc(struct LFIBox *box, struct LFIContext **ctxp, size_t size);
 
 void *
-lfi_lib_calloc(struct LFIContext **ctxp, size_t count, size_t size);
+lfi_lib_calloc(struct LFIBox *box, struct LFIContext **ctxp, size_t count, size_t size);
 
 void
-lfi_lib_free(struct LFIContext **ctxp, void *p);
+lfi_lib_free(struct LFIBox *box, struct LFIContext **ctxp, void *p);
 
 #ifdef __cplusplus
 }

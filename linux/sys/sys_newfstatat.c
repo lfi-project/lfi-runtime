@@ -21,5 +21,5 @@ sys_newfstatat(struct LFILinuxThread *t, int dirfd, lfiptr pathp,
     int kfd = fdget(&t->proc->fdtable, dirfd);
     if (kfd == -1)
         return -LINUX_EBADF;
-    return host_fstatat(kfd, "", stat_, 0);
+    return host_fstatat(kfd, "", stat_, LINUX_AT_EMPTY_PATH);
 }
