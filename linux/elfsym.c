@@ -45,13 +45,13 @@ load_libsyms(struct LFILinuxProc *proc)
         return false;
     if (!loadsym(proc, &proc->libsyms.thread_destroy, "_lfi_thread_destroy"))
         return false;
-    if (!loadsym(proc, &proc->libsyms.malloc, "malloc"))
+    if (!loadsym(proc, &proc->libsyms.malloc, "_lfi_malloc"))
         return false;
-    if (!loadsym(proc, &proc->libsyms.realloc, "realloc"))
+    if (!loadsym(proc, &proc->libsyms.realloc, "_lfi_realloc"))
         return false;
-    if (!loadsym(proc, &proc->libsyms.calloc, "calloc"))
+    if (!loadsym(proc, &proc->libsyms.calloc, "_lfi_calloc"))
         return false;
-    if (!loadsym(proc, &proc->libsyms.free, "free"))
+    if (!loadsym(proc, &proc->libsyms.free, "_lfi_free"))
         return false;
     return true;
 }
