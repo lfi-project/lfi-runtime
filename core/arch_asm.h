@@ -157,6 +157,12 @@
 .endm
 
 
+.macro write_ctx reg
+    mv t0, tp
+    sd \reg, (8*TLS_SLOT_LFI)(t0)
+.endm
+
+
 #endif
 // clang-format on
 
