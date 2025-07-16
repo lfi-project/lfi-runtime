@@ -5,5 +5,6 @@ executable(
   files('main.c'),
   c_args: c_args_warnings,
   dependencies: [argtable, lfi_linux],
+  link_args: ['-static'],
   install: true,
 )
