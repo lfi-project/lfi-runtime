@@ -158,8 +158,7 @@
 
 
 .macro write_ctx reg
-    mv t0, tp
-    sd \reg, (8*TLS_SLOT_LFI)(t0)
+    sd \reg, (8*TLS_SLOT_LFI)(tp)
 .endm
 
 
