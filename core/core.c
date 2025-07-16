@@ -91,7 +91,7 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
     }
 
     const char *verbose = getenv("LFI_VERBOSE");
-    if (verbose && strcmp(verbose, "1"))
+    if (verbose && strcmp(verbose, "1") == 0)
         opts.verbose = true;
 
     *engine = (struct LFIEngine) {
