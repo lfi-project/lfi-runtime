@@ -14,11 +14,6 @@ static uint8_t prog_cb[] = {
     0x80, 0x03, 0x1f, 0xd6, // br x28
 };
 
-static uint8_t ret[] = {
-    0x7e, 0x0f, 0x40, 0xf9, // ldr x30, [x27, #24]
-    0xc0, 0x03, 0x3f, 0xd6, // blr x30
-};
-
 #elif defined(LFI_ARCH_X64)
 
 static uint8_t prog[] = {

@@ -18,11 +18,11 @@ jobs:
 
     - name: Install LFI x86-64 Compiler
       if: matrix.os == 'ubuntu-22.04'
-      run: wget -q https://github.com/zyedidia/lfi/releases/download/v0.8/x86_64-lfi-clang.tar.gz && tar -xf x86_64-lfi-clang.tar.gz && echo "$PWD/x86_64-lfi-clang/lfi-bin" >> $GITHUB_PATH
+      run: wget -q https://github.com/lfi-project/lfi-llvm-toolchain/releases/download/v0.9/x86_64-lfi-clang.tar.gz && echo "$PWD/x86_64-lfi-clang/lfi-bin" >> $GITHUB_PATH
 
     - name: Install LFI AArch64 Compiler
       if: matrix.os == 'ubuntu-24.04-arm'
-      run: wget -q https://github.com/lfi-project/lfi-llvm-toolchain/releases/download/new-reserved-regs/aarch64-lfi-clang.tar.gz && tar -xf aarch64-lfi-clang.tar.gz && echo "$PWD/aarch64-lfi-clang/lfi-bin" >> $GITHUB_PATH
+      run: wget -q https://github.com/lfi-project/lfi-llvm-toolchain/releases/download/v0.9/aarch64-lfi-clang.tar.gz && tar -xf aarch64-lfi-clang.tar.gz && echo "$PWD/aarch64-lfi-clang/lfi-bin" >> $GITHUB_PATH
 
     - name: Set env
       run: echo "ASAN_OPTIONS=use_sigaltstack=0,detect_leaks=0" >> $GITHUB_ENV
