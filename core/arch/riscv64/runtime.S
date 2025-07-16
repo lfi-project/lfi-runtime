@@ -63,7 +63,7 @@ lfi_ctx_entry:
     ld   x18, REGS_X0+8*18(a0)   # x18 (s2)
     ld   x19, REGS_X0+8*19(a0)   # x19 (s3)
     ld   x20, REGS_X0+8*20(a0)   # x20 (s4)
-    ld   x21, REGS_X0+8*21(a0)   # x21 (s5) --> base 
+    ld   x21, REGS_X0+8*21(a0)   # x21 (s5)
     ld   x22, REGS_X0+8*22(a0)   # x22 (s6)
     ld   x23, REGS_X0+8*23(a0)   # x23 (s7)
     ld   x24, REGS_X0+8*24(a0)   # x24 (s8)
@@ -308,7 +308,7 @@ lfi_syscall_entry:
     fld   f31, REGS_F+8*31(a0)
     
     ld   a0, REGS_X0+8*10(a0)
-    add  ra, REG_BASE, ra
+    add  ra, s5, ra
     jalr zero, ra, 0
 
 .global lfi_get_tp
@@ -316,7 +316,7 @@ lfi_syscall_entry:
 lfi_get_tp:
     get_ctx t0
     ld   a0, REGS_TP(t0)
-    add  ra, REG_BASE, ra
+    add  ra, s5, ra
     jalr zero, ra, 0
 
 .global lfi_set_tp
@@ -325,7 +325,7 @@ lfi_set_tp:
     get_ctx REG_BASE
     sd   a0, REGS_TP(REG_BASE)
     ld   REG_BASE, REGS_BASE(REG_BASE)
-    add  ra, REG_BASE, ra
+    add  ra, s5, ra
     jalr zero, ra, 0
 
 #ifndef __APPLE__
