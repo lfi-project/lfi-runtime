@@ -110,7 +110,7 @@ lfi_ctx_entry:
     fcvt.d.w f30, zero
     fcvt.d.w f31, zero
     
-    add.uw  ra, t0, REG_BASE
+    add.uw  ra, t0, x21
     
     ld   a0, REGS_X0+8*10(a0)    # Load x10 (a0) last
     
