@@ -106,12 +106,14 @@ lfi_trampoline:
     movq INVOKE_BOX(%r13), %r14
     movq INVOKE_CTX(%r13), %r13
     movq %r13, %r11
+    movq $0, %r15
 
     jmp .lfi_trampoline_common
 
 // Direct trampoline that doesn't involve a thread-local lookup. Instead the
 // info usually passed via the lfi_invoke_info thread-local are passed via
 // the stack:
+// (%rsp+24): n_stack (unused)
 // (%rsp+16): lfiptr target
 // (%rsp+8): struct LFIContext *box
 // (%rsp): struct LFIContext **ctxp
@@ -125,6 +127,7 @@ lfi_trampoline_direct:
 
     // save callee-saved registers
     xchgq %r15, (%rsp)
+    // xchgq %r14, -8(%rsp) not included yet
     pushq %r14
     pushq %r13
     pushq %r12
@@ -132,9 +135,10 @@ lfi_trampoline_direct:
     pushq %rbp
 
     // Put arguments where we expect them.
-    movq %r15, %r12
-    movq %r11, %r13
-    movq %r10, %r14
+    movq %r15, %r12 // target
+    movq %r11, %r13 // ctxp
+    movq %r14, %r15 // n_stack
+    movq %r10, %r14 // box
 
 .lfi_trampoline_common:
     // Check if the context pointer is zero.
