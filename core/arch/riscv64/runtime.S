@@ -136,8 +136,7 @@ lfi_ctx_entry:
     fcvt.d.w f30, zero
     fcvt.d.w f31, zero
     
-    # Now use the preserved entrypoint in t3
-    add.uw  ra, t3, x21
+    add.uw  ra, a2, x21
     
     ld   a0, REGS_X0+8*10(a0)    # Load x10 (a0) last
     
