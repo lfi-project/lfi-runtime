@@ -3,15 +3,14 @@
 .text
 
 .macro zero_caller_regs
-    // Skip x0 and x1 because return value could be there.
+    // skip x0 and x1 because return value could be there.
     mov x2, #0
     mov x3, #0
     mov x4, #0
     mov x5, #0
     mov x6, #0
     mov x7, #0
-    // TODO: can an indirect result be placed in x8?
-    mov x8, #0
+    // skip x8 due to indirect result
     mov x9, #0
     // skip x10 (target)
     mov x11, #0
@@ -21,9 +20,8 @@
     mov x15, #0
     mov x16, #0
     mov x17, #0
-    // TODO: consider skipping x18 because it is platform-reserved.
-    mov x18, #0
-    // Skip v0 and v1 because return value could be there.
+    // skip x18 because it is platform-reserved
+    // skip v0 and v1 because return value could be there.
     movi v2.2D, #0
     movi v3.2D, #0
     movi v4.2D, #0

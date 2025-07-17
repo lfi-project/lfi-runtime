@@ -1,7 +1,6 @@
 #include "arch_asm.h"
 
 .macro zero_regs
-    mov x8, #0
     mov x9, #0
     // skip x10 (target)
     mov x11, #0
@@ -11,8 +10,7 @@
     mov x15, #0
     mov x16, #0
     mov x17, #0
-    // TODO: consider skipping x18 because it is platform-reserved.
-    mov x18, #0
+    // skip x18 (platform-reserved)
     mov x19, #0
     mov x20, #0
     mov x21, #0
@@ -141,14 +139,14 @@ lfi_trampoline_direct:
 
 .lfi_trampoline_common:
     // Load the context pointer from the LFIContext **.
-    ldr x8, [x20]
+    ldr x13, [x20]
     // If NULL, initialize the context pointer.
-    cbnz x8, 1f
+    cbnz x13, 1f
     b .trampoline_clone
 .trampoline_clone_ret:
-    ldr x8, [x20]
+    ldr x13, [x20]
 1:
-    ldr x9, [x8, #REGS_RETADDR]
+    ldr x9, [x13, #REGS_RETADDR]
     // load target into x10
     mov x10, x22
 
@@ -156,23 +154,23 @@ lfi_trampoline_direct:
     // [tpidr_el0, TLS_SLOT_LFI] into the context and setting it to point to
     // the context itself.
     get_ctx x12
-    str x12, [x8, REGS_HOST_TP]
-    write_ctx x8, x12
+    str x12, [x13, REGS_HOST_TP]
+    write_ctx x13, x12
 
     // save user sp to stack
-    ldr x12, [x8, REGS_SP]
+    ldr x12, [x13, REGS_SP]
     stp x12, xzr, [sp, #-16]!
 
     // save host stack
     mov x11, sp
-    str x11, [x8, REGS_HOST_SP]
+    str x11, [x13, REGS_HOST_SP]
 
     // set guest stack
     mov sp, x12
     // set return address to lfi_retfn
     mov x30, x9
     // set base pointer
-    ldr REG_BASE, [x8, REGS_BASE]
+    ldr REG_BASE, [x13, REGS_BASE]
     // set address pointer to a valid value
     mov REG_ADDR, REG_BASE
 
