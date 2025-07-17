@@ -215,6 +215,10 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
                 sys_ignore(t, "fcntl"))
         SYS(prctl,
                 sys_prctl(t, a0, a1, a2, a3, a4))
+        SYS(uname,
+                sys_uname(t, a0))
+        SYS(sysinfo,
+                sys_sysinfo(t, a0))
 
         // Unsupported syscalls that we ignore or purposefully return ENOSYS for.
         SYS(set_robust_list,

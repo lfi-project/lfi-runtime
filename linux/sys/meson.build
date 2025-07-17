@@ -40,9 +40,11 @@ srcs += files(
   'sys_sched_getaffinity.c',
   'sys_sched_yield.c',
   'sys_set_tid_address.c',
+  'sys_sysinfo.c',
   'sys_time.c',
   'sys_truncate.c',
   'sys_unlinkat.c',
   'sys_write.c',
   'sys_writev.c',
+  'sys_uname.c',
 )

@@ -19,6 +19,22 @@ struct Dirent {
     char d_name[256];
 };
 
+struct SysInfo {
+    unsigned long uptime;
+    unsigned long loads[3];
+    unsigned long totalram;
+    unsigned long freeram;
+    unsigned long sharedram;
+    unsigned long bufferram;
+    unsigned long totalswap;
+    unsigned long freeswap;
+    unsigned short procs, pad;
+    unsigned long totalhigh;
+    unsigned long freehigh;
+    unsigned mem_unit;
+    char __reserved[256];
+};
+
 typedef int linux_clockid_t;
 typedef int64_t linux_time_t;
 

@@ -276,3 +276,9 @@ sys_lfi_register(struct LFILinuxThread *t, lfiptr box_funcs, size_t n);
 int
 sys_prctl(struct LFILinuxThread *t, int op, uint64_t arg2, uint64_t arg3,
     uint64_t arg4, uint64_t arg5);
+
+int
+sys_sysinfo(struct LFILinuxThread *t, lfiptr infop);
+
+int
+sys_uname(struct LFILinuxThread *t, lfiptr bufp);
