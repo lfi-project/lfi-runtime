@@ -2,3 +2,4 @@
 url = https://github.com/lfi-project/lfi-verifier.git
 revision = master
 directory = lfi-verifier
+patch_directory = lfi-verifier
