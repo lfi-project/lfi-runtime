@@ -63,7 +63,7 @@ lfi_ctx_entry:
     ld   x18, REGS_X0+8*18(a0)   # x18 (s2)
     ld   x19, REGS_X0+8*19(a0)   # x19 (s3)
     ld   x20, REGS_X0+8*20(a0)   # x20 (s4)
-    ld   x21, REGS_X0+8*21(a0)   # x21 (s5)
+    ld   x21, REGS_X0+8*21(a0)   # x21 (s5) - this is our base register
     ld   x22, REGS_X0+8*22(a0)   # x22 (s6)
     ld   x23, REGS_X0+8*23(a0)   # x23 (s7)
     ld   x24, REGS_X0+8*24(a0)   # x24 (s8)
