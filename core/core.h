@@ -55,10 +55,12 @@ struct Sys {
 };
 
 struct LFIContext {
-    // Registers of sandbox and associated host thread (stack, thread pointer) are stored here.
+    // Registers of sandbox and associated host thread (stack, thread pointer)
+    // are stored here.
     struct LFIRegs regs;
 
-    // User-provided data pointer -- tracks per-sandbox context for Linux runtime.
+    // User-provided data pointer -- tracks per-sandbox context for Linux
+    // runtime.
     void *userdata;
 
     // Sandbox that this context is associated with.

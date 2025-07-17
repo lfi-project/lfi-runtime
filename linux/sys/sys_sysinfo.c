@@ -7,9 +7,11 @@
 int
 sys_sysinfo(struct LFILinuxThread *t, lfiptr infop)
 {
-    struct SysInfo *info = bufhost(t, infop, sizeof(struct SysInfo), alignof(struct SysInfo));
+    struct SysInfo *info = bufhost(t, infop, sizeof(struct SysInfo),
+        alignof(struct SysInfo));
     if (!info)
-        return -LINUX_EINVAL;;
+        return -LINUX_EINVAL;
+    ;
     struct sysinfo kinfo;
     int r = sysinfo(&kinfo);
     if (r < 0)

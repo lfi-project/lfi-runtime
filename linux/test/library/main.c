@@ -1,8 +1,8 @@
+#include <dlfcn.h>
+#include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
-#include <dlfcn.h>
 
 #define LFI_SYS_pause 1024
 

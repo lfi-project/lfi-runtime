@@ -83,7 +83,8 @@ lfi_lib_realloc(struct LFIBox *box, struct LFIContext **ctxp, size_t size)
 }
 
 EXPORT void *
-lfi_lib_calloc(struct LFIBox *box, struct LFIContext **ctxp, size_t count, size_t size)
+lfi_lib_calloc(struct LFIBox *box, struct LFIContext **ctxp, size_t count,
+    size_t size)
 {
     struct LFILinuxProc *proc = lfi_box_data(box);
     assert(proc->libsyms.calloc);

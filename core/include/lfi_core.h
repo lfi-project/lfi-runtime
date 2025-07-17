@@ -22,9 +22,9 @@ struct LFIEngine;
 struct LFIBox;
 
 // An LFIContext represents a sandbox execution context, tracking the
-// sandbox's registers, thread pointer, stack, and a reference to the corresponding
-// LFIBox. There may be multiple LFIContexts for one LFIBox, corresponding to
-// multiple sandbox threads.
+// sandbox's registers, thread pointer, stack, and a reference to the
+// corresponding LFIBox. There may be multiple LFIContexts for one LFIBox,
+// corresponding to multiple sandbox threads.
 struct LFIContext;
 
 struct LFIOptions {
