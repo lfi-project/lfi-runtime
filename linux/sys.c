@@ -223,6 +223,8 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
         // Unsupported syscalls that we ignore or purposefully return ENOSYS for.
         SYS(set_robust_list,
                 sys_ignore(t, "set_robust_list"))
+        SYS(getrlimit,
+                sys_ignore(t, "getrlimit"))
         SYS(membarrier,
                 sys_ignore(t, "membarrier"))
         SYS(madvise,
