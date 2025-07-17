@@ -42,28 +42,6 @@ lfi_ctx_entry:
     write_ctx a0          # Added write_ctx
     sd   t1, REGS_HOST_TP(a0)
     
-    # Skip x0 (zero register)
-    # Skip x1 (ra) 
-    ld   x2, REGS_X0+8*2(a0)     # x2 (sp)
-    ld   x3, REGS_X0+8*3(a0)     # x3 (gp)
-    # Skip x4 (tp)
-    ld   x5, REGS_X0+8*5(a0)     # x5 (t0)
-    ld   x6, REGS_X0+8*6(a0)     # x6 (t1)
-    ld   x7, REGS_X0+8*7(a0)     # x7 (t2)
-    ld   x8, REGS_X0+8*8(a0)     # x8 (s0/fp)
-    ld   x9, REGS_X0+8*9(a0)     # x9 (s1)
-    # Skip x10 (a0)
-    ld   x11, REGS_X0+8*11(a0)   # x11 (a1)
-    ld   x12, REGS_X0+8*12(a0)   # x12 (a2)
-    ld   x13, REGS_X0+8*13(a0)   # x13 (a3)
-    ld   x14, REGS_X0+8*14(a0)   # x14 (a4)
-    ld   x15, REGS_X0+8*15(a0)   # x15 (a5)
-    ld   x16, REGS_X0+8*16(a0)   # x16 (a6)
-    ld   x17, REGS_X0+8*17(a0)   # x17 (a7)
-    ld   x18, REGS_X0+8*18(a0)   # x18 (s2)
-    ld   x19, REGS_X0+8*19(a0)   # x19 (s3)
-    ld   x20, REGS_X0+8*20(a0)   # x20 (s4)
-    ld   x21, REGS_X0+8*21(a0)   # x21 (s5) - this is our base register
     ld   x22, REGS_X0+8*22(a0)   # x22 (s6)
     ld   x23, REGS_X0+8*23(a0)   # x23 (s7)
     ld   x24, REGS_X0+8*24(a0)   # x24 (s8)
@@ -71,6 +49,54 @@ lfi_ctx_entry:
     ld   x26, REGS_X0+8*26(a0)   # x26 (s10)
     ld   x27, REGS_X0+8*27(a0)   # x27 (s11)
     ld   x28, REGS_X0+8*28(a0)   # x28 (t3)
+    ld   x29, REGS_X0+8*29(a0)   # x29 (t4)
+    ld   x30, REGS_X0+8*30(a0)   # x30 (t5)
+    ld   x31, REGS_X0+8*31(a0)   # x31 (t6)
+    
+    mv   sp, x2  # Use the loaded sp value
+    
+    fcvt.d.w f0, zero
+    fcvt.d.w f1, zero
+    fcvt.d.w f2, zero
+    fcvt.d.w f3, zero
+    fcvt.d.w f4, zero
+    fcvt.d.w f5, zero
+    fcvt.d.w f6, zero
+    fcvt.d.w f7, zero
+    fcvt.d.w f8, zero
+    fcvt.d.w f9, zero
+    fcvt.d.w f10, zero
+    fcvt.d.w f11, zero
+    fcvt.d.w f12, zero
+    fcvt.d.w f13, zero
+    fcvt.d.w f14, zero
+    fcvt.d.w f15, zero
+    fcvt.d.w f16, zero
+    fcvt.d.w f17, zero
+    fcvt.d.w f18, zero
+    fcvt.d.w f19, zero
+    fcvt.d.w f20, zero
+    fcvt.d.w f21, zero
+    fcvt.d.w f22, zero
+    fcvt.d.w f23, zero
+    fcvt.d.w f24, zero
+    fcvt.d.w f25, zero
+    fcvt.d.w f26, zero
+    fcvt.d.w f27, zero
+    fcvt.d.w f28, zero
+    fcvt.d.w f29, zero
+    fcvt.d.w f30, zero
+    fcvt.d.w f31, zero
+    
+    # Target address was calculated earlier in ra
+    ld   x21, REGS_X0+8*21(a0)   # x21 (s5) - this is our base register
+    ld   x22, REGS_X0+8*22(a0)   # x22 (s6)
+    ld   x23, REGS_X0+8*23(a0)   # x23 (s7)
+    ld   x24, REGS_X0+8*24(a0)   # x24 (s8)
+    ld   x25, REGS_X0+8*25(a0)   # x25 (s9)
+    ld   x26, REGS_X0+8*26(a0)   # x26 (s10)
+    ld   x27, REGS_X0+8*27(a0)   # x27 (s11)
+    ld   x28, REGS_X0+8*28(a0)   # x28 (t3) 
     ld   x29, REGS_X0+8*29(a0)   # x29 (t4)
     ld   x30, REGS_X0+8*30(a0)   # x30 (t5)
     ld   x31, REGS_X0+8*31(a0)   # x31 (t6)
