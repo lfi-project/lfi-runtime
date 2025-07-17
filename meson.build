@@ -42,6 +42,11 @@ if not archmap.has_key(cpu)
   subdir_done()
 endif
 
+if cpu == 'riscv64'
+  add_project_arguments('-march=rv64gc_zba', language: 'c')
+  add_project_arguments('-march=rv64gc_zba', language: 'cpp')
+endif
+
 defines = []
 if compiler.has_function('getdents64', prefix : '''#define _GNU_SOURCE
 #include <dirent.h>''')

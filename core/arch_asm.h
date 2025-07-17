@@ -150,10 +150,13 @@
 // RISC-V specific context handling
 // This is a placeholder - you'll need to implement based on your TLS setup
 .macro get_ctx reg
-    // Load from thread pointer offset - adjust based on your TLS implementation
-    // This is similar to the ARM64/x86 approach but uses RISC-V instructions
-    csrr \reg, 0x4c1  // Read thread pointer (if available)
-    ld \reg, (8*TLS_SLOT_LFI)(\reg)
+
+ ld \reg, (8*TLS_SLOT_LFI)(tp)
+.endm
+
+
+.macro write_ctx reg
+    sd \reg, (8*TLS_SLOT_LFI)(tp)
 .endm
 
 
