@@ -28,7 +28,7 @@ static uint8_t prog[] = {
 
 static uint8_t prog[] = {
     0x93, 0x08, 0xa0, 0x02, // li a7, 42
-    0x83, 0xb0, 0x0a, 0x00, // ld ra, 0(x21)
+    0x83, 0xb0, 0x0d, 0x00, // ld ra, 0(s11)
     0xe7, 0x80, 0x00, 0x00, // jalr ra
 };
 
@@ -46,7 +46,7 @@ handler(struct LFIContext *ctx)
 #elif defined(LFI_ARCH_X64)
     int arg = (int) lfi_ctx_regs(ctx)->rax;
 #elif defined(LFI_ARCH_RISCV64)
-    int arg = (int) lfi_ctx_regs(ctx)->x17;
+    int arg = (int) lfi_ctx_regs(ctx)->a7;
 #endif
     assert(arg == 42);
     printf("success: received %d\n", 42);

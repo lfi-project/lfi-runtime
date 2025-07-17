@@ -104,62 +104,53 @@
 
 #if defined(__riscv) && (__riscv_xlen == 64)
 
-#define REGS_X0  32
-#define REGS_X1  40
-#define REGS_X2  48
-#define REGS_SP  REGS_X2
-#define REGS_X3  56
-#define REGS_X4  64
-#define REGS_X5  72
-#define REGS_X6  80
-#define REGS_X7  88
-#define REGS_X8  96
-#define REGS_X9  104
-#define REGS_X10 112
-#define REGS_X11 120
-#define REGS_X12 128
-#define REGS_X13 136
-#define REGS_X14 144
-#define REGS_X15 152
-#define REGS_X16 160
-#define REGS_X17 168
-#define REGS_X18 176
-#define REGS_X19 184
-#define REGS_X20 192
-#define REGS_X21 200
-#define REGS_X22 208
-#define REGS_X23 216
-#define REGS_X24 224
-#define REGS_X25 232
-#define REGS_X26 240
-#define REGS_X27 248
-#define REGS_X28 256
-#define REGS_X29 264
-#define REGS_X30 272
-#define REGS_X31 280
+#define REGS_ZERO  32
+#define REGS_RA    40
+#define REGS_SP    48
+#define REGS_GP    56
+#define REGS_RTP   64
+#define REGS_T0    72
+#define REGS_T1    80
+#define REGS_T2    88
+#define REGS_S0    96
+#define REGS_S1    104
+#define REGS_A0    112
+#define REGS_A1    120
+#define REGS_A2    128
+#define REGS_A3    136
+#define REGS_A4    144
+#define REGS_A5    152
+#define REGS_A6    160
+#define REGS_A7    168
+#define REGS_S2    176
+#define REGS_S3    184
+#define REGS_S4    192
+#define REGS_S5    200
+#define REGS_S6    208
+#define REGS_S7    216
+#define REGS_S8    224
+#define REGS_S9    232
+#define REGS_S10   240
+#define REGS_S11   248
+#define REGS_T3    256
+#define REGS_T4    264
+#define REGS_T5    272
+#define REGS_T6    280
+#define REGS_F     288
 
-#define REGS_F   288
-
-// Use a saved register as the base register (similar to ARM64 using x21)
-#define REGS_BASE REGS_X18 // s2 (saved register)
-#define REGS_ADDR REGS_X19
-#define REG_BASE  s2 // Assembly register name for s2
-#define REG_ADDR  s3
+#define REGS_BASE REGS_S11
+#define REGS_ADDR REGS_S10
+#define REG_BASE  s11
+#define REG_ADDR  s10
 // clang-format off
 #ifdef __ASSEMBLER__
-// RISC-V specific context handling
-// This is a placeholder - you'll need to implement based on your TLS setup
 .macro get_ctx reg
-
- ld \reg, (8*TLS_SLOT_LFI)(tp)
+    ld \reg, (8*TLS_SLOT_LFI)(tp)
 .endm
-
 
 .macro write_ctx reg
     sd \reg, (8*TLS_SLOT_LFI)(tp)
 .endm
-
-
 #endif
 // clang-format on
 

@@ -74,15 +74,45 @@ _Static_assert(offsetof(struct LFIRegs, xmm) % 16 == 0,
 
 #elif defined(LFI_ARCH_RISCV64)
 
-_Static_assert(offsetof(struct LFIRegs, x0) == REGS_X0,
-    "incorrect REGS offset");
-_Static_assert(offsetof(struct LFIRegs, x2) == REGS_SP,
-    "incorrect REGS offset");
-_Static_assert(offsetof(struct LFIRegs, x18) == REGS_BASE,
-    "incorrect REGS offset");
-_Static_assert(offsetof(struct LFIRegs, x19) == REGS_ADDR,
-    "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, zero) == REGS_ZERO, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, ra) == REGS_RA, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, sp) == REGS_SP, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, gp) == REGS_GP, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, rtp) == REGS_RTP, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, t0) == REGS_T0, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, t1) == REGS_T1, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, t2) == REGS_T2, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, s0) == REGS_S0, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, s1) == REGS_S1, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, a0) == REGS_A0, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, a1) == REGS_A1, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, a2) == REGS_A2, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, a3) == REGS_A3, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, a4) == REGS_A4, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, a5) == REGS_A5, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, a6) == REGS_A6, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, a7) == REGS_A7, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, s2) == REGS_S2, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, s3) == REGS_S3, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, s4) == REGS_S4, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, s5) == REGS_S5, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, s6) == REGS_S6, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, s7) == REGS_S7, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, s8) == REGS_S8, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, s9) == REGS_S9, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, s10) == REGS_S10, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, s11) == REGS_S11, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, t3) == REGS_T3, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, t4) == REGS_T4, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, t5) == REGS_T5, "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, t6) == REGS_T6, "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, f) == REGS_F, "incorrect REGS offset");
+
+_Static_assert(offsetof(struct LFIRegs, REG_BASE) == REGS_BASE,
+    "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, REG_ADDR) == REGS_ADDR,
+    "incorrect REGS offset");
+
 
 #endif
 
