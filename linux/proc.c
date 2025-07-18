@@ -137,6 +137,7 @@ lfi_proc_free(struct LFILinuxProc *proc)
     unlock(&proc->lk_threads);
     free(proc->dynsym.data);
     free(proc->dynstr.data);
+    lfi_box_free(proc->box);
     unlock(&proc->lk_proc);
     free(proc);
 }
