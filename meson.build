@@ -114,4 +114,12 @@ if get_option('enable_linux')
     dependencies: lfi_linux.as_link_whole(),
     install: true,
   )
+
+  pkg = import('pkgconfig')
+  pkg.generate(
+      name: 'lfi',
+      filebase: 'lfi',
+      description: 'LFI runtime',
+      libraries: [liblfi_so, liblfi_a],
+  )
 endif
