@@ -1,9 +1,14 @@
+#ifdef HAVE_PKU
+#define _GNU_SOURCE
+#endif
+
 #include "core.h"
 #include "lfi_core.h"
 
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/mman.h>
 
 // Use of the following two functions assumes that the sandbox and host share
@@ -63,13 +68,39 @@ lfi_box_new(struct LFIEngine *engine)
     }
 
     size_t size = engine->opts.boxsize;
-    uintptr_t base = boxmap_addspace(engine->bm, box_footprint(size));
+    uintptr_t base = boxmap_addspace(engine->bm, box_footprint(size, engine->opts));
     if (base == 0) {
         lfi_error = LFI_ERR_BOXMAP;
         goto err1;
     }
 
+    int pkey = 0;
+    if (engine->opts.use_pku) {
+#ifdef HAVE_PKU
+        pkey = pkey_alloc(0, 0);
+        if (pkey == -1) {
+            if (errno == ENOSPC)
+                LOG(engine, "could not allocate pkey: no more keys available");
+            else
+                LOG(engine, "could not allocate pkey: invalid argument");
+            lfi_error = LFI_ERR_PKU;
+            return NULL;
+        }
+
+        int r = pkey_mprotect((void *) base, size, PROT_READ | PROT_WRITE, pkey);
+        if (r == -1) {
+            lfi_error = LFI_ERR_PKU;
+            return NULL;
+        }
+#else
+        LOG(engine, "use_pku=1 but liblfi was compiled without PKU support");
+        lfi_error = LFI_ERR_PKU;
+        return NULL;
+#endif
+    }
+
     *box = (struct LFIBox) {
+        .pkey = pkey,
         .base = base,
         .size = size,
         .engine = engine,
@@ -88,7 +119,7 @@ lfi_box_new(struct LFIEngine *engine)
     return box;
 
 err2:
-    boxmap_rmspace(engine->bm, base, box_footprint(size));
+    boxmap_rmspace(engine->bm, base, box_footprint(size, engine->opts));
 err1:
     free(box);
     return NULL;
@@ -355,7 +386,11 @@ lfi_box_free(struct LFIBox *box)
     void *p = mmap((void *) box->base, box->size, PROT_NONE,
         MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
     assert(p == (void *) box->base);
-    boxmap_rmspace(box->engine->bm, box->base, box_footprint(box->size));
+    boxmap_rmspace(box->engine->bm, box->base, box_footprint(box->size, box->engine->opts));
+#ifdef HAVE_PKU
+    if (box->pkey != 0)
+        pkey_free(box->pkey);
+#endif
     free(box);
 }
 

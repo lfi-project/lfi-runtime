@@ -37,6 +37,10 @@ struct LFIOptions {
     // Display verbose debugging information using the system logger.
     bool verbose;
 
+    // Use memory protection keys for load-store protection. This can only be
+    // enabled on machines that support pku (Intel MPK or Arm POE).
+    bool use_pku;
+
     // Enable stores-only mode (for verification).
     bool stores_only;
 
@@ -288,6 +292,8 @@ enum {
     LFI_ERR_MMAP = 4,
     // Error creating sigaltstack.
     LFI_ERR_SIGALTSTACK = 5,
+    // Error with protection keys.
+    LFI_ERR_PKU = 6,
 };
 
 struct LFIInvokeInfo {

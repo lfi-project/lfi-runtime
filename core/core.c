@@ -67,7 +67,7 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
         .chunksize = gb(4),
         // This is the guard size between the edge of the boxmap region and the
         // outer world.
-        .guardsize = box_footprint(gb(4)),
+        .guardsize = box_footprint(gb(4), opts),
     };
     struct BoxMap *bm = boxmap_new(bm_opts);
     if (!bm) {
@@ -78,7 +78,7 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
     // Reserve space for n sandboxes with appropriate footprint, 2 guard pages,
     // and 2 chunks worth of slack because boxmap has to do internal alignment
     // when mmap returns non-chunk-aligned region.
-    size_t reserve = nsandboxes * box_footprint(opts.boxsize) +
+    size_t reserve = nsandboxes * box_footprint(opts.boxsize, opts) +
         bm_opts.chunksize * 2 + bm_opts.guardsize * 2;
 
     if (nsandboxes > 0) {

@@ -46,3 +46,8 @@ option('segue_single_sandbox',
   type: 'boolean',
   value: false,
   description: 'assume that %gs is never modified by the host, and there is only one sandbox (x86-64 only)')
+
+option('enable_pku',
+  type: 'boolean',
+  value: true,
+  description: 'enable use of memory protection keys if available (allows setting opts.use_pku=1)')

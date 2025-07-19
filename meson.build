@@ -63,6 +63,10 @@ if compiler.has_function('memfd_create', prefix : '''#define _GNU_SOURCE
 #include <sys/mman.h>''')
   defines += '-DHAVE_MEMFD_CREATE'
 endif
+if get_option('enable_pku') and compiler.has_function('pkey_alloc', prefix : '''#define _GNU_SOURCE
+#include <sys/mman.h>''')
+  defines += '-DHAVE_PKU'
+endif
 if compiler.compiles('''#include <sys/syscall.h>
 #ifndef SYS_memfd_create
 #error "no SYS_memfd_create"

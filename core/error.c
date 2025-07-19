@@ -26,6 +26,8 @@ name(int errno)
         return "memory reservation failed";
     case LFI_ERR_MMAP:
         return "libmmap failed";
+    case LFI_ERR_PKU:
+        return "pku operation failed";
     case LFI_ERR_SIGALTSTACK:
         return "sigaltstack failed";
     default:

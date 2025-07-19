@@ -25,6 +25,9 @@ struct LFIEngine {
 };
 
 struct LFIBox {
+    // Non-zero protection key if pku is enabled (zero if disabled).
+    int pkey;
+
     // Address space information.
     uintptr_t base;
     size_t size;
@@ -92,7 +95,7 @@ gb(size_t x)
 // certain size. This depends on the architecture because it is effectively
 // reserving a guard region beyond the sandbox.
 static inline size_t
-box_footprint(size_t boxsize)
+box_footprint(size_t boxsize, struct LFIOptions opts)
 {
     if (boxsize != gb(4)) {
         LOG_(
@@ -102,6 +105,8 @@ box_footprint(size_t boxsize)
 #if defined(LFI_ARCH_ARM64)
     return gb(4);
 #elif defined(LFI_ARCH_X64)
+    if (opts.use_pku)
+        return gb(4);
     return gb(44);
 #elif defined(LFI_ARCH_RISCV64)
     return gb(4);
