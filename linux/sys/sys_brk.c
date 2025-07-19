@@ -44,5 +44,6 @@ sys_brk(struct LFILinuxThread *t, lfiptr addr)
             return -1;
     }
     p->brksize = newsize;
+    LOG(p->engine, "sys_brk(%lx) = %lx\n", addr, p->brkbase + p->brksize);
     return p->brkbase + p->brksize;
 }
