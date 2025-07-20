@@ -106,11 +106,11 @@ box_footprint(size_t boxsize, struct LFIOptions opts)
     return gb(4);
 #elif defined(LFI_ARCH_X64)
 
-# ifdef HAVE_PKU
+#ifdef HAVE_PKU
     return gb(4);
-# else
+#else
     return gb(44);
-# endif
+#endif
 
 #elif defined(LFI_ARCH_RISCV64)
     return gb(4);

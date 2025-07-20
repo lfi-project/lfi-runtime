@@ -29,6 +29,14 @@
 .global lfi_callback
 lfi_callback:
     // Entrypoint for callbacks, with the target in %r10.
+#ifdef HAVE_PKU
+    movq %rcx, SCRATCHPAD+0(%REG_BASE)
+    movq %rdx, SCRATCHPAD+8(%REG_BASE)
+    pku_all_access
+    movq SCRATCHPAD+0(%REG_BASE), %rcx
+    movq SCRATCHPAD+8(%REG_BASE), %rdx
+#endif
+
     get_ctx %r11
     // Swap the sandbox/host stacks. The sandbox stack won't remain in the
     // REGS_HOST_SP spot for long because we'll restore the saved host stack on
@@ -54,7 +62,7 @@ lfi_callback:
 
 #ifdef ENABLE_SEGUE
 # ifndef SEGUE_SINGLE_SANDBOX
-    wrgsbase %r14
+    wrgsbase %REG_BASE
 # endif
 #endif
 
@@ -70,6 +78,12 @@ lfi_callback:
     movq %rsp, REGS_HOST_SP(%r11)
     // Restore sandbox stack pointer.
     movq %r10, %rsp
+
+#ifdef HAVE_PKU
+    movq %rax, SCRATCHPAD+0(%REG_BASE)
+    pku_box_access REGS_PKEY(%r11)
+    movq SCRATCHPAD+0(%REG_BASE), %rax
+#endif
 
 #ifndef STORES_ONLY
     zero_caller_regs

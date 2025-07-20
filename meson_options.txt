@@ -49,5 +49,5 @@ option('segue_single_sandbox',
 
 option('enable_pku',
   type: 'boolean',
-  value: true,
-  description: 'enable use of memory protection keys if available (allows setting opts.use_pku=1)')
+  value: false,
+  description: 'use memory protection keys')

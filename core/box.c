@@ -2,13 +2,14 @@
 #define _GNU_SOURCE
 #endif
 
+#include "arch_asm.h"
 #include "core.h"
 #include "lfi_core.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <sys/mman.h>
 
 // Use of the following two functions assumes that the sandbox and host share
@@ -64,8 +65,28 @@ syssetup(struct LFIBox *box)
     box->sys->rtcalls[3] = (uintptr_t) &lfi_ret;
 
     // Map read-only.
-    int r = protectmem((void *) box->base, box->engine->opts.pagesize, PROT_READ, box->pkey);
+    int r = protectmem((void *) box->base, box->engine->opts.pagesize,
+        PROT_READ, box->pkey);
     assert(r == 0);
+}
+
+static void
+scratchsetup(struct LFIBox *box)
+{
+    // Currently the scratchpad is only used by PKU code, but if we need it in
+    // the future for general LFI we can remove this ifdef.
+#ifdef HAVE_PKU
+    void *addr = (void *) (box->base + SCRATCHPAD);
+    size_t pagesize = box->engine->opts.pagesize;
+    // Map the page.
+    void *p = mmap(addr, pagesize, PROT_READ | PROT_WRITE,
+        MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+    assert(p == addr);
+
+    // Mark accessible for the protection key.
+    int r = protectmem(addr, pagesize, PROT_READ | PROT_WRITE, box->pkey);
+    assert(r == 0);
+#endif
 }
 
 EXPORT struct LFIBox *
@@ -78,7 +99,8 @@ lfi_box_new(struct LFIEngine *engine)
     }
 
     size_t size = engine->opts.boxsize;
-    uintptr_t base = boxmap_addspace(engine->bm, box_footprint(size, engine->opts));
+    uintptr_t base = boxmap_addspace(engine->bm,
+        box_footprint(size, engine->opts));
     if (base == 0) {
         lfi_error = LFI_ERR_BOXMAP;
         goto err1;
@@ -100,15 +122,21 @@ lfi_box_new(struct LFIEngine *engine)
     assert(r == 0);
 #endif
 
+    // The mmap region for the sandbox begins immediately after the scratchpad.
+    // The scratchpad must be located after the guard region, which is enforced
+    // by this assertion.
+    assert(SCRATCHPAD >= engine->guardsize);
+
     *box = (struct LFIBox) {
         .pkey = pkey,
         .base = base,
         .size = size,
         .engine = engine,
-        .min = base + engine->guardsize + engine->opts.pagesize, // for sys page
+        .min = base + SCRATCHPAD + engine->opts.pagesize,
         .max = base + size - engine->guardsize,
     };
     syssetup(box);
+    scratchsetup(box);
 
     bool ok = mm_init(&box->mm, box->min, box->max - box->min,
         engine->opts.pagesize);
@@ -176,7 +204,8 @@ host_flags(int flags)
 
 // Create a fixed memory mapping with the LFI_MAP/LFI_PROT flags.
 static int
-mapmem(uintptr_t start, size_t size, int prot, int flags, int fd, off_t off, int pkey)
+mapmem(uintptr_t start, size_t size, int prot, int flags, int fd, off_t off,
+    int pkey)
 {
     void *mem = mmap((void *) start, size, host_prot(prot),
         host_flags(flags) | MAP_FIXED, fd, off);
@@ -394,7 +423,8 @@ lfi_box_free(struct LFIBox *box)
     void *p = mmap((void *) box->base, box->size, PROT_NONE,
         MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
     assert(p == (void *) box->base);
-    boxmap_rmspace(box->engine->bm, box->base, box_footprint(box->size, box->engine->opts));
+    boxmap_rmspace(box->engine->bm, box->base,
+        box_footprint(box->size, box->engine->opts));
 #ifdef HAVE_PKU
     if (box->pkey != 0)
         pkey_free(box->pkey);

@@ -41,17 +41,18 @@ init_verifier(struct LFIVerifier *v, struct LFIOptions *opts)
 static bool
 check_pku(void)
 {
-# ifdef __GLIBC__
+#ifdef __GLIBC__
     // With glibc we need to make sure GLIBC_TUNABLES=glibc.pthread.rseq=0. See
     // https://issues.chromium.org/issues/428179540 and
     // https://lore.kernel.org/all/cover.1747817128.git.dvyukov@google.com/ for
     // details.
     char *tunables = getenv("GLIBC_TUNABLES");
     if (!tunables || strstr(tunables, "pthread.rseq=0") == NULL) {
-        ERROR("error: missing GLIBC_TUNABLES=glibc.pthread.rseq=0 environment variable");
+        ERROR(
+            "error: missing GLIBC_TUNABLES=glibc.pthread.rseq=0 environment variable");
         return false;
     }
-# endif
+#endif
     return true;
 }
 #endif

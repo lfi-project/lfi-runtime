@@ -22,6 +22,13 @@
 // protector is global.
 #define TLS_SLOT_LFI 5
 
+// The location of the scratchpad page inside the sandbox. This is a page that
+// is accessible to the sandbox and can be used by the runtime to stash
+// temporaries even when sandboxing is enabled (especially important for PKU).
+// The scratchpad is located below the sandbox 'min' address, so it cannot be
+// unmapped by sandbox code.
+#define SCRATCHPAD (128 * 1024)
+
 #if defined(__aarch64__) || defined(_M_ARM64)
 
 #define REGS_X0     32

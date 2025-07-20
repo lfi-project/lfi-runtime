@@ -189,6 +189,14 @@ lfi_trampoline_direct:
     movq %r12, REGS_HOST_TP(%r13)
     write_ctx %r13
 
+#ifdef HAVE_PKU
+    movq %rcx, SCRATCHPAD+0(%REG_BASE)
+    movq %rdx, SCRATCHPAD+8(%REG_BASE)
+    pku_box_access REGS_PKEY(%r13)
+    movq SCRATCHPAD+0(%REG_BASE), %rcx
+    movq SCRATCHPAD+8(%REG_BASE), %rdx
+#endif
+
 #ifndef STORES_ONLY
     // Zero non-argument registers for full LFI.
     zero_regs
@@ -202,6 +210,11 @@ lfi_trampoline_direct:
 .p2align 4
 .global lfi_ret
 lfi_ret:
+#ifdef HAVE_PKU
+    movq %rax, SCRATCHPAD+0(%REG_BASE)
+    pku_all_access
+    movq SCRATCHPAD+0(%REG_BASE), %rax
+#endif
     get_ctx %r11
     // restore host sp
     movq REGS_HOST_SP(%r11), %rsp
