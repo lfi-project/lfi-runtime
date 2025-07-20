@@ -68,6 +68,7 @@ struct LFIRegs {
     uint64_t host_tp;
     uint64_t tp;
     uint64_t retaddr;
+    uint64_t pkey;
 
     uint64_t rsp;
     uint64_t rax;
@@ -85,7 +86,7 @@ struct LFIRegs {
     uint64_t r13;
     uint64_t r14;
     uint64_t r15;
-    uint64_t _pad[4];
+    uint64_t _pad[3];
     uint64_t xmm[32];
 };
 

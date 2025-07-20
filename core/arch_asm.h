@@ -66,22 +66,24 @@
 
 #elif defined(__x86_64__) || defined(_M_X64)
 
-#define REGS_RSP  32
-#define REGS_RAX  40
-#define REGS_RCX  48
-#define REGS_RDX  56
-#define REGS_RBX  64
-#define REGS_RBP  72
-#define REGS_RSI  80
-#define REGS_RDI  88
-#define REGS_R8   96
-#define REGS_R9   104
-#define REGS_R10  112
-#define REGS_R11  120
-#define REGS_R12  128
-#define REGS_R13  136
-#define REGS_R14  144
-#define REGS_R15  152
+#define REGS_PKEY 32
+
+#define REGS_RSP  40
+#define REGS_RAX  48
+#define REGS_RCX  56
+#define REGS_RDX  64
+#define REGS_RBX  72
+#define REGS_RBP  80
+#define REGS_RSI  88
+#define REGS_RDI  96
+#define REGS_R8   104
+#define REGS_R9   112
+#define REGS_R10  120
+#define REGS_R11  128
+#define REGS_R12  136
+#define REGS_R13  144
+#define REGS_R14  152
+#define REGS_R15  160
 #define REGS_XMM  192
 
 #define REGS_BASE REGS_R14
@@ -96,6 +98,13 @@
 
 .macro write_ctx reg
     movq \reg, %fs:(8*TLS_SLOT_LFI)
+.endm
+
+.macro write_pkru val
+    movq \val, %rax
+    xorl %ecx, %ecx
+    xorl %edx, %edx
+    wrpkru
 .endm
 #endif
 // clang-format on

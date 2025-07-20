@@ -75,29 +75,23 @@ lfi_box_new(struct LFIEngine *engine)
     }
 
     int pkey = 0;
-    if (engine->opts.use_pku) {
 #ifdef HAVE_PKU
-        pkey = pkey_alloc(0, 0);
-        if (pkey == -1) {
-            if (errno == ENOSPC)
-                LOG(engine, "could not allocate pkey: no more keys available");
-            else
-                LOG(engine, "could not allocate pkey: invalid argument");
-            lfi_error = LFI_ERR_PKU;
-            return NULL;
-        }
-
-        int r = pkey_mprotect((void *) base, size, PROT_READ | PROT_WRITE, pkey);
-        if (r == -1) {
-            lfi_error = LFI_ERR_PKU;
-            return NULL;
-        }
-#else
-        LOG(engine, "use_pku=1 but liblfi was compiled without PKU support");
+    pkey = pkey_alloc(0, 0);
+    if (pkey == -1) {
+        if (errno == ENOSPC)
+            LOG(engine, "could not allocate pkey: no more keys available");
+        else
+            LOG(engine, "could not allocate pkey: invalid argument");
         lfi_error = LFI_ERR_PKU;
         return NULL;
-#endif
     }
+
+    int r = pkey_mprotect((void *) base, size, PROT_READ | PROT_WRITE, pkey);
+    if (r == -1) {
+        lfi_error = LFI_ERR_PKU;
+        return NULL;
+    }
+#endif
 
     *box = (struct LFIBox) {
         .pkey = pkey,

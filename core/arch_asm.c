@@ -32,6 +32,8 @@ _Static_assert(offsetof(struct LFIRegs, vector) % 16 == 0,
 
 #elif defined(LFI_ARCH_X64)
 
+_Static_assert(offsetof(struct LFIRegs, pkey) == REGS_PKEY,
+    "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, rsp) == REGS_RSP,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, rax) == REGS_RAX,

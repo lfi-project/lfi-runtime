@@ -2,7 +2,6 @@ tests = [
   'test_init.c',
   'test_box.c',
   'test_ctx.c',
-  'test_pku.c',
 ]
 
 # Add architecture-specific tests

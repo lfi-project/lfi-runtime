@@ -41,7 +41,22 @@ lfi_ctx_entry:
     movq REGS_R13(%rdi), %r13
     movq REGS_R14(%rdi), %r14
     movq REGS_R15(%rdi), %r15
+
+#ifdef HAVE_PKU
+    // this assumes that the sandbox has a valid stack...
+    pushq REGS_RDI(%rdi)
+    pushq %rax
+    pushq %rdx
+    pushq %rcx
+    write_pkru REGS_PKEY(%rdi)
+    popq %rcx
+    popq %rdx
+    popq %rax
+    popq %rdi
+#else
     movq REGS_RDI(%rdi), %rdi
+#endif
+
 #ifdef ENABLE_SEGUE
     wrgsbase %REG_BASE
 #endif
@@ -87,6 +102,13 @@ lfi_ctx_end:
 .global lfi_syscall_entry
 .p2align 4
 lfi_syscall_entry:
+#ifdef HAVE_PKU
+    pushq %rax
+    pushq %rdx
+    write_pkru $0
+    popq %rdx
+    popq %rax
+#endif
     get_ctx %rcx
     // save registers
     movq %rsp, REGS_RSP(%rcx)
@@ -168,22 +190,63 @@ lfi_syscall_entry:
     movq REGS_XMM+13*16(%rcx), %xmm13
     movq REGS_XMM+14*16(%rcx), %xmm14
     movq REGS_XMM+15*16(%rcx), %xmm15
+#ifdef HAVE_PKU
+    pushq %rax
+    pushq %rdx
+    write_pkru REGS_PKEY(%rcx)
+    popq %rdx
+    popq %rax
+#endif
     movq $0, %rcx // clobbered
     jmpq *%r11
 
 .global lfi_get_tp
 .p2align 4
 lfi_get_tp:
+#ifdef HAVE_PKU
+    pushq %rdx
+    pushq %rcx
+    write_pkru $0
+
+    get_ctx %rax
+    pushq REGS_TP(%rax)
+
+    movq REGS_PKEY(%rax), %rax
+    wrpkru
+    popq %rax
+    popq %rcx
+    popq %rdx
+#else
     get_ctx %rax
     movq REGS_TP(%rax), %rax
+#endif
     jmpq *%r11
 
 .global lfi_set_tp
 .p2align 4
 lfi_set_tp:
+#ifdef HAVE_PKU
+    pushq %rcx // for alignment
+    pushq %rcx
+    pushq %rdx
+    pushq %rax
+    write_pkru $0
+    popq %rax
+
+    get_ctx %REG_BASE
+    movq %rax, REGS_TP(%REG_BASE)
+    movq REGS_PKEY(%REG_BASE), %rax
+    movq REGS_BASE(%REG_BASE), %REG_BASE
+    wrpkru
+
+    popq %rdx
+    popq %rcx
+    popq %rcx
+#else
     get_ctx %REG_BASE
     movq %rax, REGS_TP(%REG_BASE)
     movq REGS_BASE(%REG_BASE), %REG_BASE
+#endif
     jmpq *%r11
 
 #ifndef __APPLE__
