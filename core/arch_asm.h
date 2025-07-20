@@ -100,12 +100,26 @@
     movq \reg, %fs:(8*TLS_SLOT_LFI)
 .endm
 
-.macro write_pkru val
-    movq \val, %rax
+// Allow access to all PKU regions.
+.macro pku_all_access
+    xorl %eax, %eax
     xorl %ecx, %ecx
     xorl %edx, %edx
     wrpkru
 .endm
+
+// Only allow access to the PKU region specified by 'key'.
+.macro pku_box_access key
+    movq \key, %rcx
+    leal (%ecx, %ecx), %ecx
+    movl $0b11, %eax
+    shll %cl, %eax
+    notl %eax
+    xorl %ecx, %ecx
+    xorl %edx, %edx
+    wrpkru
+.endm
+
 #endif
 // clang-format on
 

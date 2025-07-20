@@ -25,7 +25,6 @@ lfi_ctx_new(struct LFIBox *box, void *userdata)
     };
 
     lfi_ctx_regs_init(ctx);
-    ctx->regs.retaddr = box->retaddr;
 
     return ctx;
 }

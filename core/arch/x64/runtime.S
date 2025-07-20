@@ -48,7 +48,7 @@ lfi_ctx_entry:
     pushq %rax
     pushq %rdx
     pushq %rcx
-    write_pkru REGS_PKEY(%rdi)
+    pku_box_access REGS_PKEY(%rdi)
     popq %rcx
     popq %rdx
     popq %rax
@@ -105,7 +105,7 @@ lfi_syscall_entry:
 #ifdef HAVE_PKU
     pushq %rax
     pushq %rdx
-    write_pkru $0
+    pku_all_access
     popq %rdx
     popq %rax
 #endif
@@ -193,7 +193,7 @@ lfi_syscall_entry:
 #ifdef HAVE_PKU
     pushq %rax
     pushq %rdx
-    write_pkru REGS_PKEY(%rcx)
+    pku_box_access REGS_PKEY(%rcx)
     popq %rdx
     popq %rax
 #endif
@@ -206,13 +206,14 @@ lfi_get_tp:
 #ifdef HAVE_PKU
     pushq %rdx
     pushq %rcx
-    write_pkru $0
+    pku_all_access
 
     get_ctx %rax
     pushq REGS_TP(%rax)
 
-    movq REGS_PKEY(%rax), %rax
-    wrpkru
+    movq REGS_PKEY(%rax), %rcx
+    pku_box_access %rcx
+    pku_all_access
     popq %rax
     popq %rcx
     popq %rdx
@@ -230,14 +231,14 @@ lfi_set_tp:
     pushq %rcx
     pushq %rdx
     pushq %rax
-    write_pkru $0
+    pku_all_access
     popq %rax
 
     get_ctx %REG_BASE
     movq %rax, REGS_TP(%REG_BASE)
-    movq REGS_PKEY(%REG_BASE), %rax
+    movq REGS_PKEY(%REG_BASE), %rcx
     movq REGS_BASE(%REG_BASE), %REG_BASE
-    wrpkru
+    pku_box_access %rcx
 
     popq %rdx
     popq %rcx

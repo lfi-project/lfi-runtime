@@ -38,6 +38,16 @@ lfi_set_tp(void) asm("lfi_set_tp");
 extern void
 lfi_ret(void) asm("lfi_ret");
 
+static int
+protectmem(void *start, size_t size, int prot, int pkey)
+{
+#ifdef HAVE_PKU
+    return pkey_mprotect(start, size, prot, pkey);
+#else
+    return mprotect(start, size, prot);
+#endif
+}
+
 // Initialize the sys page (at the beginning of the sandbox) to contain the
 // runtime call entrypoints.
 static void
@@ -54,7 +64,7 @@ syssetup(struct LFIBox *box)
     box->sys->rtcalls[3] = (uintptr_t) &lfi_ret;
 
     // Map read-only.
-    int r = mprotect((void *) box->base, box->engine->opts.pagesize, PROT_READ);
+    int r = protectmem((void *) box->base, box->engine->opts.pagesize, PROT_READ, box->pkey);
     assert(r == 0);
 }
 
@@ -85,12 +95,9 @@ lfi_box_new(struct LFIEngine *engine)
         lfi_error = LFI_ERR_PKU;
         return NULL;
     }
-
-    int r = pkey_mprotect((void *) base, size, PROT_READ | PROT_WRITE, pkey);
-    if (r == -1) {
-        lfi_error = LFI_ERR_PKU;
-        return NULL;
-    }
+    assert(pkey != 0);
+    int r = pkey_mprotect((void *) base, size, PROT_NONE, pkey);
+    assert(r == 0);
 #endif
 
     *box = (struct LFIBox) {
@@ -169,12 +176,19 @@ host_flags(int flags)
 
 // Create a fixed memory mapping with the LFI_MAP/LFI_PROT flags.
 static int
-mapmem(uintptr_t start, size_t size, int prot, int flags, int fd, off_t off)
+mapmem(uintptr_t start, size_t size, int prot, int flags, int fd, off_t off, int pkey)
 {
     void *mem = mmap((void *) start, size, host_prot(prot),
         host_flags(flags) | MAP_FIXED, fd, off);
     if (mem == (void *) -1)
         return -1;
+
+#ifdef HAVE_PKU
+    if (pkey_mprotect((void *) start, size, host_prot(prot), pkey) == -1) {
+        munmap((void *) start, size);
+        return -1;
+    }
+#endif
     return 0;
 }
 
@@ -220,7 +234,7 @@ protectverify(struct LFIBox *box, uintptr_t base, size_t size, int prot,
     // Allow mprotect if mapping is not executable, or verification is disabled
     // and it's not WX, or WX is allowed (and verification is disabled).
     if (!x || (no_verify && !(w && x)) || allow_wx) {
-        return mprotect((void *) base, size, host_prot(prot));
+        return protectmem((void *) base, size, host_prot(prot), box->pkey);
     } else if (w && x) {
         LOG(box->engine, "error: attempted to set memory as WX");
         return -1;
@@ -230,7 +244,7 @@ protectverify(struct LFIBox *box, uintptr_t base, size_t size, int prot,
 
     // Mark the memory as read-only so we can verify it without someone else
     // writing to it at the same time.
-    mprotect((void *) base, size, PROT_READ);
+    protectmem((void *) base, size, PROT_READ, box->pkey);
 
     // Verify.
     if (!lfiv_verify(&box->engine->verifier, (char *) base, size, base)) {
@@ -238,7 +252,7 @@ protectverify(struct LFIBox *box, uintptr_t base, size_t size, int prot,
         return -1;
     }
     // Mark the memory as requested.
-    return mprotect((void *) base, size, host_prot(prot));
+    return protectmem((void *) base, size, host_prot(prot), box->pkey);
 }
 
 // Create a new memory mapping, and verify if necessary.
@@ -254,7 +268,7 @@ mapverify(struct LFIBox *box, uintptr_t start, size_t size, int prot, int flags,
     // Allow mprotect if mapping is not executable, or verification is disabled
     // and it's not WX, or WX is allowed (and verification is disabled).
     if (!x || (no_verify && !(w && x)) || allow_wx) {
-        return mapmem(start, size, prot, flags, fd, off);
+        return mapmem(start, size, prot, flags, fd, off, box->pkey);
     } else if (w && x) {
         LOG(box->engine, "error: attempted to map WX memory");
         return -1;
@@ -264,13 +278,13 @@ mapverify(struct LFIBox *box, uintptr_t start, size_t size, int prot, int flags,
 
     // Map memory as readable so that we can verify it.
     int r;
-    if ((r = mapmem(start, size, LFI_PROT_READ, flags, fd, off)) < 0)
+    if ((r = mapmem(start, size, LFI_PROT_READ, flags, fd, off, box->pkey)) < 0)
         return r;
     // Verify.
     if (!lfiv_verify(&box->engine->verifier, (char *) start, size, start))
         return -1;
     // Mark the memory as requested.
-    return mprotect((void *) start, size, host_prot(prot));
+    return protectmem((void *) start, size, host_prot(prot), box->pkey);
 }
 
 static lfiptr
