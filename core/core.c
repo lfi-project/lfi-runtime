@@ -36,6 +36,26 @@ init_verifier(struct LFIVerifier *v, struct LFIOptions *opts)
 #endif
 }
 
+#ifdef HAVE_PKU
+#include <features.h>
+static bool
+check_pku(void)
+{
+# ifdef __GLIBC__
+    // With glibc we need to make sure GLIBC_TUNABLES=glibc.pthread.rseq=0. See
+    // https://issues.chromium.org/issues/428179540 and
+    // https://lore.kernel.org/all/cover.1747817128.git.dvyukov@google.com/ for
+    // details.
+    char *tunables = getenv("GLIBC_TUNABLES");
+    if (!tunables || strstr(tunables, "pthread.rseq=0") == NULL) {
+        ERROR("error: missing GLIBC_TUNABLES=glibc.pthread.rseq=0 environment variable");
+        return false;
+    }
+# endif
+    return true;
+}
+#endif
+
 static bool
 init_sigaltstack(struct LFIEngine *engine)
 {
@@ -57,6 +77,11 @@ init_sigaltstack(struct LFIEngine *engine)
 EXPORT struct LFIEngine *
 lfi_new(struct LFIOptions opts, size_t nsandboxes)
 {
+#ifdef HAVE_PKU
+    if (!check_pku())
+        return NULL;
+#endif
+
     struct LFIEngine *engine = malloc(sizeof(struct LFIEngine));
     if (!engine) {
         lfi_error = LFI_ERR_ALLOC;
