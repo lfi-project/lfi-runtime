@@ -99,7 +99,7 @@ lfi_callback:
     // Restore sandbox thread control block to point to context.
     write_ctx x9, x10
 
-#ifndef STORES_ONLY_TRAMPOLINE
+#ifndef STORES_ONLY
     zero_caller_regs
 #endif
 

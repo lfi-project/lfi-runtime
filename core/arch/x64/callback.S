@@ -71,7 +71,7 @@ lfi_callback:
     // Restore sandbox stack pointer.
     movq %r10, %rsp
 
-#ifndef STORES_ONLY_TRAMPOLINE
+#ifndef STORES_ONLY
     zero_caller_regs
 #endif
 

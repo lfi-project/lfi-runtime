@@ -115,6 +115,9 @@
     movl $0b11, %eax
     shll %cl, %eax
     notl %eax
+#ifdef STORES_ONLY
+    andl $0xfffffffe, %eax
+#endif
     xorl %ecx, %ecx
     xorl %edx, %edx
     wrpkru

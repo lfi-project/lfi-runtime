@@ -30,10 +30,10 @@ option('enable_analyzer',
   value: false,
   description: 'pass -fanalyzer to enable the GCC static analyzer')
 
-option('stores_only_trampoline',
+option('stores_only',
   type: 'boolean',
   value: false,
-  description: 'assume stores-only mode for trampolines - disables a routine that zeroes all registers to prevent leakage')
+  description: 'only sandbox stores -- allows sandboxed programs to read (but not write) outside the sandbox')
 
 # Note: disabling segue or using only one segue sandbox can roughly double the
 # speed of trampolines on x86-64. You can benchmark with test_trampoline.c.

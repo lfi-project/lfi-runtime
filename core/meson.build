@@ -12,8 +12,8 @@ srcs = files(
   'arch_asm.c',
 )
 
-if get_option('stores_only_trampoline')
-  defines += ['-DSTORES_ONLY_TRAMPOLINE']
+if get_option('stores_only')
+  defines += ['-DSTORES_ONLY']
 endif
 
 subdir('arch/' + archmap[cpu])

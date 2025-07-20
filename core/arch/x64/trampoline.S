@@ -189,7 +189,7 @@ lfi_trampoline_direct:
     movq %r12, REGS_HOST_TP(%r13)
     write_ctx %r13
 
-#ifndef STORES_ONLY_TRAMPOLINE
+#ifndef STORES_ONLY
     // Zero non-argument registers for full LFI.
     zero_regs
 #endif

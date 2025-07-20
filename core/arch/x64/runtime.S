@@ -203,7 +203,7 @@ lfi_syscall_entry:
 .global lfi_get_tp
 .p2align 4
 lfi_get_tp:
-#ifdef HAVE_PKU
+#if defined(HAVE_PKU) && !defined(STORES_ONLY)
     pushq %rdx
     pushq %rcx
     pku_all_access
@@ -213,7 +213,6 @@ lfi_get_tp:
 
     movq REGS_PKEY(%rax), %rcx
     pku_box_access %rcx
-    pku_all_access
     popq %rax
     popq %rcx
     popq %rdx

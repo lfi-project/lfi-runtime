@@ -175,7 +175,7 @@ lfi_trampoline_direct:
     // set address pointer to a valid value
     mov REG_ADDR, REG_BASE
 
-#ifndef STORES_ONLY_TRAMPOLINE
+#ifndef STORES_ONLY
     // Zero non-argument registers for full LFI.
     // TODO: calling convention or LFI_INVOKE should enforce that all unused
     // argument registers are zeroed.
