@@ -43,18 +43,11 @@ lfi_ctx_entry:
     movq REGS_R15(%rdi), %r15
 
 #ifdef HAVE_PKU
-    // save registers that we clobber with wrpkru into the scratchpad
-    movq %rax, SCRATCHPAD+0(%REG_BASE)
-    movq %rdx, SCRATCHPAD+8(%REG_BASE)
-    movq %rcx, SCRATCHPAD+16(%REG_BASE)
-    movq REGS_RDI(%rdi), %rdx
-    movq %rdx, SCRATCHPAD+24(%REG_BASE)
-    pku_box_access REGS_PKEY(%rdi)
-    // restore registers from the scratchpad
-    movq SCRATCHPAD+0(%REG_BASE), %rax
-    movq SCRATCHPAD+8(%REG_BASE), %rdx
-    movq SCRATCHPAD+16(%REG_BASE), %rcx
-    movq SCRATCHPAD+24(%REG_BASE), %rdi
+    // enabling PKU clobbers %rcx, %rdx, %rax
+    movq REGS_PKEY(%rdi), %rcx
+    movq REGS_RDI(%rdi), %rdi
+    pku_box_access %rcx
+    xorl %eax, %eax
 #else
     movq REGS_RDI(%rdi), %rdi
 #endif
@@ -105,11 +98,11 @@ lfi_ctx_end:
 .p2align 4
 lfi_syscall_entry:
 #ifdef HAVE_PKU
-    movq %rax, SCRATCHPAD+0(%REG_BASE)
-    movq %rdx, SCRATCHPAD+8(%REG_BASE)
+    pushq %rax
+    pushq %rdx
     pku_all_access
-    movq SCRATCHPAD+0(%REG_BASE), %rax
-    movq SCRATCHPAD+8(%REG_BASE), %rdx
+    popq %rax
+    popq %rdx
 #endif
     get_ctx %rcx
     // save registers
@@ -193,11 +186,11 @@ lfi_syscall_entry:
     movq REGS_XMM+14*16(%rcx), %xmm14
     movq REGS_XMM+15*16(%rcx), %xmm15
 #ifdef HAVE_PKU
-    movq %rax, SCRATCHPAD+0(%REG_BASE)
-    movq %rdx, SCRATCHPAD+8(%REG_BASE)
+    pushq %rax
+    pushq %rdx
     pku_box_access REGS_PKEY(%rcx)
-    movq SCRATCHPAD+0(%REG_BASE), %rax
-    movq SCRATCHPAD+8(%REG_BASE), %rdx
+    popq %rdx
+    popq %rax
 #endif
     movq $0, %rcx // clobbered
     jmpq *%r11
@@ -206,19 +199,18 @@ lfi_syscall_entry:
 .p2align 4
 lfi_get_tp:
 #if defined(HAVE_PKU) && !defined(STORES_ONLY)
-    movq %rdx, SCRATCHPAD+0(%REG_BASE)
-    movq %rcx, SCRATCHPAD+8(%REG_BASE)
+    pushq %rdx
+    pushq %rcx
     pku_all_access
 
     get_ctx %rax
-    movq REGS_TP(%rax), %rdx
-    movq %rdx, SCRATCHPAD+16(%REG_BASE)
+    pushq REGS_TP(%rax)
 
     movq REGS_PKEY(%rax), %rcx
     pku_box_access %rcx
-    movq SCRATCHPAD+0(%REG_BASE), %rdx
-    movq SCRATCHPAD+8(%REG_BASE), %rcx
-    movq SCRATCHPAD+16(%REG_BASE), %rax
+    popq %rax
+    popq %rcx
+    popq %rdx
 #else
     get_ctx %rax
     movq REGS_TP(%rax), %rax
@@ -229,11 +221,11 @@ lfi_get_tp:
 .p2align 4
 lfi_set_tp:
 #ifdef HAVE_PKU
-    movq %rdx, SCRATCHPAD+0(%REG_BASE)
-    movq %rcx, SCRATCHPAD+8(%REG_BASE)
-    movq %rax, SCRATCHPAD+16(%REG_BASE)
+    pushq %rax
+    pushq %rcx
+    pushq %rax
     pku_all_access
-    movq SCRATCHPAD+16(%REG_BASE), %rax
+    popq %rax
 
     get_ctx %REG_BASE
     movq %rax, REGS_TP(%REG_BASE)
@@ -241,8 +233,8 @@ lfi_set_tp:
     movq REGS_BASE(%REG_BASE), %REG_BASE
     pku_box_access %rcx
 
-    movq SCRATCHPAD+0(%REG_BASE), %rdx
-    movq SCRATCHPAD+8(%REG_BASE), %rcx
+    popq %rcx
+    popq %rdx
 #else
     get_ctx %REG_BASE
     movq %rax, REGS_TP(%REG_BASE)

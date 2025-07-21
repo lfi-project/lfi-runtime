@@ -30,11 +30,11 @@
 lfi_callback:
     // Entrypoint for callbacks, with the target in %r10.
 #ifdef HAVE_PKU
-    movq %rcx, SCRATCHPAD+0(%REG_BASE)
-    movq %rdx, SCRATCHPAD+8(%REG_BASE)
+    xchg %rcx, (%rsp)
+    movq %rdx, %r11
     pku_all_access
-    movq SCRATCHPAD+0(%REG_BASE), %rcx
-    movq SCRATCHPAD+8(%REG_BASE), %rdx
+    movq %r11, %rdx
+    xchg %rcx, (%rsp)
 #endif
 
     get_ctx %r11
@@ -80,9 +80,10 @@ lfi_callback:
     movq %r10, %rsp
 
 #ifdef HAVE_PKU
-    movq %rax, SCRATCHPAD+0(%REG_BASE)
-    pku_box_access REGS_PKEY(%r11)
-    movq SCRATCHPAD+0(%REG_BASE), %rax
+    movq REGS_PKEY(%r11), %rcx
+    movq %rax, %r11
+    pku_box_access %rcx
+    movq %r11, %rax
 #endif
 
 #ifndef STORES_ONLY

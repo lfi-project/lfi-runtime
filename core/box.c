@@ -70,25 +70,6 @@ syssetup(struct LFIBox *box)
     assert(r == 0);
 }
 
-static void
-scratchsetup(struct LFIBox *box)
-{
-    // Currently the scratchpad is only used by PKU code, but if we need it in
-    // the future for general LFI we can remove this ifdef.
-#ifdef HAVE_PKU
-    void *addr = (void *) (box->base + SCRATCHPAD);
-    size_t pagesize = box->engine->opts.pagesize;
-    // Map the page.
-    void *p = mmap(addr, pagesize, PROT_READ | PROT_WRITE,
-        MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
-    assert(p == addr);
-
-    // Mark accessible for the protection key.
-    int r = protectmem(addr, pagesize, PROT_READ | PROT_WRITE, box->pkey);
-    assert(r == 0);
-#endif
-}
-
 EXPORT struct LFIBox *
 lfi_box_new(struct LFIEngine *engine)
 {
@@ -122,21 +103,15 @@ lfi_box_new(struct LFIEngine *engine)
     assert(r == 0);
 #endif
 
-    // The mmap region for the sandbox begins immediately after the scratchpad.
-    // The scratchpad must be located after the guard region, which is enforced
-    // by this assertion.
-    assert(SCRATCHPAD >= engine->guardsize);
-
     *box = (struct LFIBox) {
         .pkey = pkey,
         .base = base,
         .size = size,
         .engine = engine,
-        .min = base + SCRATCHPAD + engine->opts.pagesize,
+        .min = base + engine->guardsize + engine->opts.pagesize,
         .max = base + size - engine->guardsize,
     };
     syssetup(box);
-    scratchsetup(box);
 
     bool ok = mm_init(&box->mm, box->min, box->max - box->min,
         engine->opts.pagesize);
