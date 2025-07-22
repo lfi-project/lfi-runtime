@@ -2,8 +2,8 @@
 
 #include "align.h"
 #include "buf.h"
-#include "log.h"
 #include "elfdefs.h"
+#include "log.h"
 
 // We do not load ELF files that have more than 64 program headers.
 #define PHNUM_MAX 64

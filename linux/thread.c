@@ -1,10 +1,10 @@
 #include "align.h"
+#include "elfdefs.h"
 #include "host.h"
 #include "lfi_arch.h"
 #include "lfi_core.h"
 #include "linux.h"
 #include "proc.h"
-#include "elfdefs.h"
 
 #include <assert.h>
 #include <stdatomic.h>

@@ -164,8 +164,9 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
         atomic_store_explicit(ctid, p2->tid, memory_order_release);
     }
 
-    LOG(p->proc->engine, "sys_clone(%lx, %lx, %lx, %lx, %lx) = %d", (long) flags,
-        (long) stack, (long) ptidp, (long) ctidp, (long) tls, (int) p2->tid);
+    LOG(p->proc->engine, "sys_clone(%lx, %lx, %lx, %lx, %lx) = %d",
+        (long) flags, (long) stack, (long) ptidp, (long) ctidp, (long) tls,
+        (int) p2->tid);
 
 #if defined(LFI_ARCH_X64)
     regs->rax = 0;

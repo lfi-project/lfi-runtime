@@ -1,7 +1,7 @@
 #pragma once
 
-#include "proc.h"
 #include "arch_sys.h"
+#include "proc.h"
 
 #define LFI_SYS_pause 1024
 
