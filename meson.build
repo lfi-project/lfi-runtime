@@ -96,6 +96,11 @@ endif
 if compiler.has_function('arc4random_buf', prefix : '#include <stdlib.h>')
   defines += '-DHAVE_ARC4RANDOM_BUF'
 endif
+have_elf_h = false
+if compiler.has_header('elf.h')
+  defines += '-DHAVE_ELF_H'
+  have_elf_h = true
+endif
 
 if get_option('enable_tlsdesc') and cpu == 'x86_64'
   defines += '-DENABLE_TLS_DESC'

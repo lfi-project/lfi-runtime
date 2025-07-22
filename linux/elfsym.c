@@ -1,8 +1,8 @@
 #include "elfsym.h"
 
 #include "proc.h"
+#include "elfdefs.h"
 
-#include <gelf.h>
 #include <stdlib.h>
 #include <string.h>
 

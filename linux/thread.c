@@ -4,9 +4,9 @@
 #include "lfi_core.h"
 #include "linux.h"
 #include "proc.h"
+#include "elfdefs.h"
 
 #include <assert.h>
-#include <gelf.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
