@@ -2,7 +2,6 @@ srcs = files(
   'list.c',
   'linux.c',
   'fd.c',
-  'sys.c',
   'proc.c',
   'buf.c',
   'elfload.c',
@@ -13,6 +12,13 @@ srcs = files(
   'path.c',
   'trampoline.c',
 )
+
+if get_option('sys_minimal')
+  srcs += files('sys_minimal.c')
+  defines += '-DSYS_MINIMAL'
+else
+  srcs += files('sys.c')
+endif
 
 subdir('arch/' + archmap[cpu])
 subdir('sys')

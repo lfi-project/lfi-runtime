@@ -102,6 +102,15 @@ static int
 spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
     uint64_t ctidp, uint64_t tls, uint64_t func)
 {
+#ifdef SYS_MINIMAL
+    // In the minimal configuration we only support spawning fake threads to
+    // attach to host threads that already exist. Using clone to create new
+    // threads from the sandbox is not permitted.
+    if (p->ctx != p->proc->clone_ctx) {
+        return -LINUX_ENOSYS;
+    }
+#endif
+
     if ((flags & 0xff) != 0 && (flags & 0xff) != LINUX_SIGCHLD) {
         LOG(p->proc->engine, "unsupported clone signal: %x",
             (unsigned) flags & 0xff);

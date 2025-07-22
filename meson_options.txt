@@ -56,3 +56,8 @@ option('static_lfi_run',
   type: 'boolean',
   value: false,
   description: 'statically link lfi-run')
+
+option('sys_minimal',
+  type: 'boolean',
+  value: false,
+  description: 'enable the minimal runtime, which only supports syscalls for basic functionality and memory allocation')

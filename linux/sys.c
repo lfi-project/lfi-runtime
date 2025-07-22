@@ -1,28 +1,11 @@
+#include "sys.h"
 #include "sys/sys.h"
 
-#include "arch_sys.h"
-#include "config.h"
 #include "linux.h"
 #include "proc.h"
 
 #include <assert.h>
 #include <stdlib.h>
-
-#define LFI_SYS_pause 1024
-
-_Static_assert(LFI_SYS_pause > LINUX_SYS_LAST, "LFI_SYS_pause invalid");
-
-#define SYS(SYSNAME, expr)    \
-    case LINUX_SYS_##SYSNAME: \
-        handled = true;       \
-        r = expr;             \
-        break;
-
-#define LFI(SYSNAME, expr)  \
-    case LFI_SYS_##SYSNAME: \
-        handled = true;     \
-        r = expr;           \
-        break;
 
 uintptr_t
 syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
