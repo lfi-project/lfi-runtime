@@ -23,5 +23,6 @@ provided by `liblfi`.
 
 # Platform Support
 
-The runtime currently only targets Linux. The core (but not the Linux emulator)
-can also be built for macOS.
+The runtime currently targets Linux for Arm64 and x86-64. There is also
+experimental support for macOS (futexes are not yet supported), and support for
+RISC-V is in-progress.
