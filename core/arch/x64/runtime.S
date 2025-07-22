@@ -101,8 +101,8 @@ lfi_syscall_entry:
     pushq %rax
     pushq %rdx
     pku_all_access
-    popq %rax
     popq %rdx
+    popq %rax
 #endif
     get_ctx %rcx
     // save registers
