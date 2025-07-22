@@ -1,7 +1,7 @@
 argtable = subproject('argtable3').get_variable('argtable_dep')
 
 link_args = []
-if get_option('b_sanitize') == 'none'
+if get_option('static_lfi_run')
   link_args = ['-static']
 endif
 

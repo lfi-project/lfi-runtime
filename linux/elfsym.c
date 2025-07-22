@@ -2,7 +2,7 @@
 
 #include "proc.h"
 
-#include <elf.h>
+#include <gelf.h>
 #include <stdlib.h>
 #include <string.h>
 

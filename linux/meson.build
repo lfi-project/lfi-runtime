@@ -26,12 +26,13 @@ config_h = configure_file(
 )
 
 cwalk = subproject('cwalk').get_variable('cwalk_dep')
+libelf = subproject('libelf').get_variable('libelf_dep')
 
 liblfi_linux = static_library(
   'lfi-linux',
   srcs + [config_h],
   c_args: c_args_warnings + defines,
-  dependencies: [lfi_core.as_link_whole(), cwalk.as_link_whole()],
+  dependencies: [lfi_core.as_link_whole(), cwalk.as_link_whole(), libelf.as_link_whole()],
   install: true,
   include_directories: include_directories('include', 'arch/' + archmap[cpu]),
 )

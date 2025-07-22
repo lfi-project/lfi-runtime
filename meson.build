@@ -52,12 +52,25 @@ if compiler.has_function('getdents64', prefix : '''#define _GNU_SOURCE
 #include <dirent.h>''')
   defines += '-DHAVE_GETDENTS64'
 endif
+if compiler.has_function('getauxval', prefix : '''#include <sys/auxv.h>''')
+  defines += '-DHAVE_GETAUXVAL'
+endif
+if compiler.has_function('sysinfo', prefix : '''#include <sys/sysinfo.h>''')
+  defines += '-DHAVE_SYSINFO'
+endif
 if compiler.compiles('''#include <sys/syscall.h>
 #ifndef SYS_getdents64
 #error "no SYS_getdents64"
 #endif
 ''')
   defines += '-DHAVE_SYS_GETDENTS64'
+endif
+if compiler.compiles('''#include <sys/syscall.h>
+#ifndef SYS_futex
+#error "no SYS_futex"
+#endif
+''')
+  defines += '-DHAVE_SYS_FUTEX'
 endif
 if compiler.has_function('memfd_create', prefix : '''#define _GNU_SOURCE
 #include <sys/mman.h>''')

@@ -10,6 +10,7 @@ subprojects/libargp
 subprojects/lfi-verifier
 subprojects/cwalk
 subprojects/argtable3
+subprojects/libelf
 
 install
 

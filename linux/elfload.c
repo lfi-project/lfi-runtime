@@ -4,7 +4,7 @@
 #include "buf.h"
 #include "log.h"
 
-#include <elf.h>
+#include <gelf.h>
 
 // We do not load ELF files that have more than 64 program headers.
 #define PHNUM_MAX 64

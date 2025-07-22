@@ -10,7 +10,7 @@ bool
 perf_output_jit_interface_file(uint8_t *elf_data, size_t size, uintptr_t offset)
 {
     (void) elf_data, (void) size, (void) offset;
-    LOG("perf is not supported on non-linux platforms");
+    ERROR("perf is not supported on non-linux platforms");
     return false;
 }
 

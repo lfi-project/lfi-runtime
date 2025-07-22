@@ -4,7 +4,9 @@
 
 // lfi_ctx_entry(struct LFIContext *ctx, uintptr_t *host_sp_ptr, uintptr_t entry)
 .global lfi_ctx_entry
+.global _lfi_ctx_entry
 .p2align 4
+_lfi_ctx_entry:
 lfi_ctx_entry:
     // save callee-saved registers to stack
     stp d8, d9,   [sp, #-16]!

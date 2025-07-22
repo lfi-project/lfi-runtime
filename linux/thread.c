@@ -6,11 +6,32 @@
 #include "proc.h"
 
 #include <assert.h>
-#include <elf.h>
+#include <gelf.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef HAVE_GETAUXVAL
 #include <sys/auxv.h>
+static unsigned long
+host_getauxval(unsigned long type)
+{
+    switch (type) {
+    case LINUX_AT_HWCAP:
+        return getauxval(AT_HWCAP);
+    case LINUX_AT_HWCAP2:
+        return getauxval(AT_HWCAP2);
+    }
+    return 0;
+}
+#else
+static unsigned long
+host_getauxval(unsigned long type)
+{
+    // TODO: non-Linux support
+    return 0;
+}
+#endif
 
 // First TID, to avoid using low TID numbers.
 #define BASE_TID 10000
@@ -136,8 +157,8 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
         (struct Auxv) { LINUX_AT_EXECFN, box_argv[0] },
         (struct Auxv) { LINUX_AT_PAGESZ,
             lfi_opts(t->proc->engine->engine).pagesize },
-        (struct Auxv) { LINUX_AT_HWCAP, getauxval(AT_HWCAP) },
-        (struct Auxv) { LINUX_AT_HWCAP2, getauxval(AT_HWCAP2) },
+        (struct Auxv) { LINUX_AT_HWCAP, host_getauxval(LINUX_AT_HWCAP) },
+        (struct Auxv) { LINUX_AT_HWCAP2, host_getauxval(LINUX_AT_HWCAP2) },
         (struct Auxv) { LINUX_AT_RANDOM, rand_start },
         (struct Auxv) { LINUX_AT_FLAGS, 0 },
         (struct Auxv) { LINUX_AT_UID, 1000 },

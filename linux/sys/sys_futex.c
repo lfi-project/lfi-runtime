@@ -1,7 +1,9 @@
 #include "sys/sys.h"
 
-#include <sys/syscall.h>
 #include <unistd.h>
+
+#ifdef HAVE_SYS_FUTEX
+#include <sys/syscall.h>
 
 static long
 host_futex_wait(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val,
@@ -31,6 +33,30 @@ host_futex_requeue(struct LFILinuxThread *t, uint32_t *uaddr, int op,
 {
     return syscall(SYS_futex, uaddr, op, val, val2, uaddr2);
 }
+#else
+static long
+host_futex_wait(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val,
+    struct TimeSpec *timeout)
+{
+    ERROR("futex_wait not supported");
+    return LINUX_ENOSYS;
+}
+
+static long
+host_futex_wake(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val)
+{
+    ERROR("futex_wake not supported");
+    return LINUX_ENOSYS;
+}
+
+static long
+host_futex_requeue(struct LFILinuxThread *t, uint32_t *uaddr, int op,
+    uint32_t val, uint32_t val2, uint32_t *uaddr2)
+{
+    ERROR("futex_requeue not supported");
+    return LINUX_ENOSYS;
+}
+#endif
 
 static long
 futex_wait(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val,

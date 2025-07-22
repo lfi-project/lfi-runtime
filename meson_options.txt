@@ -51,3 +51,8 @@ option('enable_pku',
   type: 'boolean',
   value: false,
   description: 'use memory protection keys')
+
+option('static_lfi_run',
+  type: 'boolean',
+  value: false,
+  description: 'statically link lfi-run')
