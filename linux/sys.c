@@ -3,6 +3,7 @@
 #include "linux.h"
 #include "proc.h"
 #include "sys/sys.h"
+#include "lfi_arch.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -36,6 +37,10 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
     SYS(clone,
             sys_clone(t, a0, a1, a2, a3, a4, a5))
 #elif defined(LFI_ARCH_ARM64)
+    // syscall: clone(flags, stack, ptid, tls, ctid, func)
+    SYS(clone,
+            sys_clone(t, a0, a1, a2, a4, a3, a5))
+#elif defined(LFI_ARCH_RISCV64)
     // syscall: clone(flags, stack, ptid, tls, ctid, func)
     SYS(clone,
             sys_clone(t, a0, a1, a2, a4, a3, a5))
@@ -152,8 +157,10 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
         SYS(unlink,
                 sys_unlinkat(t, LINUX_AT_FDCWD, a0, 0))
 #endif
+#ifdef LINUX_SYS_renameat
         SYS(renameat,
                 sys_renameat(t, a0, a1, a2, a3))
+#endif
 #ifdef LINUX_SYS_rename
         SYS(rename,
                 sys_renameat(t, LINUX_AT_FDCWD, a0, LINUX_AT_FDCWD, a1))

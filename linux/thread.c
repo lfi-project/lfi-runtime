@@ -195,6 +195,8 @@ sp_init(struct LFILinuxThread *t, lfiptr sp)
     lfi_ctx_regs(t->ctx)->sp = sp;
 #elif defined(LFI_ARCH_X64)
     lfi_ctx_regs(t->ctx)->rsp = sp;
+#elif defined(LFI_ARCH_RISCV64)
+    lfi_ctx_regs(t->ctx)->sp = sp;
 #else
 #error "invalid arch"
 #endif
