@@ -101,7 +101,7 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size, const 
     proc->interp_path = interp_path;
 
     // Make the program path absolute if necessary.
-    if (!cwk_path_is_absolute(prog_path)) {
+    if (prog_path && !cwk_path_is_absolute(prog_path)) {
         proc->prog_path = malloc(FILENAME_MAX);
         if (proc->prog_path) {
             char buf[FILENAME_MAX];
@@ -109,7 +109,7 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size, const 
             if (cwd == buf)
                 cwk_path_get_absolute(cwd, prog_path, proc->prog_path, FILENAME_MAX);
         }
-    } else {
+    } else if (prog_path) {
         proc->prog_path = strndup(prog_path, FILENAME_MAX);
     }
 
