@@ -161,7 +161,7 @@ main(int argc, char **argv)
         exit(1);
     }
 
-    bool ok = lfi_proc_load(proc, prog.data, prog.size);
+    bool ok = lfi_proc_load(proc, prog.data, prog.size, inputs->sval[0]);
     if (!ok) {
         fprintf(stderr, "failed to load %s\n", inputs->sval[0]);
         exit(1);

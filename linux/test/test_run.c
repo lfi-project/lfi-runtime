@@ -75,7 +75,7 @@ main(int argc, const char **argv)
     struct LFILinuxProc *proc = lfi_proc_new(linux_);
     assert(proc);
 
-    bool ok = lfi_proc_load(proc, prog.data, prog.size);
+    bool ok = lfi_proc_load(proc, prog.data, prog.size, argv[1]);
     assert(ok);
 
     const char *envp[] = {

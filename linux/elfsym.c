@@ -1,5 +1,6 @@
 #include "elfsym.h"
 
+#include "buf.h"
 #include "elfdefs.h"
 #include "proc.h"
 
@@ -56,8 +57,8 @@ load_libsyms(struct LFILinuxProc *proc)
     return true;
 }
 
-bool
-elf_loadsyms(struct LFILinuxProc *proc, uint8_t *elfdat, size_t elfsize)
+static bool
+load_dynshs(uint8_t *elfdat, size_t elfsize, Elf64_Shdr **o_dynsym_sh, Elf64_Shdr **o_dynstr_sh)
 {
     Elf64_Ehdr *ehdr = (Elf64_Ehdr *) elfdat;
 
@@ -95,6 +96,49 @@ elf_loadsyms(struct LFILinuxProc *proc, uint8_t *elfdat, size_t elfsize)
             break;
         }
     }
+
+    *o_dynsym_sh = dynsym_sh;
+    *o_dynstr_sh = dynstr_sh;
+
+    return true;
+}
+
+bool
+elf_dynamic(uint8_t *elfdat, size_t elfsize, uintptr_t *o_dynamic)
+{
+    struct Buf prog = (struct Buf) {
+        .data = elfdat,
+        .size = elfsize,
+    };
+
+    Elf64_Ehdr ehdr;
+    size_t n = buf_read(prog, &ehdr, sizeof(ehdr), 0);
+    if (n != sizeof(ehdr))
+        return NULL;
+
+    Elf64_Phdr phdr[ehdr.e_phnum];
+    n = buf_read(prog, phdr, sizeof(Elf64_Phdr) * ehdr.e_phnum, ehdr.e_phoff);
+    if (n != sizeof(Elf64_Phdr) * ehdr.e_phnum)
+        return NULL;
+
+    for (int x = 0; x < ehdr.e_phnum; x++) {
+        if (phdr[x].p_type == PT_DYNAMIC) {
+            *o_dynamic = phdr[x].p_vaddr;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+elf_loadsyms(struct LFILinuxProc *proc, uint8_t *elfdat, size_t elfsize)
+{
+    Elf64_Shdr *dynsym_sh;
+    Elf64_Shdr *dynstr_sh;
+
+    bool ok = load_dynshs(elfdat, elfsize, &dynsym_sh, &dynstr_sh);
+    if (!ok)
+        return false;
 
     if (!dynsym_sh || !dynstr_sh)
         return false;

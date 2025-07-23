@@ -11,6 +11,7 @@ srcs = files(
   'perf.c',
   'path.c',
   'trampoline.c',
+  'debugger.c',
 )
 
 if get_option('sys_minimal')

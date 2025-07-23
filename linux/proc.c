@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <stdatomic.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 EXPORT struct LFILinuxProc *
 lfi_proc_new(struct LFILinuxEngine *engine)
@@ -61,7 +62,7 @@ lfi_proc_box(struct LFILinuxProc *proc)
 }
 
 EXPORT bool
-lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size)
+lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size, const char *prog_path)
 {
     struct Buf interp = (struct Buf) { 0 };
 
@@ -95,11 +96,25 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size)
         LOG(proc->engine,
             "warning: found dynamic interpreter, but CONFIG_ENABLE_DYLD is false");
 #endif
-        free(interp_path);
+    }
+
+    proc->interp_path = interp_path;
+
+    // Make the program path absolute if necessary.
+    if (!cwk_path_is_absolute(prog_path)) {
+        proc->prog_path = malloc(FILENAME_MAX);
+        if (proc->prog_path) {
+            char buf[FILENAME_MAX];
+            char *cwd = getcwd(buf, sizeof(buf));
+            if (cwd == buf)
+                cwk_path_get_absolute(cwd, prog_path, proc->prog_path, FILENAME_MAX);
+        }
+    } else {
+        proc->prog_path = strndup(prog_path, FILENAME_MAX);
     }
 
     struct ELFLoadInfo info;
-    if (!elf_load(proc, prog, prog_size, interp.data, interp.size, true, &info))
+    if (!elf_load(proc, proc->prog_path, prog, prog_size, interp_path, interp.data, interp.size, true, &info))
         return false;
 
     lfiptr entry = info.elfentry;
@@ -138,6 +153,8 @@ lfi_proc_free(struct LFILinuxProc *proc)
     free(proc->dynsym.data);
     free(proc->dynstr.data);
     lfi_box_free(proc->box);
+    free(proc->interp_path);
+    free(proc->prog_path);
     unlock(&proc->lk_proc);
     free(proc);
 }

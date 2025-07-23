@@ -96,6 +96,15 @@ endif
 if compiler.has_function('arc4random_buf', prefix : '#include <stdlib.h>')
   defines += '-DHAVE_ARC4RANDOM_BUF'
 endif
+r_debug_code = '''
+extern char _r_debug;
+int main() {
+  return (int) &_r_debug;
+}
+'''
+if compiler.links(r_debug_code, name: 'has _r_debug')
+  defines += '-DHAVE_R_DEBUG'
+endif
 have_elf_h = false
 if compiler.has_header('elf.h')
   defines += '-DHAVE_ELF_H'

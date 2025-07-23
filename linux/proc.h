@@ -102,6 +102,11 @@ struct LFILinuxProc {
 
     struct LibSymbols libsyms;
 
+    // File path for ELF interpreter used to load this proc (or NULL).
+    char *interp_path;
+    // File path for the ELF program loaded for this proc (or NULL).
+    char *prog_path;
+
     // The clone context is the context used for cloning new sandbox threads
     // dynamically. To create a new thread, invoke thread_create via the
     // clone_ctx. The sandbox will execute pthread_create inside thread_create,

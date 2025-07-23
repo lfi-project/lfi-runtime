@@ -2,6 +2,7 @@
 
 #include "align.h"
 #include "buf.h"
+#include "debugger.h"
 #include "elfdefs.h"
 #include "log.h"
 
@@ -265,8 +266,8 @@ err1:
 }
 
 bool
-elf_load(struct LFILinuxProc *proc, uint8_t *prog_data, size_t prog_size,
-    uint8_t *interp_data, size_t interp_size, bool perform_map,
+elf_load(struct LFILinuxProc *proc, const char *prog_path, uint8_t *prog_data, size_t prog_size,
+    const char *interp_path, uint8_t *interp_data, size_t interp_size, bool perform_map,
     struct ELFLoadInfo *info)
 {
     struct Buf prog = (struct Buf) {
@@ -297,6 +298,11 @@ elf_load(struct LFILinuxProc *proc, uint8_t *prog_data, size_t prog_size,
     if (proc->engine->opts.perf)
         if (!perf_output_jit_interface_file(prog_data, prog_size, p_first))
             ERROR("failed to generate perf map");
+
+    // Register the ELF files we loaded with lldb/gdb.
+    if (has_interp)
+        db_register_load(proc, interp_path, interp_data, interp_size, i_first);
+    db_register_load(proc, prog_path, prog_data, prog_size, p_first);
 
     struct LFIBox *box = proc->box;
     *info = (struct ELFLoadInfo) {
