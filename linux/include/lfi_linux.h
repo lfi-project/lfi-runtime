@@ -34,6 +34,9 @@ struct LFILinuxOptions {
     // (UNSAFE). Useful for testing and benchmarking for system calls that the
     // runtime doesn't support. Only works on Linux.
     bool sys_passthrough;
+
+    // Enable debugger support by hooking into the _r_debug symbol.
+    bool debug;
 };
 
 // An LFILinuxEngine tracks a set of LFILinuxProcs and LFILinuxThreads.

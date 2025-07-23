@@ -69,21 +69,23 @@ notify_db_of_load(struct link_map *map)
 void
 db_register_load(struct LFILinuxProc *proc, const char *filename, uint8_t *prog_data, size_t prog_size, uintptr_t load_addr)
 {
+    if (proc->engine->opts.debug) {
 #ifdef HAVE_R_DEBUG
-    uintptr_t dynsym;
-    if (!elf_dynamic(prog_data, prog_size, &dynsym))
-        return;
-    struct link_map *map = malloc(sizeof(struct link_map));
-    if (map) {
-        *map = (struct link_map) {
-            .l_addr = load_addr,
-            .l_name = filename,
-            .l_ld = load_addr + dynsym,
-        };
-        notify_db_of_load(map);
-        LOG(proc->engine, "db_register: %s", map->l_name ? map->l_name : "(embedded ELF)");
-    }
+        uintptr_t dynsym;
+        if (!elf_dynamic(prog_data, prog_size, &dynsym))
+            return;
+        struct link_map *map = malloc(sizeof(struct link_map));
+        if (map) {
+            *map = (struct link_map) {
+                .l_addr = load_addr,
+                .l_name = filename,
+                .l_ld = load_addr + dynsym,
+            };
+            notify_db_of_load(map);
+            LOG(proc->engine, "db_register: %s", map->l_name ? map->l_name : "(embedded ELF)");
+        }
 #else
-    LOG(proc->engine, "db_register: gdb/lldb support unavailable because _r_debug was not found");
+        LOG(proc->engine, "db_register: gdb/lldb support unavailable because _r_debug was not found");
 #endif
+    }
 }

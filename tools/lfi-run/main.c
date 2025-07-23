@@ -68,6 +68,7 @@ main(int argc, char **argv)
     struct arg_lit *verbose = arg_lit0("V", "verbose", "verbose output");
     struct arg_lit *perf = arg_lit0(NULL, "perf", "enable perf support");
     struct arg_lit *verify = arg_lit0("v", "verify", "enable verification");
+    struct arg_lit *no_debug = arg_lit0(NULL, "no-debug", "disable debugging support");
     struct arg_lit *sys_passthrough = arg_lit0("p", "sys-passthrough",
         "pass most system calls directly to the host");
     struct arg_int *pagesize = arg_intn(NULL, "pagesize", "<int>", 0, 1,
@@ -137,6 +138,7 @@ main(int argc, char **argv)
                                           cwd,
             .sys_passthrough = sys_passthrough->count > 0,
             .perf = perf->count > 0,
+            .debug = no_debug->count == 0,
         });
     if (!linux_) {
         fprintf(stderr, "failed to create LFI Linux engine\n");
