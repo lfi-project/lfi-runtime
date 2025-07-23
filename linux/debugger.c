@@ -3,7 +3,6 @@
 #include "lock.h"
 #include "elfsym.h"
 
-#include <elf.h>
 #include <stdlib.h>
 
 #ifdef HAVE_R_DEBUG
