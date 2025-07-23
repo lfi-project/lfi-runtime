@@ -26,3 +26,21 @@ provided by `liblfi`.
 The runtime currently targets Linux for Arm64 and x86-64. There is also
 experimental support for macOS (futexes are not yet supported), and support for
 RISC-V is in-progress.
+
+# Usage
+
+```
+Usage: lfi-run [OPTION...] INPUT...
+
+  -h, --help                show help
+  -V, --verbose             verbose output
+  --perf                    enable perf support
+  -v, --verify              enable verification
+  -p, --sys-passthrough     pass most system calls directly to the host
+  --pagesize=<int>          system page size
+  --env=<var=val>           set environment variable
+  --dir=<box=host>          map sandbox path to host directory
+  --wd=<dir>                working directory within sandbox
+  -r, --restricted          apply --dir and --wd flags (default is --dir /=/ --wd $PWD for testing)
+  <input>                   input command
+```
