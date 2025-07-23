@@ -192,7 +192,6 @@ lfi_syscall_entry:
     sd s8, REGS_S8(REG_BASE)
     sd s9, REGS_S9(REG_BASE)
     sd s10, REGS_S10(REG_BASE)
-    sd s11, REGS_S11(REG_BASE)
     sd t3, REGS_T3(REG_BASE)
     sd t4, REGS_T4(REG_BASE)
     sd t5, REGS_T5(REG_BASE)
