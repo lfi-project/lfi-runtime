@@ -79,7 +79,8 @@ lfi_proc_box(struct LFILinuxProc *proc);
 // Loads an ELF program in the proc's address space. The path is used to set up
 // debugging, and can be NULL if unknown.
 bool
-lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size, const char *prog_path);
+lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
+    const char *prog_path);
 
 // Look up the address of the given symbol name. Must be called after an ELF
 // image has been loaded in proc. Returns 0 if not found.

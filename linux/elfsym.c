@@ -58,7 +58,8 @@ load_libsyms(struct LFILinuxProc *proc)
 }
 
 static bool
-load_dynshs(uint8_t *elfdat, size_t elfsize, Elf64_Shdr **o_dynsym_sh, Elf64_Shdr **o_dynstr_sh)
+load_dynshs(uint8_t *elfdat, size_t elfsize, Elf64_Shdr **o_dynsym_sh,
+    Elf64_Shdr **o_dynstr_sh)
 {
     Elf64_Ehdr *ehdr = (Elf64_Ehdr *) elfdat;
 

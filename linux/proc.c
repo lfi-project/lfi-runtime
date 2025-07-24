@@ -62,7 +62,8 @@ lfi_proc_box(struct LFILinuxProc *proc)
 }
 
 EXPORT bool
-lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size, const char *prog_path)
+lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
+    const char *prog_path)
 {
     struct Buf interp = (struct Buf) { 0 };
 
@@ -107,14 +108,16 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size, const 
             char buf[FILENAME_MAX];
             char *cwd = getcwd(buf, sizeof(buf));
             if (cwd == buf)
-                cwk_path_get_absolute(cwd, prog_path, proc->prog_path, FILENAME_MAX);
+                cwk_path_get_absolute(cwd, prog_path, proc->prog_path,
+                    FILENAME_MAX);
         }
     } else if (prog_path) {
         proc->prog_path = strndup(prog_path, FILENAME_MAX);
     }
 
     struct ELFLoadInfo info;
-    if (!elf_load(proc, proc->prog_path, prog, prog_size, interp_path, interp.data, interp.size, true, &info))
+    if (!elf_load(proc, proc->prog_path, prog, prog_size, interp_path,
+            interp.data, interp.size, true, &info))
         return false;
 
     lfiptr entry = info.elfentry;

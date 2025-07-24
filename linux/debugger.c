@@ -1,7 +1,8 @@
 #include "debugger.h"
+
+#include "elfsym.h"
 #include "linux.h"
 #include "lock.h"
-#include "elfsym.h"
 
 #include <stdlib.h>
 
@@ -18,11 +19,7 @@ struct r_debug {
     int32_t r_version;
     struct link_map *r_map;
     uintptr_t r_brk;
-    enum {
-        RT_CONSISTENT,
-        RT_ADD,
-        RT_DELETE
-    } r_state;
+    enum { RT_CONSISTENT, RT_ADD, RT_DELETE } r_state;
     uintptr_t r_ldbase;
 };
 
@@ -67,7 +64,8 @@ notify_db_of_load(struct link_map *map)
 #endif
 
 void
-db_register_load(struct LFILinuxProc *proc, const char *filename, uint8_t *prog_data, size_t prog_size, uintptr_t load_addr)
+db_register_load(struct LFILinuxProc *proc, const char *filename,
+    uint8_t *prog_data, size_t prog_size, uintptr_t load_addr)
 {
     if (proc->engine->opts.debug) {
 #ifdef HAVE_R_DEBUG
@@ -82,10 +80,12 @@ db_register_load(struct LFILinuxProc *proc, const char *filename, uint8_t *prog_
                 .l_ld = load_addr + dynsym,
             };
             notify_db_of_load(map);
-            LOG(proc->engine, "db_register: %s", map->l_name ? map->l_name : "(embedded ELF)");
+            LOG(proc->engine, "db_register: %s",
+                map->l_name ? map->l_name : "(embedded ELF)");
         }
 #else
-        LOG(proc->engine, "db_register: gdb/lldb support unavailable because _r_debug was not found");
+        LOG(proc->engine,
+            "db_register: gdb/lldb support unavailable because _r_debug was not found");
 #endif
     }
 }

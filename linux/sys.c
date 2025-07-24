@@ -1,9 +1,9 @@
 #include "sys.h"
 
+#include "lfi_arch.h"
 #include "linux.h"
 #include "proc.h"
 #include "sys/sys.h"
-#include "lfi_arch.h"
 
 #include <assert.h>
 #include <stdlib.h>

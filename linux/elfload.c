@@ -266,9 +266,9 @@ err1:
 }
 
 bool
-elf_load(struct LFILinuxProc *proc, const char *prog_path, uint8_t *prog_data, size_t prog_size,
-    const char *interp_path, uint8_t *interp_data, size_t interp_size, bool perform_map,
-    struct ELFLoadInfo *info)
+elf_load(struct LFILinuxProc *proc, const char *prog_path, uint8_t *prog_data,
+    size_t prog_size, const char *interp_path, uint8_t *interp_data,
+    size_t interp_size, bool perform_map, struct ELFLoadInfo *info)
 {
     struct Buf prog = (struct Buf) {
         .data = prog_data,

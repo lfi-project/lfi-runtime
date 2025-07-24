@@ -179,8 +179,8 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
     regs->x0 = 0;
     regs->sp = stack;
 #elif defined(LFI_ARCH_RISCV64)
-   regs->a0 = 0;
-   regs->sp = stack;
+    regs->a0 = 0;
+    regs->sp = stack;
 #else
 #error "invalid arch"
 #endif

@@ -308,8 +308,8 @@
 #define LINUX_SYS_fchmodat2               452
 
 // RISC-V specific syscalls
-#define LINUX_SYS_sysriscv                244 // Same as arch_specific_syscall
-#define LINUX_SYS_riscv_flush_icache      259 // sysriscv + 15
+#define LINUX_SYS_sysriscv           244 // Same as arch_specific_syscall
+#define LINUX_SYS_riscv_flush_icache 259 // sysriscv + 15
 
 // Should always match the largest syscall number.
 #define LINUX_SYS_LAST 452
