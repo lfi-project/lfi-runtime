@@ -37,6 +37,7 @@ srcs += files(
   'sys_readlinkat.c',
   'sys_readv.c',
   'sys_renameat.c',
+  'sys_renameat2.c',
   'sys_sched_getaffinity.c',
   'sys_sched_yield.c',
   'sys_set_tid_address.c',

@@ -282,3 +282,7 @@ sys_sysinfo(struct LFILinuxThread *t, lfiptr infop);
 
 int
 sys_uname(struct LFILinuxThread *t, lfiptr bufp);
+
+int
+sys_renameat2(struct LFILinuxThread *t, int olddir, lfiptr oldpathp, int newdir,
+    lfiptr newpathp, unsigned int flags);

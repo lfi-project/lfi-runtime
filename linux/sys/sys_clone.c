@@ -35,6 +35,8 @@ threadspawn_fake(struct LFILinuxThread *t)
     entry = regs->r11;
 #elif defined(LFI_ARCH_ARM64)
     entry = regs->x30;
+#elif defined(LFI_ARCH_RISCV64)
+    entry = regs->ra;
 #else
 #error "invalid arch"
 #endif
@@ -53,6 +55,8 @@ threadspawn(void *arg)
     entry = regs->r11;
 #elif defined(LFI_ARCH_ARM64)
     entry = regs->x30;
+#elif defined(LFI_ARCH_RISCV64)
+    entry = regs->ra;
 #else
 #error "invalid arch"
 #endif
@@ -174,6 +178,9 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
 #elif defined(LFI_ARCH_ARM64)
     regs->x0 = 0;
     regs->sp = stack;
+#elif defined(LFI_ARCH_RISCV64)
+   regs->a0 = 0;
+   regs->sp = stack;
 #else
 #error "invalid arch"
 #endif
