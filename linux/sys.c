@@ -155,7 +155,7 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
                 sys_unlinkat(t, a0, a1, a2))
 #ifdef LINUX_SYS_unlink
         SYS(unlink,
-                sys_unlinkat(t, LINUX_AT_FDCWD, a0, a1))
+                sys_unlinkat(t, LINUX_AT_FDCWD, a0, 0))
 #endif
 #ifdef LINUX_SYS_renameat
         SYS(renameat,
@@ -167,7 +167,7 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
 #endif
 #ifdef LINUX_SYS_rename
         SYS(rename,
-                sys_renameat(t, LINUX_AT_FDCWD, a0, LINUX_AT_FDCWD, a))
+                sys_renameat(t, LINUX_AT_FDCWD, a0, LINUX_AT_FDCWD, a1))
 #endif
         SYS(faccessat,
                 sys_faccessat(t, a0, a1, a2))
