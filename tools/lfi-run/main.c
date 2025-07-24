@@ -129,12 +129,14 @@ main(int argc, char **argv)
         NULL,
     };
 
+    const char **strdirs = strarray(dirs);
+
     struct LFILinuxEngine *linux_ = lfi_linux_new(engine,
         (struct LFILinuxOptions) {
             .stacksize = mb(2),
             .verbose = verbose->count > 0,
             .exit_unknown_syscalls = true,
-            .dir_maps = restricted->count > 0 ? strarray(dirs) : all,
+            .dir_maps = restricted->count > 0 ? strdirs : all,
             .wd = restricted->count > 0 ? (wd->count > 0 ? wd->sval[0] : NULL) :
                                           cwd,
             .sys_passthrough = sys_passthrough->count > 0,
@@ -183,6 +185,7 @@ main(int argc, char **argv)
 
     free(box_argv);
     free(box_envp);
+    free(strdirs);
 
     lfi_linux_free(linux_);
 
