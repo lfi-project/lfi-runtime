@@ -30,11 +30,11 @@
 lfi_callback:
     // Entrypoint for callbacks, with the target in %r10.
 #ifdef HAVE_PKU
-    xchg %rcx, (%rsp)
+    pushq %rcx
     movq %rdx, %r11
     pku_all_access
     movq %r11, %rdx
-    xchg %rcx, (%rsp)
+    popq %rcx
 #endif
 
     get_ctx %r11

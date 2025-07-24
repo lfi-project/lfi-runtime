@@ -83,6 +83,15 @@ main(void)
     assert(p != (lfiptr) -1);
     assert(lfi_box_ptrvalid(box, p));
 
+    lfiptr stack = lfi_box_mapany(box, pagesize, LFI_PROT_READ | LFI_PROT_WRITE,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
+
+#if defined(LFI_ARCH_X64)
+    lfi_ctx_regs(ctx)->rsp = stack + pagesize;
+#elif defined(LFI_ARCH_ARM64)
+    lfi_ctx_regs(ctx)->sp = stack + pagesize;
+#endif
+
 #if defined(LFI_ARCH_X64)
     // Set all bytes to trap instructions, since 0 does not pass verification.
     memset((void *) lfi_box_l2p(box, p), 0xcc, pagesize);
