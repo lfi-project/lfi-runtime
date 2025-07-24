@@ -155,7 +155,7 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
                 sys_unlinkat(t, a0, a1, a2))
 #ifdef LINUX_SYS_unlink
         SYS(unlink,
-                sys_unlinkat(t, LINUX_AT_FDCWD, a0, 0))
+                sys_unlinkat(t, LINUX_AT_FDCWD, a0, a1))
 #endif
 #ifdef LINUX_SYS_renameat
         SYS(renameat,
