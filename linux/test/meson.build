@@ -12,7 +12,6 @@ foreach t : tests
 endforeach
 
 # Remaining tests work by running actual programs and checking outputs.
-lficc = find_program(cpu + '-lfi-linux-musl-clang', required: false)
 if not lficc.found()
   warning('lficc not found: cannot test liblfi')
   subdir_done()

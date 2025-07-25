@@ -132,6 +132,8 @@ endif
 subdir('core')
 
 if get_option('enable_linux')
+  lficc = find_program(cpu + '-lfi-linux-musl-clang', required: false)
+
   subdir('linux')
   subdir('tools')
 
