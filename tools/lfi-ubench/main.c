@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -50,8 +51,19 @@ time_ns()
         (uint64_t) ts.tv_nsec;
 }
 
+static bool
+has_bench(const char **benches, const char *bench)
+{
+    while (*benches) {
+        if (strcmp(*benches, bench) == 0)
+            return true;
+        benches++;
+    }
+    return false;
+}
+
 #define BENCHMARK(name, iters, expr)                                    \
-    do {                                                                \
+    if (argc == 1 || has_bench(argv, name)) {                           \
         printf("%s... ", name);                                         \
         uint64_t start = time_ns();                                     \
         for (size_t i = 0; i < (iters); ++i) {                          \
@@ -60,10 +72,10 @@ time_ns()
         uint64_t end = time_ns();                                       \
         double time_per_iter = (double) (end - start) / (double) iters; \
         printf("%f ns\n", time_per_iter);                               \
-    } while (0)
+    }
 
 int
-main(void)
+main(int argc, const char **argv)
 {
     size_t pagesize = getpagesize();
     struct LFIEngine *engine = lfi_new(
@@ -94,25 +106,25 @@ main(void)
 
     lfi_box_init_ret(lfi_proc_box(proc));
 
-    const char *argv[] = {
+    const char *box_argv[] = {
         library,
         NULL,
     };
 
-    const char *envp[] = {
+    const char *box_envp[] = {
         "LFI=1",
         "USER=sandbox",
         "HOME=/home",
         NULL,
     };
 
-    struct LFILinuxThread *t = lfi_thread_new(proc, 1, &argv[0], &envp[0]);
+    struct LFILinuxThread *t = lfi_thread_new(proc, 1, &box_argv[0], &box_envp[0]);
     assert(t);
 
     int result = lfi_thread_run(t);
     assert(result == 0);
 
-    size_t iters = 10000000;
+    size_t iters = 100000000;
 
     lfiptr fn;
 
