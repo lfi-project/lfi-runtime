@@ -22,6 +22,9 @@ lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
     const char *verbose = getenv("LFI_VERBOSE");
     if (verbose && strcmp(verbose, "1") == 0)
         opts.verbose = true;
+    const char *debug = getenv("LFI_DEBUG");
+    if (debug && strcmp(debug, "1") == 0)
+        opts.debug = true;
 
     lfi_sys_handler(lfi_engine, arch_syshandle);
 
