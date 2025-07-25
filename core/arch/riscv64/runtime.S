@@ -242,6 +242,8 @@ lfi_syscall_entry:
     ld a0, 0(sp)
     addi sp, sp, 8
 
+    write_ctx a0
+
     ld ra, REGS_RA(a0)
     ld sp, REGS_SP(a0)
     ld gp, REGS_GP(a0)
