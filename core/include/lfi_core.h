@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <threads.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -298,7 +299,7 @@ struct LFIInvokeInfo {
     struct LFIBox *box;
 };
 
-extern _Thread_local struct LFIInvokeInfo lfi_invoke_info asm(
+extern thread_local struct LFIInvokeInfo lfi_invoke_info asm(
     "lfi_invoke_info");
 
 extern const void *lfi_trampoline_addr;

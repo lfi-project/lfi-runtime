@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 
-EXPORT _Thread_local struct LFIInvokeInfo lfi_invoke_info asm(
+EXPORT thread_local struct LFIInvokeInfo lfi_invoke_info asm(
     "lfi_invoke_info");
 
 EXPORT extern void

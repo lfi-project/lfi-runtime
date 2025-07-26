@@ -6,7 +6,10 @@
 #include <assert.h>
 
 // This is where sys_clone places new contexts that are created via clone.
-_Thread_local struct LFIContext *new_ctx;
+thread_local struct LFIContext *new_ctx;
+
+// Pthread key used for destroying sandbox threads.
+static pthread_key_t thread_key;
 
 static struct LFIContext *
 lfi_linux_clone_cb(struct LFIBox *box)
@@ -18,7 +21,22 @@ lfi_linux_clone_cb(struct LFIBox *box)
     LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
     LFI_INVOKE(box, &proc->clone_ctx, proc->libsyms.thread_create, void *,
         (void) );
+
+    pthread_setspecific(thread_key, new_ctx);
+
     return new_ctx;
+}
+
+// Called when a host thread that has an associated sandbox thread exits.
+static void
+thread_destructor(void *p)
+{
+    struct LFIContext *ctx = p;
+    (void) ctx;
+
+    LOG_("destroy sandbox thread");
+
+    // TODO: destroy the sandbox thread.
 }
 
 EXPORT void
@@ -38,6 +56,10 @@ lfi_linux_init_clone(struct LFILinuxThread *main)
 
     // Register lfi_linux_clone_cb as the clone_cb.
     lfi_set_clone_cb(lfi_box_engine(main->proc->box), lfi_linux_clone_cb);
+
+    // Initialize our pthread key so that we get a callback when host threads
+    // that have associated sandbox threads exit.
+    pthread_key_create(&thread_key, thread_destructor);
 }
 
 static inline bool

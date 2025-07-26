@@ -1,6 +1,7 @@
 #include <stdio.h>
+#include <threads.h>
 
-_Thread_local int i;
+thread_local int i;
 
 int
 tls(void)

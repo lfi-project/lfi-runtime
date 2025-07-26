@@ -1,6 +1,7 @@
 #include <unistd.h>
+#include <threads.h>
 
-_Thread_local int x;
+thread_local int x;
 
 int
 bench_tls(void)

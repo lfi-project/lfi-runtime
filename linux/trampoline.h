@@ -2,4 +2,4 @@
 
 #include "linux.h"
 
-extern _Thread_local struct LFIContext *new_ctx;
+extern thread_local struct LFIContext *new_ctx;

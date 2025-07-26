@@ -9,6 +9,7 @@
 #include "mmap.h"
 
 #include <signal.h>
+#include <threads.h>
 
 #define EXPORT __attribute__((visibility("default")))
 
@@ -70,8 +71,8 @@ struct LFIContext {
     struct LFIBox *box;
 };
 
-extern _Thread_local int lfi_error;
-extern _Thread_local char *lfi_error_desc;
+extern thread_local int lfi_error;
+extern thread_local char *lfi_error_desc;
 
 static inline size_t
 kb(size_t x)

@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <threads.h>
 #include <unistd.h>
 
 // Use -b to run the benchmark: ./core/test/test_trampoline.c.elf -b
@@ -21,7 +22,7 @@ callback(int a)
     return a;
 }
 
-static _Thread_local struct LFIContext *lib_ctx;
+static thread_local struct LFIContext *lib_ctx;
 
 struct ThreadArgs {
     struct LFIBox *box;

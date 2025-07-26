@@ -3,8 +3,8 @@
 
 #include <stdlib.h>
 
-_Thread_local int lfi_error;
-_Thread_local char *lfi_error_desc;
+thread_local int lfi_error;
+thread_local char *lfi_error_desc;
 
 EXPORT int
 lfi_errno(void)
