@@ -127,14 +127,14 @@ lfi_trampoline_struct:
     movq REGS_RCX(%r11), %rcx
     movq REGS_R8(%r11), %r8
     movq REGS_R9(%r11), %r9
-    movdqu REGS_XMM+0*16(%r11), %xmm0
-    movdqu REGS_XMM+1*16(%r11), %xmm1
-    movdqu REGS_XMM+2*16(%r11), %xmm2
-    movdqu REGS_XMM+3*16(%r11), %xmm3
-    movdqu REGS_XMM+4*16(%r11), %xmm4
-    movdqu REGS_XMM+5*16(%r11), %xmm5
-    movdqu REGS_XMM+6*16(%r11), %xmm6
-    movdqu REGS_XMM+7*16(%r11), %xmm7
+    movdqu REGS_XMM(0)(%r11), %xmm0
+    movdqu REGS_XMM(1)(%r11), %xmm1
+    movdqu REGS_XMM(2)(%r11), %xmm2
+    movdqu REGS_XMM(3)(%r11), %xmm3
+    movdqu REGS_XMM(4)(%r11), %xmm4
+    movdqu REGS_XMM(5)(%r11), %xmm5
+    movdqu REGS_XMM(6)(%r11), %xmm6
+    movdqu REGS_XMM(7)(%r11), %xmm7
 
     jmp .lfi_trampoline_common
 
@@ -269,8 +269,8 @@ lfi_ret:
     // save return registers
     movq %rax, REGS_RAX(%r11)
     movq %rdx, REGS_RDX(%r11)
-    movdqu %xmm0, REGS_XMM+0*16(%r11)
-    movdqu %xmm1, REGS_XMM+1*16(%r11)
+    movdqu %xmm0, REGS_XMM(0)(%r11)
+    movdqu %xmm1, REGS_XMM(1)(%r11)
     // restore sandbox sp to its initial value
     popq %rbp
     movq %rbp, REGS_RSP(%r11)

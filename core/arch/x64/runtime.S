@@ -119,22 +119,22 @@ lfi_syscall_entry:
     movq %r10, REGS_R10(%rcx)
     movq %r11, REGS_R11(%rcx)
     fnstcw REGS_FCW(%rcx)
-    movq %xmm0, REGS_XMM+0*16(%rcx)
-    movq %xmm1, REGS_XMM+1*16(%rcx)
-    movq %xmm2, REGS_XMM+2*16(%rcx)
-    movq %xmm3, REGS_XMM+3*16(%rcx)
-    movq %xmm4, REGS_XMM+4*16(%rcx)
-    movq %xmm5, REGS_XMM+5*16(%rcx)
-    movq %xmm6, REGS_XMM+6*16(%rcx)
-    movq %xmm7, REGS_XMM+7*16(%rcx)
-    movq %xmm8, REGS_XMM+8*16(%rcx)
-    movq %xmm9, REGS_XMM+9*16(%rcx)
-    movq %xmm10, REGS_XMM+10*16(%rcx)
-    movq %xmm11, REGS_XMM+11*16(%rcx)
-    movq %xmm12, REGS_XMM+12*16(%rcx)
-    movq %xmm13, REGS_XMM+13*16(%rcx)
-    movq %xmm14, REGS_XMM+14*16(%rcx)
-    movq %xmm15, REGS_XMM+15*16(%rcx)
+    movq %xmm0, REGS_XMM(0)(%rcx)
+    movq %xmm1, REGS_XMM(1)(%rcx)
+    movq %xmm2, REGS_XMM(2)(%rcx)
+    movq %xmm3, REGS_XMM(3)(%rcx)
+    movq %xmm4, REGS_XMM(4)(%rcx)
+    movq %xmm5, REGS_XMM(5)(%rcx)
+    movq %xmm6, REGS_XMM(6)(%rcx)
+    movq %xmm7, REGS_XMM(7)(%rcx)
+    movq %xmm8, REGS_XMM(8)(%rcx)
+    movq %xmm9, REGS_XMM(9)(%rcx)
+    movq %xmm10, REGS_XMM(10)(%rcx)
+    movq %xmm11, REGS_XMM(11)(%rcx)
+    movq %xmm12, REGS_XMM(12)(%rcx)
+    movq %xmm13, REGS_XMM(13)(%rcx)
+    movq %xmm14, REGS_XMM(14)(%rcx)
+    movq %xmm15, REGS_XMM(15)(%rcx)
 
     // swap the thread control block back to the host one
     movq REGS_HOST_TP(%rcx), %rdi
@@ -171,22 +171,22 @@ lfi_syscall_entry:
     movq REGS_R10(%rcx), %r10
     movq REGS_R11(%rcx), %r11
     fldcw REGS_FCW(%rcx)
-    movq REGS_XMM+0*16(%rcx), %xmm0
-    movq REGS_XMM+1*16(%rcx), %xmm1
-    movq REGS_XMM+2*16(%rcx), %xmm2
-    movq REGS_XMM+3*16(%rcx), %xmm3
-    movq REGS_XMM+4*16(%rcx), %xmm4
-    movq REGS_XMM+5*16(%rcx), %xmm5
-    movq REGS_XMM+6*16(%rcx), %xmm6
-    movq REGS_XMM+7*16(%rcx), %xmm7
-    movq REGS_XMM+8*16(%rcx), %xmm8
-    movq REGS_XMM+9*16(%rcx), %xmm9
-    movq REGS_XMM+10*16(%rcx), %xmm10
-    movq REGS_XMM+11*16(%rcx), %xmm11
-    movq REGS_XMM+12*16(%rcx), %xmm12
-    movq REGS_XMM+13*16(%rcx), %xmm13
-    movq REGS_XMM+14*16(%rcx), %xmm14
-    movq REGS_XMM+15*16(%rcx), %xmm15
+    movq REGS_XMM(0)(%rcx), %xmm0
+    movq REGS_XMM(1)(%rcx), %xmm1
+    movq REGS_XMM(2)(%rcx), %xmm2
+    movq REGS_XMM(3)(%rcx), %xmm3
+    movq REGS_XMM(4)(%rcx), %xmm4
+    movq REGS_XMM(5)(%rcx), %xmm5
+    movq REGS_XMM(6)(%rcx), %xmm6
+    movq REGS_XMM(7)(%rcx), %xmm7
+    movq REGS_XMM(8)(%rcx), %xmm8
+    movq REGS_XMM(9)(%rcx), %xmm9
+    movq REGS_XMM(10)(%rcx), %xmm10
+    movq REGS_XMM(11)(%rcx), %xmm11
+    movq REGS_XMM(12)(%rcx), %xmm12
+    movq REGS_XMM(13)(%rcx), %xmm13
+    movq REGS_XMM(14)(%rcx), %xmm14
+    movq REGS_XMM(15)(%rcx), %xmm15
 #ifdef HAVE_PKU
     pushq %rax
     pushq %rdx

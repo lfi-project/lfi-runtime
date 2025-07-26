@@ -61,14 +61,14 @@
     movq %rcx, REGS_RCX(%r11)
     movq %r8, REGS_R8(%r11)
     movq %r9, REGS_R9(%r11)
-    movdqu %xmm0, REGS_XMM+0*16(%r11)
-    movdqu %xmm1, REGS_XMM+1*16(%r11)
-    movdqu %xmm2, REGS_XMM+2*16(%r11)
-    movdqu %xmm3, REGS_XMM+3*16(%r11)
-    movdqu %xmm4, REGS_XMM+4*16(%r11)
-    movdqu %xmm5, REGS_XMM+5*16(%r11)
-    movdqu %xmm6, REGS_XMM+6*16(%r11)
-    movdqu %xmm7, REGS_XMM+7*16(%r11)
+    movdqu %xmm0, REGS_XMM(0)(%r11)
+    movdqu %xmm1, REGS_XMM(1)(%r11)
+    movdqu %xmm2, REGS_XMM(2)(%r11)
+    movdqu %xmm3, REGS_XMM(3)(%r11)
+    movdqu %xmm4, REGS_XMM(4)(%r11)
+    movdqu %xmm5, REGS_XMM(5)(%r11)
+    movdqu %xmm6, REGS_XMM(6)(%r11)
+    movdqu %xmm7, REGS_XMM(7)(%r11)
 .endif
 
     // Save %r11 across the call (and stack alignment).
@@ -98,8 +98,8 @@
 .if \with_struct
     movq REGS_RAX(%r11), %rax
     movq REGS_RDX(%r11), %rdx
-    movdqu REGS_XMM+0*16(%r11), %xmm0
-    movdqu REGS_XMM+1*16(%r11), %xmm1
+    movdqu REGS_XMM(0)(%r11), %xmm0
+    movdqu REGS_XMM(1)(%r11), %xmm1
 .endif
 
 #ifdef HAVE_PKU
