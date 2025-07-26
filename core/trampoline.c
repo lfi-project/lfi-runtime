@@ -4,11 +4,6 @@
 
 EXPORT thread_local struct LFIInvokeInfo lfi_invoke_info asm("lfi_invoke_info");
 
-EXPORT extern void
-lfi_trampoline() asm("lfi_trampoline");
-
-EXPORT const void *lfi_trampoline_addr = &lfi_trampoline;
-
 EXPORT void
 lfi_set_clone_cb(struct LFIEngine *engine,
     struct LFIContext *(*clone_cb_arg)(struct LFIBox *) )

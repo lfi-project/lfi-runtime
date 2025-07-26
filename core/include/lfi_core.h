@@ -301,19 +301,23 @@ struct LFIInvokeInfo {
 
 extern thread_local struct LFIInvokeInfo lfi_invoke_info asm("lfi_invoke_info");
 
-extern const void *lfi_trampoline_addr;
+#define LFI_X(x, y)  x##y
+#define LFI_XX(x, y) LFI_X(x, y)
+
+#define LFI_INVOKE_NAMED(name, box_, ctxp, fn, ret_type, args, ...)         \
+    ({                                                                      \
+        ret_type LFI_XX(__lfi_trampoline, name) args asm("lfi_trampoline"); \
+        lfi_invoke_info = (struct LFIInvokeInfo) {                          \
+            .ctx = ctxp,                                                    \
+            .targetfn = fn,                                                 \
+            .box = box_,                                                    \
+        };                                                                  \
+        LFI_XX(__lfi_trampoline, name)(__VA_ARGS__);                        \
+    })
 
 // LFI_INVOKE(struct LFIContext **ctx, lfiptr fn, return type, arg types, ...)
-#define LFI_INVOKE(box_, ctxp, fn, ret_type, args, ...)                       \
-    ({                                                                        \
-        lfi_invoke_info = (struct LFIInvokeInfo) {                            \
-            .ctx = ctxp,                                                      \
-            .targetfn = fn,                                                   \
-            .box = box_,                                                      \
-        };                                                                    \
-        ret_type(*_trampoline) args = (ret_type(*) args) lfi_trampoline_addr; \
-        _trampoline(__VA_ARGS__);                                             \
-    })
+#define LFI_INVOKE(box_, ctxp, fn, ret_type, args, ...) \
+    LFI_INVOKE_NAMED(__COUNTER__, box_, ctxp, fn, ret_type, args, __VA_ARGS__)
 
 #ifdef __cplusplus
 }
