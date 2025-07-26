@@ -204,6 +204,12 @@ lfi_box_cbinit(struct LFIBox *box);
 void *
 lfi_box_register_cb(struct LFIBox *box, void *fn);
 
+// Similar to lfi_box_register_cb, but expects the arguments and return values
+// to be accessed through the struct LFIContext associated with the callback
+// invoker.
+void *
+lfi_box_register_cb_struct(struct LFIBox *box, void *fn);
+
 // Unregister fn as a callback.
 void
 lfi_box_unregister_cb(struct LFIBox *box, void *fn);
@@ -300,6 +306,11 @@ struct LFIInvokeInfo {
 };
 
 extern thread_local struct LFIInvokeInfo lfi_invoke_info asm("lfi_invoke_info");
+
+// Direct trampoline that loads arguments/return values from the struct
+// LFIContext that is used in the invocation.
+void
+lfi_trampoline_struct(void) asm("lfi_trampoline_struct");
 
 #define LFI_X(x, y)  x##y
 #define LFI_XX(x, y) LFI_X(x, y)

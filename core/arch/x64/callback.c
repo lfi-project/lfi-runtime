@@ -32,6 +32,9 @@ static uint8_t cbentry_code[16] = {
 extern void
 lfi_callback();
 
+extern void
+lfi_callback_struct();
+
 static ssize_t
 cbfreeslot(struct LFIBox *box)
 {
@@ -89,6 +92,29 @@ err1:
 err:
     close(fd);
     return false;
+}
+
+EXPORT void *
+lfi_box_register_cb_struct(struct LFIBox *box, void *fn)
+{
+    assert(fn);
+    assert(cbfind(box, fn) == -1 && "fn is already registered as a callback");
+
+    ssize_t slot = cbfreeslot(box);
+    if (slot == -1)
+        return NULL;
+
+    // Write 'fn' into the 'target' field for the chosen slot.
+    atomic_store_explicit(&box->cbinfo.cbentries_alias[slot].target,
+        (uint64_t) fn, memory_order_seq_cst);
+    // Write the trampoline into the 'trampoline' field for the chosen slot
+    atomic_store_explicit(&box->cbinfo.cbentries_alias[slot].trampoline,
+        (uint64_t) lfi_callback_struct, memory_order_seq_cst);
+
+    // Mark the slot as allocated.
+    box->callbacks[slot] = fn;
+
+    return &box->cbinfo.cbentries_box[slot].code[0];
 }
 
 EXPORT void *

@@ -84,6 +84,7 @@
 #define REGS_R13  144
 #define REGS_R14  152
 #define REGS_R15  160
+#define REGS_FCW  168
 #define REGS_XMM  192
 
 #define REGS_BASE REGS_R14

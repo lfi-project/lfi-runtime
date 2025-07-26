@@ -118,6 +118,7 @@ lfi_syscall_entry:
     movq %r9,  REGS_R9(%rcx)
     movq %r10, REGS_R10(%rcx)
     movq %r11, REGS_R11(%rcx)
+    fnstcw REGS_FCW(%rcx)
     movq %xmm0, REGS_XMM+0*16(%rcx)
     movq %xmm1, REGS_XMM+1*16(%rcx)
     movq %xmm2, REGS_XMM+2*16(%rcx)
@@ -169,6 +170,7 @@ lfi_syscall_entry:
     movq REGS_R9(%rcx), %r9
     movq REGS_R10(%rcx), %r10
     movq REGS_R11(%rcx), %r11
+    fldcw REGS_FCW(%rcx)
     movq REGS_XMM+0*16(%rcx), %xmm0
     movq REGS_XMM+1*16(%rcx), %xmm1
     movq REGS_XMM+2*16(%rcx), %xmm2

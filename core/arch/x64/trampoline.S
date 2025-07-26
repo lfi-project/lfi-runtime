@@ -88,6 +88,56 @@
 #endif
 .endm
 
+.macro lazy_ctx_clone
+    // Check if the context pointer is zero.
+    cmpq $0, (%r11)
+    jne 1f
+    // Initialize the context pointer with the clone callback.
+    call .trampoline_clone
+1:
+    // Load the context pointer from struct LFIContext **ctx.
+    movq (%r11), %r11
+.endm
+
+.p2align 4
+.global lfi_trampoline_struct
+lfi_trampoline_struct:
+    endbr64
+    // save callee-saved registers
+    pushq %r15
+    pushq %r14
+    pushq %r13
+    pushq %r12
+    pushq %rbx
+    pushq %rbp
+
+    get_invoke_info %r13
+    movq INVOKE_TARGETFN(%r13), %r12
+    // Loads a pointer to the context pointer.
+    movq INVOKE_BOX(%r13), %r14
+    movq INVOKE_CTX(%r13), %r13
+    movq %r13, %r11
+    movq $0, %r15
+
+    lazy_ctx_clone
+
+    movq REGS_RDI(%r11), %rdi
+    movq REGS_RSI(%r11), %rsi
+    movq REGS_RDX(%r11), %rdx
+    movq REGS_RCX(%r11), %rcx
+    movq REGS_R8(%r11), %r8
+    movq REGS_R9(%r11), %r9
+    movdqu REGS_XMM+0*16(%r11), %xmm0
+    movdqu REGS_XMM+1*16(%r11), %xmm1
+    movdqu REGS_XMM+2*16(%r11), %xmm2
+    movdqu REGS_XMM+3*16(%r11), %xmm3
+    movdqu REGS_XMM+4*16(%r11), %xmm4
+    movdqu REGS_XMM+5*16(%r11), %xmm5
+    movdqu REGS_XMM+6*16(%r11), %xmm6
+    movdqu REGS_XMM+7*16(%r11), %xmm7
+
+    jmp .lfi_trampoline_common
+
 .global lfi_trampoline
 .p2align 4
 lfi_trampoline:
@@ -107,6 +157,8 @@ lfi_trampoline:
     movq INVOKE_CTX(%r13), %r13
     movq %r13, %r11
     movq $0, %r15
+
+    lazy_ctx_clone
 
     jmp .lfi_trampoline_common
 
@@ -140,16 +192,9 @@ lfi_trampoline_direct:
     movq %r14, %r15 // n_stack
     movq %r10, %r14 // box
 
-.lfi_trampoline_common:
-    // Check if the context pointer is zero.
-    cmpq $0, (%r11)
-    jne 1f
-    // Initialize the context pointer with the clone callback.
-    call .trampoline_clone
-1:
-    // Load the context pointer from struct LFIContext **ctx.
-    movq (%r11), %r11
+    lazy_ctx_clone
 
+.lfi_trampoline_common:
     // dummy push to keep the stack aligned
     pushq %rbp
     // push sandbox rsp
@@ -221,6 +266,11 @@ lfi_ret:
     // restore host tp
     movq REGS_HOST_TP(%r11), %rbp
     write_ctx %rbp
+    // save return registers
+    movq %rax, REGS_RAX(%r11)
+    movq %rdx, REGS_RDX(%r11)
+    movdqu %xmm0, REGS_XMM+0*16(%r11)
+    movdqu %xmm1, REGS_XMM+1*16(%r11)
     // restore sandbox sp to its initial value
     popq %rbp
     movq %rbp, REGS_RSP(%r11)
