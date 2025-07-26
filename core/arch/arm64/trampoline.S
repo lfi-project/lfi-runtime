@@ -237,7 +237,7 @@ lfi_trampoline_direct:
     udf #0
 
 .global lfi_ret_end
-.p2align lfi_ret_end
+.p2align 4
 lfi_ret_end:
     mov REG_BASE, x0
     b .lfi_ret_internal
