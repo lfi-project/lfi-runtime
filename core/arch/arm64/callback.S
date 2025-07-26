@@ -54,14 +54,32 @@
     movi v31.2D, #0
 .endm
 
-.global lfi_callback
-.p2align 4
-lfi_callback:
+.macro lfi_callback_gen with_struct
     get_ctx x9
 
     // Save and replace tpidr_el0 with host value.
     ldr x12, [x9, REGS_HOST_TP]
     write_ctx x12, x11
+
+.if \with_struct
+    str x0, [x9, #REGS_X(0)]
+    str x1, [x9, #REGS_X(1)]
+    str x2, [x9, #REGS_X(2)]
+    str x3, [x9, #REGS_X(3)]
+    str x4, [x9, #REGS_X(4)]
+    str x5, [x9, #REGS_X(5)]
+    str x6, [x9, #REGS_X(6)]
+    str x7, [x9, #REGS_X(7)]
+    str x8, [x9, #REGS_X(8)]
+    str d0, [x9, #REGS_V(0)]
+    str d1, [x9, #REGS_V(1)]
+    str d2, [x9, #REGS_V(2)]
+    str d3, [x9, #REGS_V(3)]
+    str d4, [x9, #REGS_V(4)]
+    str d5, [x9, #REGS_V(5)]
+    str d6, [x9, #REGS_V(6)]
+    str d7, [x9, #REGS_V(7)]
+.endif
 
     // Get current sandbox sp.
     mov x12, sp
@@ -83,6 +101,14 @@ lfi_callback:
     // Restore x18 and x9.
     mov x18, x23
     mov x9, x22
+
+.if \with_struct
+    ldr x0, [x9, #REGS_X(0)]
+    ldr x1, [x9, #REGS_X(1)]
+    ldr x8, [x9, #REGS_X(8)]
+    ldr d0, [x9, #REGS_V(0)]
+    ldr d1, [x9, #REGS_V(1)]
+.endif
 
     // Read previous sandbox sp and return address from stack.
     ldp x11, x30, [sp], 16
@@ -108,6 +134,17 @@ lfi_callback:
 
     add x30, REG_BASE, w30, uxtw
     ret
+.endm
+
+.p2align 4
+.global lfi_callback
+lfi_callback:
+    lfi_callback_gen 0
+
+.p2align 4
+.global lfi_callback_struct
+lfi_callback_struct:
+    lfi_callback_gen 1
 
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits

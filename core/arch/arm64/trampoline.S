@@ -90,6 +90,58 @@ Lloh1:
 #endif
 .endm
 
+.macro lazy_ctx_clone
+    // Load the context pointer from the LFIContext **.
+    ldr x13, [x20]
+    // If NULL, initialize the context pointer.
+    cbnz x13, 1f
+    bl .trampoline_clone
+    ldr x13, [x20]
+1:
+.endm
+
+.global lfi_trampoline_struct
+.p2align 4
+lfi_trampoline_struct:
+    bti jc
+    stp d8, d9,   [sp, #-16]!
+    stp d10, d11, [sp, #-16]!
+    stp d12, d13, [sp, #-16]!
+    stp d14, d15, [sp, #-16]!
+    stp x19, x20, [sp, #-16]!
+    stp x21, x22, [sp, #-16]!
+    stp x23, x24, [sp, #-16]!
+    stp x25, x26, [sp, #-16]!
+    stp x27, x28, [sp, #-16]!
+    stp x29, x30, [sp, #-16]!
+
+    get_invoke_info x19
+    ldr x20, [x19, #INVOKE_CTX]
+    ldr x21, [x19, #INVOKE_BOX]
+    ldr x22, [x19, #INVOKE_TARGETFN]
+
+    lazy_ctx_clone
+
+    ldr x0, [x13, #REGS_X(0)]
+    ldr x1, [x13, #REGS_X(1)]
+    ldr x2, [x13, #REGS_X(2)]
+    ldr x3, [x13, #REGS_X(3)]
+    ldr x4, [x13, #REGS_X(4)]
+    ldr x5, [x13, #REGS_X(5)]
+    ldr x6, [x13, #REGS_X(6)]
+    ldr x7, [x13, #REGS_X(7)]
+    ldr x8, [x13, #REGS_X(8)]
+    ldr d0, [x13, #REGS_V(0)]
+    ldr d1, [x13, #REGS_V(1)]
+    ldr d2, [x13, #REGS_V(2)]
+    ldr d3, [x13, #REGS_V(3)]
+    ldr d4, [x13, #REGS_V(4)]
+    ldr d5, [x13, #REGS_V(5)]
+    ldr d6, [x13, #REGS_V(6)]
+    ldr d7, [x13, #REGS_V(7)]
+
+    b .lfi_trampoline_common
+
 .global lfi_trampoline
 .p2align 4
 lfi_trampoline:
@@ -109,6 +161,8 @@ lfi_trampoline:
     ldr x20, [x19, #INVOKE_CTX]
     ldr x21, [x19, #INVOKE_BOX]
     ldr x22, [x19, #INVOKE_TARGETFN]
+
+    lazy_ctx_clone
 
     b .lfi_trampoline_common
 
@@ -138,15 +192,9 @@ lfi_trampoline_direct:
     mov x20, x11
     mov x21, x12
 
+    lazy_ctx_clone
+
 .lfi_trampoline_common:
-    // Load the context pointer from the LFIContext **.
-    ldr x13, [x20]
-    // If NULL, initialize the context pointer.
-    cbnz x13, 1f
-    b .trampoline_clone
-.trampoline_clone_ret:
-    ldr x13, [x20]
-1:
     ldr x9, [x13, #REGS_RETADDR]
     // load target into x10
     mov x10, x22
@@ -198,6 +246,12 @@ lfi_ret:
     // restore host stack
     ldr x19, [REG_BASE, REGS_HOST_SP]
     mov sp, x19
+    // save return registers
+    str x0, [REG_BASE, REGS_X(0)]
+    str x1, [REG_BASE, REGS_X(1)]
+    str x8, [REG_BASE, REGS_X(8)]
+    str d0, [REG_BASE, REGS_V(0)]
+    str d1, [REG_BASE, REGS_V(1)]
     // restore the user sp
     ldp x19, xzr, [sp], 16
     str x19, [REG_BASE, REGS_SP]
@@ -217,6 +271,7 @@ lfi_ret:
 // Slowpath taken when the sandbox context needs to be initialized.
 .p2align 4
 .trampoline_clone:
+    stp x29, x30, [sp, #-16]!
     stp x0, x1, [sp, #-16]!
     stp x2, x3, [sp, #-16]!
     stp x4, x5, [sp, #-16]!
@@ -237,7 +292,8 @@ lfi_ret:
     ldp x4, x5, [sp], 16
     ldp x2, x3, [sp], 16
     ldp x0, x1, [sp], 16
-    b .trampoline_clone_ret
+    ldp x29, x30, [sp], 16
+    ret
 
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits

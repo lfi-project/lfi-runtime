@@ -18,13 +18,15 @@ _Static_assert(offsetof(struct LFIRegs, retaddr) == REGS_RETADDR,
 
 _Static_assert(offsetof(struct LFIRegs, x0) == REGS_X0,
     "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, x1) == REGS_X(1),
+    "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, sp) == REGS_SP,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, REG_BASE) == REGS_BASE,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, REG_ADDR) == REGS_ADDR,
     "incorrect REGS offset");
-_Static_assert(offsetof(struct LFIRegs, vector) == REGS_VECTOR,
+_Static_assert(offsetof(struct LFIRegs, vector) == REGS_V0,
     "incorrect REGS offset");
 
 _Static_assert(offsetof(struct LFIRegs, vector) % 16 == 0,

@@ -29,7 +29,8 @@
 #define REGS_ADDR   REGS_X(28) // x28
 #define REGS_BASE   REGS_X(27) // x27
 #define REGS_SP     280
-#define REGS_VECTOR 288
+#define REGS_V0     288
+#define REGS_V(n)   (REGS_V0 + 16 * n)
 
 #define REG_BASE    x27
 #define REG_ADDR    x28

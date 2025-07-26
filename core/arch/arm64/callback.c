@@ -37,6 +37,9 @@ memfd_create(const char *name, unsigned int flags)
 extern void
 lfi_callback() asm("lfi_callback");
 
+extern void
+lfi_callback_struct() asm("lfi_callback_struct");
+
 static ssize_t
 cbfreeslot(struct LFIBox *box)
 {
@@ -125,8 +128,8 @@ err:
     return false;
 }
 
-EXPORT void *
-lfi_box_register_cb(struct LFIBox *box, void *fn)
+static void *
+register_cb(struct LFIBox *box, void *fn, uint64_t lfi_callback_fn)
 {
     assert(fn);
     assert(cbfind(box, fn) == -1 && "fn is already registered as a callback");
@@ -140,12 +143,24 @@ lfi_box_register_cb(struct LFIBox *box, void *fn)
         (uint64_t) fn, memory_order_seq_cst);
     // write the trampoline into the 'trampoline' field for the chosen slot
     atomic_store_explicit(&box->cbinfo.dataentries_alias[slot].trampoline,
-        (uint64_t) lfi_callback, memory_order_seq_cst);
+        lfi_callback_fn, memory_order_seq_cst);
 
     // Mark the slot as allocated.
     box->callbacks[slot] = fn;
 
     return &box->cbinfo.cbentries[slot].code[0];
+}
+
+EXPORT void *
+lfi_box_register_cb_struct(struct LFIBox *box, void *fn)
+{
+    return register_cb(box, fn, (uint64_t) lfi_callback_struct);
+}
+
+EXPORT void *
+lfi_box_register_cb(struct LFIBox *box, void *fn)
+{
+    return register_cb(box, fn, (uint64_t) lfi_callback);
 }
 
 EXPORT void
