@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <threads.h>
+#include <time.h>
 #include <unistd.h>
 
 // Use -b to run the benchmark: ./core/test/test_trampoline.c.elf -b

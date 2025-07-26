@@ -299,8 +299,7 @@ struct LFIInvokeInfo {
     struct LFIBox *box;
 };
 
-extern thread_local struct LFIInvokeInfo lfi_invoke_info asm(
-    "lfi_invoke_info");
+extern thread_local struct LFIInvokeInfo lfi_invoke_info asm("lfi_invoke_info");
 
 extern const void *lfi_trampoline_addr;
 

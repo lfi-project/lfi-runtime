@@ -1,14 +1,14 @@
 #include "lfi_linux.h"
 
 #include <assert.h>
-#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <time.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <sys/mman.h>
 
 const char *library = "tools/lfi-ubench/libbench.lfi";
 
@@ -38,7 +38,8 @@ readfile(const char *path)
 
 static void
 callback(void)
-{}
+{
+}
 
 static inline uint64_t
 time_ns()
@@ -47,8 +48,7 @@ time_ns()
     if (clock_gettime(CLOCK_REALTIME, &ts)) {
         exit(1);
     }
-    return ((uint64_t) ts.tv_sec) * 1000000000LLU +
-        (uint64_t) ts.tv_nsec;
+    return ((uint64_t) ts.tv_sec) * 1000000000LLU + (uint64_t) ts.tv_nsec;
 }
 
 static bool
@@ -80,7 +80,7 @@ main(int argc, const char **argv)
     size_t pagesize = getpagesize();
     struct LFIEngine *engine = lfi_new(
         (struct LFIOptions) {
-            .boxsize = 4UL * 1024  * 1024 * 1024,
+            .boxsize = 4UL * 1024 * 1024 * 1024,
             .pagesize = pagesize,
             .no_verify = false,
             .verbose = true,
@@ -118,7 +118,8 @@ main(int argc, const char **argv)
         NULL,
     };
 
-    struct LFILinuxThread *t = lfi_thread_new(proc, 1, &box_argv[0], &box_envp[0]);
+    struct LFILinuxThread *t = lfi_thread_new(proc, 1, &box_argv[0],
+        &box_envp[0]);
     assert(t);
 
     int result = lfi_thread_run(t);
@@ -146,7 +147,7 @@ main(int argc, const char **argv)
     fn = lfi_proc_sym(proc, "bench_callback");
     BENCHMARK("bench_callback", iters,
         LFI_INVOKE(lfi_proc_box(proc), lfi_thread_ctxp(t), fn, void,
-        (void (*)(void)), box_callback));
+            (void (*)(void)), box_callback));
 
     lfi_thread_free(t);
 
