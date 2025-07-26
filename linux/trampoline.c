@@ -33,18 +33,21 @@ lfi_linux_clone_cb(struct LFIBox *box)
 static void
 thread_destructor(void *p)
 {
-    struct LFIContext *ctx = p;
-    struct LFILinuxThread *thread = lfi_ctx_data(ctx);
-    struct LFILinuxProc *proc = thread->proc;
+    (void) p;
 
-    assert(proc->libsyms.thread_destroy);
-
-    LFI_INVOKE(proc->box, &ctx, proc->libsyms.thread_destroy,
-        void, (lfiptr), thread->box_pthread);
-
-    LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
-    LFI_INVOKE(proc->box, &proc->clone_ctx, proc->libsyms.free,
-        void, (lfiptr), thread->box_pthread);
+    // Unused for now until boxrt is appropriately updated in prebuilts.
+    /* struct LFIContext *ctx = p; */
+    /* struct LFILinuxThread *thread = lfi_ctx_data(ctx); */
+    /* struct LFILinuxProc *proc = thread->proc; */
+    /*  */
+    /* assert(proc->libsyms.thread_destroy); */
+    /*  */
+    /* LFI_INVOKE(proc->box, &ctx, proc->libsyms.thread_destroy, */
+    /*     void, (lfiptr), thread->box_pthread); */
+    /*  */
+    /* LOCK_WITH_DEFER(&proc->lk_clone, lk_clone); */
+    /* LFI_INVOKE(proc->box, &proc->clone_ctx, proc->libsyms.free, */
+    /*     void, (lfiptr), thread->box_pthread); */
 }
 
 EXPORT void
