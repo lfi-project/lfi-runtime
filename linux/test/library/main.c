@@ -26,7 +26,8 @@ _lfi_thread_create(void)
 void
 _lfi_thread_destroy(void *arg)
 {
-    free((pthread_t *) arg);
+    (void) arg;
+    pthread_exit(NULL);
 }
 
 int

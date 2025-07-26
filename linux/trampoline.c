@@ -19,9 +19,11 @@ lfi_linux_clone_cb(struct LFIBox *box)
 
     // Invoke thread_create in clone_ctx and return the resulting new_ctx.
     LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
-    LFI_INVOKE(box, &proc->clone_ctx, proc->libsyms.thread_create, void *,
+    lfiptr pt = LFI_INVOKE(box, &proc->clone_ctx, proc->libsyms.thread_create, lfiptr,
         (void) );
 
+    struct LFILinuxThread *thread = lfi_ctx_data(new_ctx);
+    thread->box_pthread = pt;
     pthread_setspecific(thread_key, new_ctx);
 
     return new_ctx;
@@ -32,11 +34,17 @@ static void
 thread_destructor(void *p)
 {
     struct LFIContext *ctx = p;
-    (void) ctx;
+    struct LFILinuxThread *thread = lfi_ctx_data(ctx);
+    struct LFILinuxProc *proc = thread->proc;
 
-    LOG_("destroy sandbox thread");
+    assert(proc->libsyms.thread_destroy);
 
-    // TODO: destroy the sandbox thread.
+    LFI_INVOKE(proc->box, &ctx, proc->libsyms.thread_destroy,
+        void, (lfiptr), thread->box_pthread);
+
+    LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
+    LFI_INVOKE(proc->box, &proc->clone_ctx, proc->libsyms.free,
+        void, (lfiptr), thread->box_pthread);
 }
 
 EXPORT void

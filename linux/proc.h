@@ -141,6 +141,9 @@ struct LFILinuxThread {
     // Pthread object if this thread was spawned by the LFI runtime using a
     // pthread.
     pthread_t *pthread;
+    // Sandbox pthread object if this thread was lazily spawned by the runtime
+    // to match a host thread.
+    lfiptr box_pthread;
 
     // Element in the parent proc's threads list.
     struct List threads_elem;

@@ -256,24 +256,26 @@ lfi_trampoline_direct:
 .global lfi_ret
 lfi_ret:
 #ifdef HAVE_PKU
-    movq %rax, %r11
+    movq %rax, %rdi
     pku_all_access
-    movq %r11, %rax
+    movq %rdi, %rax
 #endif
-    get_ctx %r11
+    get_ctx %rdi
+.global lfi_ret_end
+lfi_ret_end:
     // restore host sp
-    movq REGS_HOST_SP(%r11), %rsp
+    movq REGS_HOST_SP(%rdi), %rsp
     // restore host tp
-    movq REGS_HOST_TP(%r11), %rbp
+    movq REGS_HOST_TP(%rdi), %rbp
     write_ctx %rbp
     // save return registers
-    movq %rax, REGS_RAX(%r11)
-    movq %rdx, REGS_RDX(%r11)
-    movdqu %xmm0, REGS_XMM(0)(%r11)
-    movdqu %xmm1, REGS_XMM(1)(%r11)
+    movq %rax, REGS_RAX(%rdi)
+    movq %rdx, REGS_RDX(%rdi)
+    movdqu %xmm0, REGS_XMM(0)(%rdi)
+    movdqu %xmm1, REGS_XMM(1)(%rdi)
     // restore sandbox sp to its initial value
     popq %rbp
-    movq %rbp, REGS_RSP(%r11)
+    movq %rbp, REGS_RSP(%rdi)
     popq %rbp // pop dummy value
     // return value should already be in %rax
     popq %rbp

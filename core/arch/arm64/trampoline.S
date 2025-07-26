@@ -236,6 +236,12 @@ lfi_trampoline_direct:
     // the previous call should return through lfi_ret
     udf #0
 
+.global lfi_ret_end
+.p2align lfi_ret_end
+lfi_ret_end:
+    mov REG_BASE, x0
+    b .lfi_ret_internal
+
 .global lfi_ret
 .p2align 4
 lfi_ret:
@@ -243,6 +249,7 @@ lfi_ret:
     // restore host thread control block
     ldr x19, [REG_BASE, REGS_HOST_TP]
     write_ctx x19, x20
+.lfi_ret_internal:
     // restore host stack
     ldr x19, [REG_BASE, REGS_HOST_SP]
     mov sp, x19

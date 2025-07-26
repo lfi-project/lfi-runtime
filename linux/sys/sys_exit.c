@@ -14,9 +14,21 @@ clearctid(struct LFILinuxThread *t)
     sys_futex(t, t->ctidp, LINUX_FUTEX_WAKE, INT_MAX, 0, 0, 0);
 }
 
+extern void
+lfi_ret_end(struct LFIContext *ctx) asm("lfi_ret_end");
+
 uintptr_t
 sys_exit(struct LFILinuxThread *t, int code)
 {
+    // If the current sandbox thread was created by the lazily clone mechanism,
+    // then it is exiting due to a destructor invocation of
+    // _lfi_thread_destroy. We should service that by simulating the return of
+    // that function via lfi_ret.
+    if (t->box_pthread) {
+        clearctid(t);
+        lfi_ret_end(t->ctx);
+        assert(!"unreachable");
+    }
     {
         LOCK_WITH_DEFER(&t->proc->lk_threads, lk_threads);
         list_remove(&t->proc->threads, &t->threads_elem);
