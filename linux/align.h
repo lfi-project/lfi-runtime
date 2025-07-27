@@ -6,7 +6,7 @@
 #define MIN(a, b)               \
     __extension__({             \
         int _a = (a), _b = (b); \
-        _a > _b ? _a : _b;      \
+        _a < _b ? _a : _b;      \
     })
 
 static inline uintptr_t
