@@ -54,7 +54,7 @@ strarray(struct arg_str *vals)
         fprintf(stderr, "failed to allocate\n");
         exit(1);
     }
-    for (size_t i = 0; i < vals->count; i++) {
+    for (int i = 0; i < vals->count; i++) {
         array[i] = vals->sval[i];
     }
     array[vals->count] = NULL;

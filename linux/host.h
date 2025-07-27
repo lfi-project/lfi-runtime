@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 #define HOST_ERR(type, expr)                               \
-    ({                                                     \
+    __extension__({                                        \
         type _ret = (type) expr;                           \
         _ret == (type) -1 ? (type) host_err(errno) : _ret; \
     })

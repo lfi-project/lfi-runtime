@@ -24,16 +24,16 @@
 
 #if defined(__aarch64__) || defined(_M_ARM64)
 
-#define REGS_X0     32
-#define REGS_X(n)   (REGS_X0 + 8 * n)
-#define REGS_ADDR   REGS_X(28) // x28
-#define REGS_BASE   REGS_X(27) // x27
-#define REGS_SP     280
-#define REGS_V0     288
-#define REGS_V(n)   (REGS_V0 + 16 * n)
+#define REGS_X0   32
+#define REGS_X(n) (REGS_X0 + 8 * n)
+#define REGS_ADDR REGS_X(28) // x28
+#define REGS_BASE REGS_X(27) // x27
+#define REGS_SP   280
+#define REGS_V0   288
+#define REGS_V(n) (REGS_V0 + 16 * n)
 
-#define REG_BASE    x27
-#define REG_ADDR    x28
+#define REG_BASE  x27
+#define REG_ADDR  x28
 
 // clang-format off
 #ifdef __ASSEMBLER__
@@ -67,7 +67,7 @@
 
 #elif defined(__x86_64__) || defined(_M_X64)
 
-#define REGS_PKEY 32
+#define REGS_PKEY   32
 
 #define REGS_RSP    40
 #define REGS_RAX    48
@@ -89,9 +89,9 @@
 #define REGS_XMM0   192
 #define REGS_XMM(n) (REGS_XMM0 + 16 * n)
 
-#define REGS_BASE REGS_R14
+#define REGS_BASE   REGS_R14
 
-#define REG_BASE  r14
+#define REG_BASE    r14
 
 // clang-format off
 #ifdef __ASSEMBLER__

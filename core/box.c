@@ -31,13 +31,13 @@ p2l(struct LFIBox *box, uintptr_t p)
 
 // Runtime call entrypoints. These are defined in runtime.S.
 extern void
-lfi_syscall_entry(void) asm("lfi_syscall_entry");
+lfi_syscall_entry(void) __asm__("lfi_syscall_entry");
 extern void
-lfi_get_tp(void) asm("lfi_get_tp");
+lfi_get_tp(void) __asm__("lfi_get_tp");
 extern void
-lfi_set_tp(void) asm("lfi_set_tp");
+lfi_set_tp(void) __asm__("lfi_set_tp");
 extern void
-lfi_ret(void) asm("lfi_ret");
+lfi_ret(void) __asm__("lfi_ret");
 
 static int
 protectmem(void *start, size_t size, int prot, int pkey)

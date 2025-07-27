@@ -15,7 +15,7 @@ clearctid(struct LFILinuxThread *t)
 }
 
 extern void
-lfi_ret_end(struct LFIContext *ctx) asm("lfi_ret_end");
+lfi_ret_end(struct LFIContext *ctx) __asm__("lfi_ret_end");
 
 uintptr_t
 sys_exit(struct LFILinuxThread *t, int code)

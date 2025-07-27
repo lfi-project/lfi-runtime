@@ -2,7 +2,8 @@
 
 #include <stdlib.h>
 
-EXPORT thread_local struct LFIInvokeInfo lfi_invoke_info asm("lfi_invoke_info");
+EXPORT thread_local struct LFIInvokeInfo lfi_invoke_info __asm__(
+    "lfi_invoke_info");
 
 EXPORT void
 lfi_set_clone_cb(struct LFIEngine *engine,
@@ -12,7 +13,7 @@ lfi_set_clone_cb(struct LFIEngine *engine,
 }
 
 void
-lfi_clone(struct LFIBox *box, struct LFIContext **ctxp) asm("lfi_clone");
+lfi_clone(struct LFIBox *box, struct LFIContext **ctxp) __asm__("lfi_clone");
 
 void
 lfi_clone(struct LFIBox *box, struct LFIContext **ctxp)

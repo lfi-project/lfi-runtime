@@ -28,9 +28,9 @@ extern struct r_debug _r_debug;
 static pthread_mutex_t db_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void
-rtld_db_dlactivity()
+rtld_db_dlactivity(void)
 {
-    ((void (*)()) _r_debug.r_brk)();
+    ((void (*)(void)) _r_debug.r_brk)();
 }
 
 static void

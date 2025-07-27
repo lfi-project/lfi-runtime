@@ -14,7 +14,7 @@
 #include "test_progs.h"
 
 static inline long long unsigned
-time_ns()
+time_ns(void)
 {
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts)) {

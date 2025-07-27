@@ -175,7 +175,7 @@ lfi_opts(struct LFIEngine *engine)
 // callable from hand-writtem assembly (runtime.S). Otherwise, macOS names the
 // symbol _lfi_syscall_handler.
 void
-lfi_syscall_handler(struct LFIContext *ctx) asm("lfi_syscall_handler");
+lfi_syscall_handler(struct LFIContext *ctx) __asm__("lfi_syscall_handler");
 
 void
 lfi_syscall_handler(struct LFIContext *ctx)

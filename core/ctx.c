@@ -5,10 +5,10 @@
 
 extern int
 lfi_ctx_entry(struct LFIContext *ctx, uintptr_t *host_sp_ptr,
-    uintptr_t entry) asm("lfi_ctx_entry");
+    uintptr_t entry) __asm__("lfi_ctx_entry");
 
 extern void
-lfi_ctx_end(struct LFIContext *ctx, int val) asm("lfi_ctx_end");
+lfi_ctx_end(struct LFIContext *ctx, int val) __asm__("lfi_ctx_end");
 
 EXPORT struct LFIContext *
 lfi_ctx_new(struct LFIBox *box, void *userdata)

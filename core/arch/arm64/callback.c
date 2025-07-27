@@ -35,10 +35,10 @@ memfd_create(const char *name, unsigned int flags)
 #endif
 
 extern void
-lfi_callback() asm("lfi_callback");
+lfi_callback() __asm__("lfi_callback");
 
 extern void
-lfi_callback_struct() asm("lfi_callback_struct");
+lfi_callback_struct() __asm__("lfi_callback_struct");
 
 static ssize_t
 cbfreeslot(struct LFIBox *box)

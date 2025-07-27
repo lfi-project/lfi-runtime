@@ -3,7 +3,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MIN(a, b)               \
+    __extension__({             \
+        int _a = (a), _b = (b); \
+        _a > _b ? _a : _b;      \
+    })
 
 static inline uintptr_t
 truncp(uintptr_t addr, size_t align)

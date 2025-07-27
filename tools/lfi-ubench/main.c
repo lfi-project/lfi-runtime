@@ -42,7 +42,7 @@ callback(void)
 }
 
 static inline uint64_t
-time_ns()
+time_ns(void)
 {
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts)) {

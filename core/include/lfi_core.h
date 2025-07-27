@@ -305,25 +305,27 @@ struct LFIInvokeInfo {
     struct LFIBox *box;
 };
 
-extern thread_local struct LFIInvokeInfo lfi_invoke_info asm("lfi_invoke_info");
+extern thread_local struct LFIInvokeInfo lfi_invoke_info __asm__(
+    "lfi_invoke_info");
 
 // Direct trampoline that loads arguments/return values from the struct
 // LFIContext that is used in the invocation.
 void
-lfi_trampoline_struct(void) asm("lfi_trampoline_struct");
+lfi_trampoline_struct(void) __asm__("lfi_trampoline_struct");
 
 #define LFI_X(x, y)  x##y
 #define LFI_XX(x, y) LFI_X(x, y)
 
-#define LFI_INVOKE_NAMED(name, box_, ctxp, fn, ret_type, args, ...)         \
-    ({                                                                      \
-        ret_type LFI_XX(__lfi_trampoline, name) args asm("lfi_trampoline"); \
-        lfi_invoke_info = (struct LFIInvokeInfo) {                          \
-            .ctx = ctxp,                                                    \
-            .targetfn = fn,                                                 \
-            .box = box_,                                                    \
-        };                                                                  \
-        LFI_XX(__lfi_trampoline, name)(__VA_ARGS__);                        \
+#define LFI_INVOKE_NAMED(name, box_, ctxp, fn, ret_type, args, ...) \
+    __extension__({                                                 \
+        ret_type LFI_XX(__lfi_trampoline, name)                     \
+            args __asm__("lfi_trampoline");                         \
+        lfi_invoke_info = (struct LFIInvokeInfo) {                  \
+            .ctx = ctxp,                                            \
+            .targetfn = fn,                                         \
+            .box = box_,                                            \
+        };                                                          \
+        LFI_XX(__lfi_trampoline, name)(__VA_ARGS__);                \
     })
 
 // LFI_INVOKE(struct LFIContext **ctx, lfiptr fn, return type, arg types, ...)

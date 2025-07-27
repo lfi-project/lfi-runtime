@@ -123,12 +123,12 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
     size_t count = 0;
     struct LFIBox *box = t->proc->box;
     // Copy the argv and envp strings into the sandbox.
-    for (int i = 0; i < nargv; i++) {
+    for (size_t i = 0; i < nargv; i++) {
         size_t len = strnlen(argv[i], ARGV_MAXLEN) + 1;
         box_argv[i] = lfi_box_copyto(box, strs_start + count, argv[i], len);
         count += len;
     }
-    for (int i = 0; i < nenvp; i++) {
+    for (size_t i = 0; i < nenvp; i++) {
         size_t len = strnlen(envp[i], ARGV_MAXLEN) + 1;
         box_envp[i] = lfi_box_copyto(box, strs_start + count, envp[i], len);
         count += len;

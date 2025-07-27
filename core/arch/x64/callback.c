@@ -30,10 +30,10 @@ static uint8_t cbentry_code[16] = {
 };
 
 extern void
-lfi_callback();
+lfi_callback(void);
 
 extern void
-lfi_callback_struct();
+lfi_callback_struct(void);
 
 static ssize_t
 cbfreeslot(struct LFIBox *box)
