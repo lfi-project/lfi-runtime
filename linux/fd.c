@@ -61,3 +61,14 @@ fdinit(struct LFILinuxEngine *engine, struct FDTable *t)
 
     t->passthrough = engine->opts.sys_passthrough;
 }
+
+void
+fdfree(struct FDTable *t)
+{
+    for (size_t i = 0; i < LINUX_NOFILE; i++) {
+        if (t->fds[i] == -1)
+            continue;
+        close(t->fds[i]);
+        free((char *) t->dirs[i]);
+    }
+}

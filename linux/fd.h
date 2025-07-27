@@ -24,3 +24,7 @@ fdclose(struct FDTable *t, int fd);
 // Initialize the file descriptor table.
 void
 fdinit(struct LFILinuxEngine *engine, struct FDTable *t);
+
+// Closes all FDs in the table and frees associated memory.
+void
+fdfree(struct FDTable *t);

@@ -158,6 +158,7 @@ lfi_proc_free(struct LFILinuxProc *proc)
     lfi_box_free(proc->box);
     free(proc->interp_path);
     free(proc->prog_path);
+    fdfree(&proc->fdtable);
     unlock(&proc->lk_proc);
     free(proc);
 }

@@ -161,6 +161,7 @@ lfi_free(struct LFIEngine *engine)
 {
     // Unmaps all virtual memory reserved by the engine.
     boxmap_delete(engine->bm);
+    free(engine->altstack.ss_sp);
     free(engine);
 }
 

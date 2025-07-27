@@ -99,6 +99,7 @@ end:
     LOG(t->proc->engine, "thread %d exited", t->tid);
     unlock(&t->proc->lk_threads);
     lfi_thread_free(t);
+    free(ss.ss_sp);
     return NULL;
 }
 

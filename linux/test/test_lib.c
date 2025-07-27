@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -154,6 +155,8 @@ main(int argc, const char **argv)
     lfi_linux_free(linux_);
 
     lfi_free(engine);
+
+    free((void *) maps[0]);
 
     return 0;
 }
