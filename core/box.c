@@ -404,6 +404,7 @@ lfi_box_free(struct LFIBox *box)
     if (box->pkey != 0)
         pkey_free(box->pkey);
 #endif
+    mm_free(&box->mm);
     free(box);
 }
 
