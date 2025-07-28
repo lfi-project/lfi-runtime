@@ -18,7 +18,7 @@ struct FDTable {
     int fds[LINUX_NOFILE];
     // Full sandbox path for opened directories. This is necessary for
     // supporting fchdir(fd).
-    const char *dirs[LINUX_NOFILE];
+    char *dirs[LINUX_NOFILE];
     pthread_mutex_t lk;
 
     bool passthrough;

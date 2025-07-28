@@ -50,8 +50,10 @@ main(int argc, const char **argv)
     char cwd[FILENAME_MAX];
     char *d = getcwd(cwd, sizeof(cwd));
     assert(d == cwd);
+
+    char *map = xasprintf("/=%s", cwd);
     const char *maps[] = {
-        xasprintf("/=%s", cwd),
+        map,
         NULL,
     };
 
@@ -101,7 +103,7 @@ main(int argc, const char **argv)
 
     lfi_free(engine);
 
-    free((char *) maps[0]);
+    free(map);
 
     return 0;
 }

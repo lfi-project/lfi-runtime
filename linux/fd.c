@@ -40,7 +40,7 @@ fdclose(struct FDTable *t, int fd)
     close(t->fds[fd]);
     t->fds[fd] = -1;
     if (t->dirs[fd]) {
-        free((void *) t->dirs[fd]);
+        free(t->dirs[fd]);
         t->dirs[fd] = NULL;
     }
     return true;
@@ -69,6 +69,6 @@ fdfree(struct FDTable *t)
         if (t->fds[i] == -1)
             continue;
         close(t->fds[i]);
-        free((char *) t->dirs[i]);
+        free(t->dirs[i]);
     }
 }
