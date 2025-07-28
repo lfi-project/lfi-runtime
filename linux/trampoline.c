@@ -35,9 +35,10 @@ thread_destructor(void *p)
 {
     (void) p;
 
+    struct LFIContext *ctx = p;
+    struct LFILinuxThread *thread = lfi_ctx_data(ctx);
+
     // Unused for now until boxrt is appropriately updated in prebuilts.
-    /* struct LFIContext *ctx = p; */
-    /* struct LFILinuxThread *thread = lfi_ctx_data(ctx); */
     /* struct LFILinuxProc *proc = thread->proc; */
     /*  */
     /* assert(proc->libsyms.thread_destroy); */
@@ -48,6 +49,8 @@ thread_destructor(void *p)
     /* LOCK_WITH_DEFER(&proc->lk_clone, lk_clone); */
     /* LFI_INVOKE(proc->box, &proc->clone_ctx, proc->libsyms.free, */
     /*     void, (lfiptr), thread->box_pthread); */
+
+    lfi_thread_free(thread);
 }
 
 EXPORT void

@@ -279,8 +279,8 @@ EXPORT void
 lfi_thread_free(struct LFILinuxThread *t)
 {
     // Unmap the stack (if created). If this thread was spawned by the sandbox
-    // calling clone, the stack will have been created by the sandbox and not
-    // by us, so we don't have to free it.
+    // calling clone (fake or real), the stack will have been created by the
+    // sandbox and not by us, so we don't have to free it.
     if (t->stack) {
         size_t stacksize = t->proc->engine->opts.stacksize;
         lfi_box_munmap(t->proc->box, t->stack, stacksize);

@@ -59,6 +59,15 @@ run_on_new_thread(struct ThreadArgs *args)
     assert(r == 0);
 }
 
+static pthread_key_t thread_key;
+
+static void
+thread_destructor(void *p)
+{
+    struct LFIContext *ctx = p;
+    lfi_ctx_free(ctx);
+}
+
 static struct LFIContext *
 clone_cb(struct LFIBox *box)
 {
@@ -76,6 +85,8 @@ clone_cb(struct LFIBox *box)
     lfi_ctx_regs(ctx)->sp = stack + pagesize;
 #endif
     printf("clone_cb initialized ctx: %p, stack: %lx\n", (void *) ctx, stack);
+
+    pthread_setspecific(thread_key, ctx);
 
     return ctx;
 }
@@ -96,6 +107,8 @@ main(void)
     assert(engine);
 
     lfi_set_clone_cb(engine, clone_cb);
+
+    pthread_key_create(&thread_key, thread_destructor);
 
     // Create a new sandbox.
     struct LFIBox *box = lfi_box_new(engine);
