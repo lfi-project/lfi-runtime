@@ -8,4 +8,6 @@ lfi_ctx_regs_init(struct LFIContext *ctx)
     ctx->regs.rsp = ctx->box->base;
     ctx->regs.retaddr = ctx->box->retaddr;
     ctx->regs.pkey = ctx->box->pkey;
+    ctx->regs.fcw = 0x37f;
+    ctx->regs.mxcsr = 0x1f80;
 }

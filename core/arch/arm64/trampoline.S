@@ -47,6 +47,9 @@
     movi v29.2D, #0
     movi v30.2D, #0
     movi v31.2D, #0
+    // zero integer and fp flags
+    ands xzr, xzr, xzr
+    msr fpsr, xzr
 .endm
 
 // Returns a pointer to lfi_invoke_info in reg.

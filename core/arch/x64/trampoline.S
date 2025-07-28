@@ -1,6 +1,8 @@
 #include "arch_asm.h"
 
 .macro zero_regs
+    fldcw REGS_FCW(%r13)
+    ldmxcsr REGS_MXCSR(%r13)
     xorq %rax, %rax
     xorq %rbx, %rbx
     xorq %rbp, %rbp

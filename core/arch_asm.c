@@ -70,6 +70,8 @@ _Static_assert(offsetof(struct LFIRegs, r15) == REGS_R15,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, fcw) == REGS_FCW,
     "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, mxcsr) == REGS_MXCSR,
+    "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, xmm) == REGS_XMM0,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, REG_BASE) == REGS_BASE,

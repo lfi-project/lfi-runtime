@@ -41,6 +41,8 @@ lfi_ctx_entry:
     movq REGS_R13(%rdi), %r13
     movq REGS_R14(%rdi), %r14
     movq REGS_R15(%rdi), %r15
+    fldcw REGS_FCW(%rdi)
+    ldmxcsr REGS_MXCSR(%rdi)
 
 #ifdef HAVE_PKU
     // enabling PKU clobbers %rcx, %rdx, %rax
@@ -72,6 +74,7 @@ lfi_ctx_entry:
     xorps %xmm13, %xmm13
     xorps %xmm14, %xmm14
     xorps %xmm15, %xmm15
+
     jmpq *%r11
 
 // lfi_ctx_end(struct LFIContext *ctx, int val)
@@ -187,6 +190,8 @@ lfi_syscall_entry:
     movq REGS_XMM(13)(%rcx), %xmm13
     movq REGS_XMM(14)(%rcx), %xmm14
     movq REGS_XMM(15)(%rcx), %xmm15
+    fldcw REGS_FCW(%rcx)
+    ldmxcsr REGS_MXCSR(%rcx)
 #ifdef HAVE_PKU
     pushq %rax
     pushq %rdx

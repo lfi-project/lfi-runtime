@@ -102,6 +102,11 @@
     movdqu REGS_XMM(1)(%r11), %xmm1
 .endif
 
+#ifndef STORES_ONLY
+    fldcw REGS_FCW(%r11)
+    ldmxcsr REGS_MXCSR(%r11)
+#endif
+
 #ifdef HAVE_PKU
     movq REGS_PKEY(%r11), %rcx
     movq %rax, %r11

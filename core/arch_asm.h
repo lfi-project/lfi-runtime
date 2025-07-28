@@ -86,6 +86,7 @@
 #define REGS_R14    152
 #define REGS_R15    160
 #define REGS_FCW    168
+#define REGS_MXCSR  172
 #define REGS_XMM0   192
 #define REGS_XMM(n) (REGS_XMM0 + 16 * n)
 

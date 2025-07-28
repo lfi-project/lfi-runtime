@@ -86,7 +86,8 @@ struct LFIRegs {
     uint64_t r13;
     uint64_t r14;
     uint64_t r15;
-    uint64_t fcw;
+    uint16_t fcw;
+    uint32_t mxcsr;
     uint64_t _pad[2];
     uint64_t xmm[32];
 };

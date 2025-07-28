@@ -52,6 +52,9 @@
     movi v29.2D, #0
     movi v30.2D, #0
     movi v31.2D, #0
+    // zero integer and fp flags
+    ands xzr, xzr, xzr
+    msr fpsr, xzr
 .endm
 
 .macro lfi_callback_gen with_struct

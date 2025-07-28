@@ -85,6 +85,9 @@ lfi_ctx_entry:
     movi v29.2D, #0
     movi v30.2D, #0
     movi v31.2D, #0
+    // zero integer and fp flags
+    ands xzr, xzr, xzr
+    msr fpsr, xzr
     // NOTE: x30 must contain a valid sandbox address
     add x30, REG_BASE, w30, uxtw
     ret
@@ -193,6 +196,9 @@ lfi_syscall_entry:
     ldp q30, q31, [x0, REGS_V(30)]
     mov sp, x1
     ldp x0, x1,   [x0, REGS_X(0)]
+    // zero integer and fp flags
+    ands xzr, xzr, xzr
+    msr fpsr, xzr
     add x30, REG_BASE, w30, uxtw
     ret
 
