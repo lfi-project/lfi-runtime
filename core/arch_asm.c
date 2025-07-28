@@ -5,6 +5,9 @@
 
 #include <stddef.h>
 
+_Static_assert(sizeof(void *) == sizeof(void (*)(void)),
+        "data pointer and function pointer differ in size");
+
 _Static_assert(offsetof(struct LFIRegs, host_sp) == REGS_HOST_SP,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, host_tp) == REGS_HOST_TP,

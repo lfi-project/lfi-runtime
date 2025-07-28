@@ -68,6 +68,7 @@ test_lib = executable(
   'test_lib.elf',
   'test_lib.c',
   dependencies: [lfi_linux],
+  c_args: c_args_warnings,
 )
 
 lib = custom_target( 'lib.lfi',

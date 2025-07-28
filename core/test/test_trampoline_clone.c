@@ -148,7 +148,7 @@ main(void)
     lfi_ctx_regs(lib_ctx)->sp = stack + pagesize;
 #endif
 
-    void *box_callback = lfi_box_register_cb(box, callback);
+    void *box_callback = lfi_box_register_cb(box, (void *) callback);
 
     struct ThreadArgs args = (struct ThreadArgs) {
         .box = box,
