@@ -4,7 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <threads.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -305,7 +304,13 @@ struct LFIInvokeInfo {
     struct LFIBox *box;
 };
 
-extern thread_local struct LFIInvokeInfo lfi_invoke_info __asm__(
+#ifdef __cplusplus
+#define lfi_thread_local thread_local
+#else
+#define lfi_thread_local _Thread_local
+#endif
+
+extern lfi_thread_local struct LFIInvokeInfo lfi_invoke_info __asm__(
     "lfi_invoke_info");
 
 // Direct trampoline that loads arguments/return values from the struct
