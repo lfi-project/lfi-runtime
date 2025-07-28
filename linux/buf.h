@@ -9,6 +9,7 @@
 #include <string.h>
 
 struct Buf {
+    int fd;
     uint8_t *data;
     size_t size;
 };
@@ -36,3 +37,6 @@ buf_read(struct Buf buf, void *to, size_t count, size_t offset)
 
 struct Buf
 buf_read_file(struct LFILinuxEngine *engine, const char *filename);
+
+void
+buf_close(struct Buf *buf);

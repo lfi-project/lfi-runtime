@@ -17,6 +17,7 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/mman.h>
 
 EXPORT struct LFILinuxProc *
 lfi_proc_new(struct LFILinuxEngine *engine)
@@ -61,8 +62,8 @@ lfi_proc_box(struct LFILinuxProc *proc)
     return proc->box;
 }
 
-EXPORT bool
-lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
+static bool
+proc_load(struct LFILinuxProc *proc, int prog_fd, uint8_t *prog, size_t prog_size,
     const char *prog_path)
 {
     struct Buf interp = (struct Buf) { 0 };
@@ -87,6 +88,13 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
                 free(interp_path);
                 return false;
             }
+            // If we are loading the main program via an in-memory buffer, we
+            // should do the same thing with the interpreter, even if we could
+            // load it directly from the file.
+            if (prog_fd == -1) {
+                interp.fd = -1;
+                close(interp.fd);
+            }
             LOG(proc->engine, "using sandbox dynamic linker: %s", interp_path);
         } else {
             LOG(proc->engine,
@@ -101,8 +109,9 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
 
     proc->interp_path = interp_path;
 
+    bool debug = proc->engine->opts.debug;
     // Make the program path absolute if necessary.
-    if (prog_path && !cwk_path_is_absolute(prog_path)) {
+    if (debug && prog_path && !cwk_path_is_absolute(prog_path)) {
         proc->prog_path = malloc(FILENAME_MAX);
         if (proc->prog_path) {
             char buf[FILENAME_MAX];
@@ -111,13 +120,13 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
                 cwk_path_get_absolute(cwd, prog_path, proc->prog_path,
                     FILENAME_MAX);
         }
-    } else if (prog_path) {
+    } else if (debug && prog_path) {
         proc->prog_path = strndup(prog_path, FILENAME_MAX);
     }
 
     struct ELFLoadInfo info;
-    if (!elf_load(proc, proc->prog_path, prog, prog_size, interp_path,
-            interp.data, interp.size, true, &info))
+    if (!elf_load(proc, proc->prog_path, prog_fd, prog, prog_size, interp_path,
+            interp.fd, interp.data, interp.size, true, &info))
         return false;
 
     lfiptr entry = info.elfentry;
@@ -140,7 +149,49 @@ lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
     if (brkregion == (lfiptr) -1)
         return false;
 
+    if (interp.data != NULL)
+        buf_close(&interp);
+
     return true;
+}
+
+EXPORT bool
+lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
+    const char *prog_path)
+{
+    return proc_load(proc, -1, prog, prog_size, prog_path);
+}
+
+EXPORT bool
+lfi_proc_load_fd(struct LFILinuxProc *proc, int fd, const char *prog_path)
+{
+    off_t cur = lseek(fd, 0, SEEK_CUR);
+    off_t prog_size = lseek(fd, 0, SEEK_END);
+    if (prog_size < 0)
+        return false;
+    lseek(fd, cur, SEEK_SET);
+
+    lseek(fd, 0, SEEK_SET);
+    void *prog_data = mmap(NULL, prog_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (prog_data == (void *) -1)
+        return false;
+
+    bool ok = proc_load(proc, fd, prog_data, prog_size, prog_path);
+    munmap(prog_data, prog_size);
+    return ok;
+}
+
+EXPORT bool
+lfi_proc_load_file(struct LFILinuxProc *proc, const char *prog_path)
+{
+    FILE *f = fopen(prog_path, "r");
+    if (!f) {
+        LOG(proc->engine, "%s: file does not exist", prog_path);
+        return false;
+    }
+    bool ok = lfi_proc_load_fd(proc, fileno(f), prog_path);
+    fclose(f);
+    return ok;
 }
 
 EXPORT void

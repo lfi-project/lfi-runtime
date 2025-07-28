@@ -98,33 +98,53 @@ sanitize(void *p, size_t sz, int prot)
 
 static bool
 buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
-    uintptr_t end, size_t p_offset, size_t filesz, int prot, struct Buf buf,
-    size_t pagesize, bool perform_map)
+    uintptr_t end, size_t p_offset, size_t filesz, size_t memsz, int prot, struct Buf buf,
+    size_t pagesize, size_t p_align, bool perform_map)
 {
     struct LFIBox *box = proc->box;
     lfiptr p;
-    if (perform_map)
-        p = lfi_box_mapat(box, p2l(box, start), p2l(box, end - start),
+    if (perform_map && buf.fd != -1) {
+        p = lfi_box_mapat(box, p2l(box, start), end - start, prot, LFI_MAP_PRIVATE,
+                buf.fd, truncp(p_offset, p_align));
+        if (p == (lfiptr) -1)
+            return false;
+        if (memsz > filesz) {
+            if ((prot & LFI_PROT_WRITE) == 0) {
+                LOG(proc->engine, "ELF error: non-writable BSS segment");
+                return false;
+            }
+            uintptr_t bss_start = start + offset + filesz;
+            uintptr_t bss_rest = ceilp(bss_start, pagesize);
+            memset((void *) bss_start, 0, bss_rest - bss_start);
+            if (bss_rest < end) {
+                p = lfi_box_mapat(box, p2l(box, bss_rest), end - bss_rest,
+                        prot, LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+            }
+        }
+    } else if (perform_map) {
+        p = lfi_box_mapat(box, p2l(box, start), end - start,
             LFI_PROT_READ | LFI_PROT_WRITE, LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS,
             -1, 0);
-    else
-        p = lfi_box_mapat_register(box, p2l(box, start), p2l(box, end - start),
+    } else {
+        p = lfi_box_mapat_register(box, p2l(box, start), end - start,
             prot, LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+    }
     if (p == (lfiptr) -1) {
         return false;
     }
 
-    if (!perform_map) {
-        // We are just registering the mapping because it has already been
-        // mapped by someone else.
+    // We are just registering the mapping because it has already been
+    // mapped by someone else.
+    if (!perform_map)
         return true;
-    }
+    // We are directly mapping from a file so we don't need to copy data in.
+    if (buf.fd != -1)
+        return true;
 
     // If we have any subsequent errors, it is expected that the caller will
     // unmap all mapped regions.
     sanitize((void *) p, pagesize, prot);
     sanitize((void *) (end - pagesize), pagesize, prot);
-    // Converting start to actual pointer requires no TUX_EXTERNAL_ADDR_SPACE.
     ssize_t n = buf_read(buf, (void *) (start + offset), filesz, p_offset);
     if (n != (ssize_t) filesz) {
         return false;
@@ -133,6 +153,7 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
         0) {
         return false;
     }
+
     return true;
 }
 
@@ -240,8 +261,8 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
             base + end, pflags(p->p_flags));
 
         if (!buf_read_elfseg(proc, base + start, offset, base + end,
-                p->p_offset, p->p_filesz, pflags(p->p_flags), elf, pagesize,
-                perform_map)) {
+                p->p_offset, p->p_filesz, p->p_memsz, pflags(p->p_flags), elf, pagesize,
+                p->p_align, perform_map)) {
             ERROR("elf_load error: reading elf segment failed");
             goto err1;
         }
@@ -266,16 +287,18 @@ err1:
 }
 
 bool
-elf_load(struct LFILinuxProc *proc, const char *prog_path, uint8_t *prog_data,
-    size_t prog_size, const char *interp_path, uint8_t *interp_data,
+elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd, uint8_t *prog_data,
+    size_t prog_size, const char *interp_path, int interp_fd, uint8_t *interp_data,
     size_t interp_size, bool perform_map, struct ELFLoadInfo *info)
 {
     struct Buf prog = (struct Buf) {
+        .fd = prog_fd,
         .data = prog_data,
         .size = prog_size,
     };
 
     struct Buf interp = (struct Buf) {
+        .fd = interp_fd,
         .data = interp_data,
         .size = interp_size,
     };

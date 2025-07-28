@@ -22,12 +22,20 @@ buf_read_file(struct LFILinuxEngine *engine, const char *filename)
     if (p == (void *) -1)
         goto err;
 
-    close(fd);
     return (struct Buf) {
+        .fd = fd,
         .data = (uint8_t *) p,
         .size = size,
     };
 err:
     close(fd);
     return (struct Buf) { 0 };
+}
+
+void
+buf_close(struct Buf *buf)
+{
+    if (buf->fd != -1)
+        close(buf->fd);
+    munmap(buf->data, buf->size);
 }
