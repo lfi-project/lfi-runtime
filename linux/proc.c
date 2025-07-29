@@ -16,8 +16,8 @@
 #include <errno.h>
 #include <stdatomic.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 EXPORT struct LFILinuxProc *
 lfi_proc_new(struct LFILinuxEngine *engine)
@@ -63,8 +63,8 @@ lfi_proc_box(struct LFILinuxProc *proc)
 }
 
 static bool
-proc_load(struct LFILinuxProc *proc, int prog_fd, uint8_t *prog, size_t prog_size,
-    const char *prog_path)
+proc_load(struct LFILinuxProc *proc, int prog_fd, uint8_t *prog,
+    size_t prog_size, const char *prog_path)
 {
     struct Buf interp = (struct Buf) { 0 };
 

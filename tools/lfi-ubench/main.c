@@ -142,7 +142,8 @@ main(int argc, const char **argv)
         LFI_INVOKE(lfi_proc_box(proc), lfi_thread_ctxp(t), fn, void, (void) ));
 
     lfi_box_cbinit(lfi_proc_box(proc));
-    void *box_callback = lfi_box_register_cb(lfi_proc_box(proc), (void *) callback);
+    void *box_callback = lfi_box_register_cb(lfi_proc_box(proc),
+        (void *) callback);
 
     fn = lfi_proc_sym(proc, "bench_callback");
     BENCHMARK("bench_callback", iters,

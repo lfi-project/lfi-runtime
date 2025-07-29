@@ -6,7 +6,7 @@ endif
 libbench = custom_target('libbench.lfi',
   output: 'libbench.lfi',
   input: files('lib.c'),
-  command: [lficc, '-static-pie', '@INPUT@', '-o', '@OUTPUT@', '-lboxrt', '-Wl,--export-dynamic', '-O2', '-g'])
+  command: [lficc, '-static-pie', '@INPUT@', '-o', '@OUTPUT@', '-lboxrt', '-Wl,--export-dynamic', '-O2'])
 
 executable('lfi-ubench',
   files('main.c'), libbench,

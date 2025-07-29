@@ -13,9 +13,10 @@ elf_interp(uint8_t *prog, size_t prog_size);
 // space. Returns true if successful. The interp may be NULL if the program is
 // statically linked or has no dynamic interpreter.
 bool
-elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd, uint8_t *prog,
-    size_t prog_size, const char *interp_path, int interp_fd, uint8_t *interp,
-    size_t interp_size, bool perform_map, struct ELFLoadInfo *info);
+elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
+    uint8_t *prog, size_t prog_size, const char *interp_path, int interp_fd,
+    uint8_t *interp, size_t interp_size, bool perform_map,
+    struct ELFLoadInfo *info);
 
 // Output a perf map file listing all the symbols from the ELF file. This
 // allows perf to map the symbols in the dynamically mapped code for the
