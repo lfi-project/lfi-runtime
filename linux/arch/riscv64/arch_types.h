@@ -25,12 +25,13 @@ struct Stat {
     linux_uid_t st_uid;
     linux_gid_t st_gid;
     linux_dev_t st_rdev;
+    uint64_t __pad1;            
     linux_off_t st_size;
     linux_blksize_t st_blksize;
+    uint32_t __pad2;            
     linux_blkcnt_t st_blocks;
-
     struct TimeSpec st_atim;
     struct TimeSpec st_mtim;
     struct TimeSpec st_ctim;
-    uint32_t _unused[3];
+    uint32_t _unused[2];       
 };
