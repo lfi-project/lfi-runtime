@@ -32,8 +32,9 @@ struct LFIBox {
     // Address space information.
     uintptr_t base;
     size_t size;
-    lfiptr min; // Smallest valid address (up to guard region)
-    lfiptr max; // Largest valid address (up to guard region)
+    lfiptr min;      // Smallest valid address (up to guard region)
+    lfiptr max;      // Largest valid address (up to guard region)
+    lfiptr max_exec; // Largest valid executable address
 
     // Memory mapper object from libmmap.
     MMAddrSpace mm;
@@ -104,7 +105,7 @@ box_footprint(size_t boxsize, struct LFIOptions opts)
         return boxsize;
     }
 #if defined(LFI_ARCH_ARM64)
-    return gb(4);
+    return gb(8);
 #elif defined(LFI_ARCH_X64)
 
 #ifdef HAVE_PKU

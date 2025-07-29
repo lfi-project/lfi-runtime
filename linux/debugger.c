@@ -5,6 +5,7 @@
 #include "lock.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef HAVE_R_DEBUG
 struct link_map {
@@ -76,7 +77,7 @@ db_register_load(struct LFILinuxProc *proc, const char *filename,
         if (map) {
             *map = (struct link_map) {
                 .l_addr = load_addr,
-                .l_name = filename,
+                .l_name = strndup(filename, FILENAME_MAX),
                 .l_ld = load_addr + dynsym,
             };
             notify_db_of_load(map);

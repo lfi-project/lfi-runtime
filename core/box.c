@@ -110,6 +110,7 @@ lfi_box_new(struct LFIEngine *engine)
         .engine = engine,
         .min = base + engine->guardsize + engine->opts.pagesize,
         .max = base + size - engine->guardsize,
+        .max_exec = base + size - engine->guardsize,
     };
     syssetup(box);
 
@@ -155,6 +156,7 @@ lfi_box_info(struct LFIBox *box)
         .size = box->size,
         .min = box->min,
         .max = box->max,
+        .max_exec = box->max_exec,
     };
 }
 

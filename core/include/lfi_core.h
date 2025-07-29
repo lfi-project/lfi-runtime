@@ -70,6 +70,9 @@ struct LFIBoxInfo {
 
     // One past the maximum accessible address.
     lfiptr max;
+
+    // One past the maximum address that may be marked as executable.
+    lfiptr max_exec;
 };
 
 #define LFI_PROT_NONE  0
@@ -81,10 +84,17 @@ struct LFIBoxInfo {
 // since such a page could be mapped twice: once as W and once as X. Thus, the
 // user of liblfi should not allow the sandbox to aliased WX mappings via
 // MAP_SHARED, and liblfi does not internally enforce this restriction.
-#define LFI_MAP_SHARED    1
-#define LFI_MAP_PRIVATE   2
-#define LFI_MAP_FIXED     16
-#define LFI_MAP_ANONYMOUS 32
+#define LFI_MAP_SHARED     1
+#define LFI_MAP_PRIVATE    2
+#define LFI_MAP_FIXED      16
+#define LFI_MAP_ANONYMOUS  32
+
+// We use MAP_EXECUTABLE to indicate that the memory mapping should be
+// allocated from the region of the sandbox where code pages may be allocated.
+// For certain architectures/configurations of LFI pages may only be marked as
+// executable if they are in a certain region of the sandbox (e.g., not in the
+// top 128MiB of the sandbox).
+#define LFI_MAP_EXECUTABLE 0x1000
 
 // Creates a new LFI engine and reserve enough virtual address space for 'n'
 // sandboxes.
