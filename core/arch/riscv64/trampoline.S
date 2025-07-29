@@ -14,19 +14,16 @@ lfi_trampoline:
     #TODO: Implement RISC-V trampoline
     ebreak
 
+.global lfi_ret_end
+.p2align 4
+lfi_ret_end
+    ebreak
+
 .global lfi_ret
 .p2align 4
 lfi_ret:
     #TODO: Implement RISC-V return
     ebreak
-
-.macro pushx reg
-    #TODO: Implement RISC-V register push
-.endm
-
-.macro popx reg
-    #TODO: Implement RISC-V register pop
-.endm
 
 .p2align 4
 .trampoline_clone:
