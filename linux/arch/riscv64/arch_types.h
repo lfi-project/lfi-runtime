@@ -32,5 +32,5 @@ struct Stat {
     struct TimeSpec st_atim;
     struct TimeSpec st_mtim;
     struct TimeSpec st_ctim;
-    uint32_t _unused[3];
+    uint32_t _unused[2];
 };
