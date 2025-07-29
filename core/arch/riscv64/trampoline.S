@@ -16,7 +16,7 @@ lfi_trampoline:
 
 .global lfi_ret_end
 .p2align 4
-lfi_ret_end
+lfi_ret_end:
     ebreak
 
 .global lfi_ret
