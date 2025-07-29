@@ -169,7 +169,7 @@ lfi_syscall_entry:
     sd ra, REGS_RA(REG_BASE)
     sd sp, REGS_SP(REG_BASE)
     sd gp, REGS_GP(REG_BASE)
-    sd tp, REGS_TP(REG_BASE)
+    
     sd t0, REGS_T0(REG_BASE)
     sd t1, REGS_T1(REG_BASE)
     sd t2, REGS_T2(REG_BASE)
