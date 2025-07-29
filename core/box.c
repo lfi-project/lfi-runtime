@@ -498,3 +498,10 @@ lfi_box_init_ret(struct LFIBox *box)
 
     box->retaddr = p_ret;
 }
+
+EXPORT void
+lfi_box_register_ret(struct LFIBox *box, lfiptr retaddr)
+{
+    assert(lfi_box_ptrvalid(box, retaddr));
+    box->retaddr = retaddr;
+}

@@ -109,7 +109,9 @@ main(int argc, const char **argv)
     bool ok = lfi_proc_load(proc, prog.data, prog.size, argv[1]);
     assert(ok);
 
-    lfi_box_init_ret(lfi_proc_box(proc));
+    lfiptr lfi_ret = lfi_proc_sym(proc, "_lfi_ret");
+    assert(lfi_ret);
+    lfi_box_register_ret(lfi_proc_box(proc), lfi_ret);
 
     const char *envp[] = {
         "LFI=1",

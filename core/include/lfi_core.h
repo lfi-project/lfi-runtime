@@ -256,9 +256,17 @@ lfi_ctx_box(struct LFIContext *ctx);
 
 // Initialize the sandbox's return function. This will create a function inside
 // the sandbox that calls lfi_ret, and will be used as the return address for
-// LFI_INVOKE calls into the sandbox.
+// LFI_INVOKE calls into the sandbox. The new memory allocated in the sandbox
+// will be marked as PROT_EXEC.
 void
 lfi_box_init_ret(struct LFIBox *box);
+
+// Register the sandbox's return function as retaddr. This is similar to
+// lfi_box_init_ret, but rather than dynamically creating the lfi_ret function
+// inside the sandbox, this assumes that it already exists and simply registers
+// it. This is useful if the platform has PROT_EXEC memory restrictions.
+void
+lfi_box_register_ret(struct LFIBox *box, lfiptr retaddr);
 
 // Register a clone callback. This callback will be called when transferring
 // control to a NULL LFI context through the LFI trampoline (e.g., via
