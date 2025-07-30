@@ -69,7 +69,7 @@ lfi_linux_lib_engine(void)
     return lib_engine;
 }
 
-void
+EXPORT void
 lfi_linux_free(struct LFILinuxEngine *engine)
 {
     free(engine);
