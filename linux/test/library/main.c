@@ -77,7 +77,8 @@ _lfi_ret(void)
 {
     // We avoid using actual assembly instructions to prevent them from being
     // rewritten.
-    asm volatile (
+    // clang-format off
+    asm volatile(
 #if defined(__aarch64__)
         ".byte 0x7e, 0x0f, 0x40, 0xf9\n" // ldr x30, [x27, #24]
         ".byte 0xc0, 0x03, 0x3f, 0xd6\n" // blr x30
@@ -91,6 +92,7 @@ _lfi_ret(void)
 #error "invalid architecture"
 #endif
     );
+    // clang-format on
 }
 
 void *symbols[] = {

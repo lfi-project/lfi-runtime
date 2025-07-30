@@ -84,10 +84,10 @@ struct LFIBoxInfo {
 // since such a page could be mapped twice: once as W and once as X. Thus, the
 // user of liblfi should not allow the sandbox to aliased WX mappings via
 // MAP_SHARED, and liblfi does not internally enforce this restriction.
-#define LFI_MAP_SHARED     1
-#define LFI_MAP_PRIVATE    2
-#define LFI_MAP_FIXED      16
-#define LFI_MAP_ANONYMOUS  32
+#define LFI_MAP_SHARED    1
+#define LFI_MAP_PRIVATE   2
+#define LFI_MAP_FIXED     16
+#define LFI_MAP_ANONYMOUS 32
 
 // We use MAP_EXECUTABLE to indicate that the memory mapping should be
 // allocated from the region of the sandbox where code pages may be allocated.
@@ -203,13 +203,13 @@ lfi_box_l2p(struct LFIBox *box, lfiptr l);
 uintptr_t
 lfi_box_p2l(struct LFIBox *box, uintptr_t p);
 
-// Initialize use of callbacks with this sandbox.
+// Deprecated.
 bool
 lfi_box_cbinit(struct LFIBox *box);
 
 // Register fn as a callback. Returns the function pointer that should be
 // passed to the sandbox code in order to call 'fn'. Returns NULL if there are
-// no more callback slots available.
+// no more callback slots available or if callback initialization failed.
 void *
 lfi_box_register_cb(struct LFIBox *box, void *fn);
 

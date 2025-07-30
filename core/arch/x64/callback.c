@@ -55,8 +55,8 @@ cbfind(struct LFIBox *box, void *fn)
     return -1;
 }
 
-EXPORT bool
-lfi_box_cbinit(struct LFIBox *box)
+static bool
+init_cb(struct LFIBox *box)
 {
     int fd = memfd_create("", 0);
     if (fd < 0)
@@ -94,9 +94,16 @@ err:
     return false;
 }
 
-EXPORT void *
-lfi_box_register_cb_struct(struct LFIBox *box, void *fn)
+static void *
+register_cb(struct LFIBox *box, void *fn, uint64_t lfi_callback_fn)
 {
+    if (!box->cbinfo.cbentries_box) {
+        if (!init_cb(box)) {
+            LOG(box->engine, "error: failed to initialize callbacks");
+            return NULL;
+        }
+    }
+
     assert(fn);
     assert(cbfind(box, fn) == -1 && "fn is already registered as a callback");
 
@@ -109,7 +116,7 @@ lfi_box_register_cb_struct(struct LFIBox *box, void *fn)
         (uint64_t) fn, memory_order_seq_cst);
     // Write the trampoline into the 'trampoline' field for the chosen slot
     atomic_store_explicit(&box->cbinfo.cbentries_alias[slot].trampoline,
-        (uint64_t) lfi_callback_struct, memory_order_seq_cst);
+        (uint64_t) lfi_callback_fn, memory_order_seq_cst);
 
     // Mark the slot as allocated.
     box->callbacks[slot] = fn;
@@ -118,26 +125,15 @@ lfi_box_register_cb_struct(struct LFIBox *box, void *fn)
 }
 
 EXPORT void *
+lfi_box_register_cb_struct(struct LFIBox *box, void *fn)
+{
+    return register_cb(box, fn, (uint64_t) lfi_callback_struct);
+}
+
+EXPORT void *
 lfi_box_register_cb(struct LFIBox *box, void *fn)
 {
-    assert(fn);
-    assert(cbfind(box, fn) == -1 && "fn is already registered as a callback");
-
-    ssize_t slot = cbfreeslot(box);
-    if (slot == -1)
-        return NULL;
-
-    // Write 'fn' into the 'target' field for the chosen slot.
-    atomic_store_explicit(&box->cbinfo.cbentries_alias[slot].target,
-        (uint64_t) fn, memory_order_seq_cst);
-    // Write the trampoline into the 'trampoline' field for the chosen slot
-    atomic_store_explicit(&box->cbinfo.cbentries_alias[slot].trampoline,
-        (uint64_t) lfi_callback, memory_order_seq_cst);
-
-    // Mark the slot as allocated.
-    box->callbacks[slot] = fn;
-
-    return &box->cbinfo.cbentries_box[slot].code[0];
+    return register_cb(box, fn, (uint64_t) lfi_callback);
 }
 
 EXPORT void

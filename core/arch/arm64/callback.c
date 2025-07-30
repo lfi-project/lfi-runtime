@@ -77,8 +77,8 @@ _Static_assert(sizeof(struct CallbackDataEntry) == sizeof(struct CallbackEntry),
 _Static_assert(MAXCALLBACKS * sizeof(struct CallbackEntry) % 16384 == 0,
     "invalid MAXCALLBACKS");
 
-EXPORT bool
-lfi_box_cbinit(struct LFIBox *box)
+static bool
+init_cb(struct LFIBox *box)
 {
     int fd = memfd_create("", 0);
     if (fd < 0)
@@ -131,6 +131,13 @@ err:
 static void *
 register_cb(struct LFIBox *box, void *fn, uint64_t lfi_callback_fn)
 {
+    if (!box->cbinfo.cbentries) {
+        if (!init_cb(box)) {
+            LOG(box->engine, "error: failed to initialize callbacks");
+            return NULL;
+        }
+    }
+
     assert(fn);
     assert(cbfind(box, fn) == -1 && "fn is already registered as a callback");
 

@@ -59,9 +59,6 @@ main(int argc, char **argv)
     struct LFIBox *box = lfi_box_new(engine);
     assert(box);
 
-    bool ok = lfi_box_cbinit(box);
-    assert(ok);
-
     lfiptr p = lfi_box_mapany(box, pagesize, LFI_PROT_READ | LFI_PROT_WRITE,
         LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
     assert(p != (lfiptr) -1);
