@@ -1,8 +1,6 @@
 #include "arch_asm.h"
 
 .macro zero_regs
-    fldcw REGS_FCW(%r13)
-    ldmxcsr REGS_MXCSR(%r13)
     xorq %rax, %rax
     xorq %rbx, %rbx
     xorq %rbp, %rbp
@@ -235,6 +233,11 @@ lfi_trampoline_direct:
     movq (%r13), %r13
     movq %r12, REGS_HOST_TP(%r13)
     write_ctx %r13
+
+#ifndef STORES_ONLY
+    fldcw REGS_FCW(%r13)
+    ldmxcsr REGS_MXCSR(%r13)
+#endif
 
 #ifdef HAVE_PKU
     movq %rcx, %rbx
