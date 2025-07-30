@@ -12,7 +12,8 @@ sys_mmap(struct LFILinuxThread *t, lfiptr addrp, size_t length, int prot,
 
     // Any mmap flag outside this list is rejected.
     const int illegal_mask = ~LINUX_MAP_ANONYMOUS & ~LINUX_MAP_PRIVATE &
-        ~LINUX_MAP_NORESERVE & ~LINUX_MAP_DENYWRITE & ~LINUX_MAP_FIXED;
+        ~LINUX_MAP_NORESERVE & ~LINUX_MAP_DENYWRITE & ~LINUX_MAP_FIXED &
+        ~LINUX_MAP_EXECUTABLE;
     if ((flags & illegal_mask) != 0) {
         LOG(t->proc->engine,
             "invalid mmap flag: not one of MAP_ANONYMOUS, MAP_PRIVATE, MAP_FIXED");

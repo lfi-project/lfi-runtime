@@ -50,12 +50,13 @@ typedef int64_t linux_time_t;
 #define LINUX_EMFILE               24
 #define LINUX_ENOSYS               38
 
-#define LINUX_MAP_SHARED           1
-#define LINUX_MAP_PRIVATE          2
-#define LINUX_MAP_FIXED            16
-#define LINUX_MAP_ANONYMOUS        32
-#define LINUX_MAP_DENYWRITE        2048
-#define LINUX_MAP_NORESERVE        16384
+#define LINUX_MAP_SHARED           0x1
+#define LINUX_MAP_PRIVATE          0x2
+#define LINUX_MAP_FIXED            0x10
+#define LINUX_MAP_ANONYMOUS        0x20
+#define LINUX_MAP_DENYWRITE        0x800
+#define LINUX_MAP_EXECUTABLE       0x1000
+#define LINUX_MAP_NORESERVE        0x4000
 
 #define LINUX_SEEK_SET             0
 #define LINUX_SEEK_CUR             1

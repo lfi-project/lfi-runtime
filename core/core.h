@@ -38,6 +38,8 @@ struct LFIBox {
 
     // Memory mapper object from libmmap.
     MMAddrSpace mm;
+    // Memory mapper object for the executable subset of the address space.
+    MMAddrSpace mm_exec;
 
     // Pointer to the page at the start of the sandbox holding runtime call
     // entrypoints.
