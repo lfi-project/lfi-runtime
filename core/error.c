@@ -13,9 +13,9 @@ lfi_errno(void)
 }
 
 static const char *
-name(int errno)
+name(int err)
 {
-    switch (errno) {
+    switch (err) {
     case LFI_ERR_NONE:
         return "no error";
     case LFI_ERR_ALLOC:
