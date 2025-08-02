@@ -169,7 +169,7 @@
 #define REGS_F    288
 
 #define REGS_BASE REGS_S11
-#define REGS_ADDR REGS_S10
+#define REGS_ADDR REGS_S1
 #define REG_BASE  s11
 #define REG_ADDR  s1
 // clang-format off
