@@ -18,11 +18,6 @@ memfd_create(const char *name, unsigned flags)
 }
 #endif
 
-EXPORT bool
-lfi_box_cbinit(struct LFIBox *box)
-{
-    assert(!"unimplemented");
-}
 
 EXPORT void *
 lfi_box_register_cb(struct LFIBox *box, void *fn)
