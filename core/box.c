@@ -511,6 +511,7 @@ lfi_box_register_ret(struct LFIBox *box, lfiptr retaddr)
 EXPORT bool
 lfi_box_cbinit(struct LFIBox *box)
 {
-    LOG(box->engine, "warning: lfi_box_cbinit is deprecated and is a no-op, please remove");
+    LOG(box->engine,
+        "warning: lfi_box_cbinit is deprecated and is a no-op, please remove");
     return true;
 }

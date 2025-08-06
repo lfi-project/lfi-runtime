@@ -334,7 +334,7 @@ extern lfi_thread_local struct LFIInvokeInfo lfi_invoke_info __asm__(
 // Direct trampoline that loads arguments/return values from the struct
 // LFIContext that is used in the invocation.
 void
-lfi_trampoline_struct(void) __asm__("lfi_trampoline_struct");
+lfi_trampoline_struct(struct LFIRegs *regs) __asm__("lfi_trampoline_struct");
 
 #define LFI_X(x, y)  x##y
 #define LFI_XX(x, y) LFI_X(x, y)

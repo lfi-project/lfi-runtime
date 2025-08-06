@@ -117,24 +117,26 @@ lfi_trampoline_struct:
     movq INVOKE_BOX(%r13), %r14
     movq INVOKE_CTX(%r13), %r13
     movq %r13, %r11
-    movq $0, %r15
+    movq %rdi, %r15
 
     lazy_ctx_clone
 
-    movq REGS_RDI(%r11), %rdi
-    movq REGS_RSI(%r11), %rsi
-    movq REGS_RDX(%r11), %rdx
-    movq REGS_RCX(%r11), %rcx
-    movq REGS_R8(%r11), %r8
-    movq REGS_R9(%r11), %r9
-    movdqu REGS_XMM(0)(%r11), %xmm0
-    movdqu REGS_XMM(1)(%r11), %xmm1
-    movdqu REGS_XMM(2)(%r11), %xmm2
-    movdqu REGS_XMM(3)(%r11), %xmm3
-    movdqu REGS_XMM(4)(%r11), %xmm4
-    movdqu REGS_XMM(5)(%r11), %xmm5
-    movdqu REGS_XMM(6)(%r11), %xmm6
-    movdqu REGS_XMM(7)(%r11), %xmm7
+    movq REGS_RDI(%r15), %rdi
+    movq REGS_RSI(%r15), %rsi
+    movq REGS_RDX(%r15), %rdx
+    movq REGS_RCX(%r15), %rcx
+    movq REGS_R8(%r15), %r8
+    movq REGS_R9(%r15), %r9
+    movdqu REGS_XMM(0)(%r15), %xmm0
+    movdqu REGS_XMM(1)(%r15), %xmm1
+    movdqu REGS_XMM(2)(%r15), %xmm2
+    movdqu REGS_XMM(3)(%r15), %xmm3
+    movdqu REGS_XMM(4)(%r15), %xmm4
+    movdqu REGS_XMM(5)(%r15), %xmm5
+    movdqu REGS_XMM(6)(%r15), %xmm6
+    movdqu REGS_XMM(7)(%r15), %xmm7
+
+    movq $0, %r15
 
     jmp .lfi_trampoline_common
 
