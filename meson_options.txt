@@ -61,3 +61,8 @@ option('sys_minimal',
   type: 'boolean',
   value: false,
   description: 'enable the minimal runtime, which only supports syscalls for basic functionality and memory allocation')
+
+option('sandbox_tls',
+  type: 'boolean',
+  value: true,
+  description: 'enable support for thread-local storage in the sandbox')

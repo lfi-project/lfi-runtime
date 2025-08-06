@@ -18,7 +18,6 @@ memfd_create(const char *name, unsigned flags)
 }
 #endif
 
-
 EXPORT void *
 lfi_box_register_cb(struct LFIBox *box, void *fn)
 {

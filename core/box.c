@@ -32,10 +32,12 @@ p2l(struct LFIBox *box, uintptr_t p)
 // Runtime call entrypoints. These are defined in runtime.S.
 extern void
 lfi_syscall_entry(void) __asm__("lfi_syscall_entry");
+#ifdef SANDBOX_TLS
 extern void
 lfi_get_tp(void) __asm__("lfi_get_tp");
 extern void
 lfi_set_tp(void) __asm__("lfi_set_tp");
+#endif
 extern void
 lfi_ret(void) __asm__("lfi_ret");
 
@@ -60,8 +62,10 @@ syssetup(struct LFIBox *box)
     assert(box->sys == (void *) box->base);
 
     box->sys->rtcalls[0] = (uintptr_t) &lfi_syscall_entry;
+#ifdef SANDBOX_TLS
     box->sys->rtcalls[1] = (uintptr_t) &lfi_get_tp;
     box->sys->rtcalls[2] = (uintptr_t) &lfi_set_tp;
+#endif
     box->sys->rtcalls[3] = (uintptr_t) &lfi_ret;
 
     // Map read-only.
@@ -511,6 +515,7 @@ lfi_box_register_ret(struct LFIBox *box, lfiptr retaddr)
 EXPORT bool
 lfi_box_cbinit(struct LFIBox *box)
 {
-    LOG(box->engine, "warning: lfi_box_cbinit is deprecated and is a no-op, please remove");
+    LOG(box->engine,
+        "warning: lfi_box_cbinit is deprecated and is a no-op, please remove");
     return true;
 }

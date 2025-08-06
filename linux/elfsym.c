@@ -42,18 +42,20 @@ loadsym(struct LFILinuxProc *proc, lfiptr *p, const char *sym)
 static bool
 load_libsyms(struct LFILinuxProc *proc)
 {
+#ifdef SANDBOX_TLS
     if (!loadsym(proc, &proc->libsyms.thread_create, "_lfi_thread_create"))
-        return false;
+        LOG(proc->engine, "warning: _lfi_thread_create not found");
     if (!loadsym(proc, &proc->libsyms.thread_destroy, "_lfi_thread_destroy"))
-        return false;
+        LOG(proc->engine, "warning: _lfi_thread_destroy not found");
+#endif
     if (!loadsym(proc, &proc->libsyms.malloc, "_lfi_malloc"))
-        return false;
+        LOG(proc->engine, "warning: _lfi_malloc not found");
     if (!loadsym(proc, &proc->libsyms.realloc, "_lfi_realloc"))
-        return false;
+        LOG(proc->engine, "warning: _lfi_realloc not found");
     if (!loadsym(proc, &proc->libsyms.calloc, "_lfi_calloc"))
-        return false;
+        LOG(proc->engine, "warning: _lfi_calloc not found");
     if (!loadsym(proc, &proc->libsyms.free, "_lfi_free"))
-        return false;
+        LOG(proc->engine, "warning: _lfi_free not found");
     return true;
 }
 

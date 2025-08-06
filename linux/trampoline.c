@@ -5,6 +5,13 @@
 
 #include <assert.h>
 
+#define ensure(expr)                                                   \
+    do {                                                               \
+        if (!(expr))                                                   \
+            ERROR("%s:%d: ensure failed: " #expr, __FILE__, __LINE__); \
+    } while (0)
+
+#ifdef SANDBOX_TLS
 // This is where sys_clone places new contexts that are created via clone.
 thread_local struct LFIContext *new_ctx;
 
@@ -15,7 +22,7 @@ static struct LFIContext *
 lfi_linux_clone_cb(struct LFIBox *box)
 {
     struct LFILinuxProc *proc = lfi_box_data(box);
-    assert(proc->libsyms.thread_create);
+    ensure(proc->libsyms.thread_create);
 
     // Invoke thread_create in clone_ctx and return the resulting new_ctx.
     LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
@@ -40,7 +47,7 @@ thread_destructor(void *p)
 
     struct LFILinuxProc *proc = thread->proc;
 
-    assert(proc->libsyms.thread_destroy);
+    ensure(proc->libsyms.thread_destroy);
 
     LFI_INVOKE(proc->box, &ctx, proc->libsyms.thread_destroy, void, (lfiptr),
         thread->box_pthread);
@@ -51,12 +58,14 @@ thread_destructor(void *p)
 
     lfi_thread_free(thread);
 }
+#endif
 
 EXPORT void
 lfi_linux_init_clone(struct LFILinuxThread *main)
 {
+#ifdef SANDBOX_TLS
     // Make sure the _lfi_thread_create symbol exists.
-    assert(main->proc->libsyms.thread_create);
+    ensure(main->proc->libsyms.thread_create);
 
     // Set clone_ctx to main's ctx to indicate that we are fake-cloning from
     // main.
@@ -73,6 +82,9 @@ lfi_linux_init_clone(struct LFILinuxThread *main)
     // Initialize our pthread key so that we get a callback when host threads
     // that have associated sandbox threads exit.
     pthread_key_create(&thread_key, thread_destructor);
+#else
+    (void) main;
+#endif
 }
 
 static inline bool
@@ -91,7 +103,7 @@ EXPORT void *
 lfi_lib_malloc(struct LFIBox *box, struct LFIContext **ctxp, size_t size)
 {
     struct LFILinuxProc *proc = lfi_box_data(box);
-    assert(proc->libsyms.malloc);
+    ensure(proc->libsyms.malloc);
 
     lfiptr p = LFI_INVOKE(proc->box, ctxp, proc->libsyms.malloc, lfiptr,
         (size_t), size);
@@ -106,7 +118,7 @@ EXPORT void *
 lfi_lib_realloc(struct LFIBox *box, struct LFIContext **ctxp, size_t size)
 {
     struct LFILinuxProc *proc = lfi_box_data(box);
-    assert(proc->libsyms.realloc);
+    ensure(proc->libsyms.realloc);
 
     lfiptr p = LFI_INVOKE(proc->box, ctxp, proc->libsyms.realloc, lfiptr,
         (size_t), size);
@@ -122,7 +134,7 @@ lfi_lib_calloc(struct LFIBox *box, struct LFIContext **ctxp, size_t count,
     size_t size)
 {
     struct LFILinuxProc *proc = lfi_box_data(box);
-    assert(proc->libsyms.calloc);
+    ensure(proc->libsyms.calloc);
 
     lfiptr p = LFI_INVOKE(proc->box, ctxp, proc->libsyms.calloc, lfiptr,
         (size_t, size_t), count, size);
@@ -137,7 +149,7 @@ EXPORT void
 lfi_lib_free(struct LFIBox *box, struct LFIContext **ctxp, void *p)
 {
     struct LFILinuxProc *proc = lfi_box_data(box);
-    assert(proc->libsyms.free);
+    ensure(proc->libsyms.free);
 
     LFI_INVOKE(proc->box, ctxp, proc->libsyms.free, void, (lfiptr),
         lfi_box_p2l(proc->box, (uintptr_t) p));

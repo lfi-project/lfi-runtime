@@ -124,6 +124,9 @@ endif
 if get_option('segue_single_sandbox')
   defines += '-DSEGUE_SINGLE_SANDBOX'
 endif
+if get_option('sandbox_tls')
+  defines += '-DSANDBOX_TLS'
+endif
 
 if not meson.is_subproject()
   add_global_arguments(c_args, language: 'c')

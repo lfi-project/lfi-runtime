@@ -4,6 +4,16 @@
 #include <signal.h>
 #include <stdatomic.h>
 
+static bool
+isfork(uint64_t flags)
+{
+    uint64_t allowed = LINUX_CLONE_CHILD_SETTID | LINUX_CLONE_CHILD_CLEARTID;
+    return (flags & ~allowed) == LINUX_SIGCHLD ||
+        (flags & ~allowed) ==
+        (LINUX_CLONE_VM | LINUX_CLONE_VFORK | LINUX_SIGCHLD);
+}
+
+#ifdef SANDBOX_TLS
 // Receiver for SIGLFI when the main thread wants to kill child threads.
 static void
 thread_signal(int sig)
@@ -15,15 +25,6 @@ thread_signal(int sig)
     struct LFILinuxThread *t = lfi_ctx_data(ctx);
     assert(t);
     sys_exit(t, 0);
-}
-
-static bool
-isfork(uint64_t flags)
-{
-    uint64_t allowed = LINUX_CLONE_CHILD_SETTID | LINUX_CLONE_CHILD_CLEARTID;
-    return (flags & ~allowed) == LINUX_SIGCHLD ||
-        (flags & ~allowed) ==
-        (LINUX_CLONE_VM | LINUX_CLONE_VFORK | LINUX_SIGCHLD);
 }
 
 static void
@@ -102,12 +103,15 @@ end:
     free(ss.ss_sp);
     return NULL;
 }
+#endif
 
 static int
 spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
     uint64_t ctidp, uint64_t tls, uint64_t func)
 {
-#ifdef SYS_MINIMAL
+#ifdef SANDBOX_TLS
+
+#if defined(SYS_MINIMAL)
     // In the minimal configuration we only support spawning fake threads to
     // attach to host threads that already exist. Using clone to create new
     // threads from the sandbox is not permitted.
@@ -218,6 +222,12 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
         atomic_store_explicit(ptid, tid, memory_order_release);
     }
     return tid;
+
+#else
+
+    return -LINUX_ENOSYS;
+
+#endif
 }
 
 int
