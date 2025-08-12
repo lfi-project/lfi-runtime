@@ -336,6 +336,9 @@ extern lfi_thread_local struct LFIInvokeInfo lfi_invoke_info __asm__(
 void
 lfi_trampoline_struct(void) __asm__("lfi_trampoline_struct");
 
+void
+lfi_clone(struct LFIBox *box, struct LFIContext **ctxp)
+
 #define LFI_X(x, y)  x##y
 #define LFI_XX(x, y) LFI_X(x, y)
 

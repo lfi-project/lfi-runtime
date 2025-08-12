@@ -15,7 +15,7 @@ lfi_set_clone_cb(struct LFIEngine *engine,
 void
 lfi_clone(struct LFIBox *box, struct LFIContext **ctxp) __asm__("lfi_clone");
 
-void
+EXPORT void
 lfi_clone(struct LFIBox *box, struct LFIContext **ctxp)
 {
     if (!box->engine->clone_cb) {
