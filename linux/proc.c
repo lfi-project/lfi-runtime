@@ -69,6 +69,11 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, uint8_t *prog,
     struct Buf interp = (struct Buf) { 0 };
 
     char *interp_path = elf_interp(prog, prog_size);
+    if (interp_path && strcmp(interp_path, "lfi") == 0) {
+        LOG(proc->engine, "interpreter=lfi: assuming static-pie linked");
+        free(interp_path);
+        interp_path = NULL;
+    }
     if (interp_path) {
 #ifdef CONFIG_ENABLE_DYLD
         if (cwk_path_is_absolute(interp_path)) {
