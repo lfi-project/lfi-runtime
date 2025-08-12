@@ -95,6 +95,15 @@ lfi_proc_load(struct LFILinuxProc *proc, const uint8_t *prog, size_t prog_size,
 bool
 lfi_proc_load_fd(struct LFILinuxProc *proc, int fd, const char *prog_path);
 
+// Load an ELF program from a buffer by using mremap. This is similar to
+// lfi_proc_load, except the provided buffer must be page-aligned and will be
+// remapped to the appropriate location using mremap. This means that the
+// loaded mapping will be backed by a file if the input buffer is backed by a
+// file. The input buffer is invalidated by this call and becomes inaccessible.
+bool
+lfi_proc_load_remap(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
+    const char *prog_path);
+
 // Load an ELF program directly from a file.
 bool
 lfi_proc_load_file(struct LFILinuxProc *proc, const char *prog_path);

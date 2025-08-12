@@ -210,7 +210,7 @@ main(int argc, char **argv)
         exit(1);
     }
 
-    bool ok = lfi_proc_load(proc, prog.data, prog.size, argv[optind]);
+    bool ok = lfi_proc_load_remap(proc, prog.data, prog.size, argv[optind]);
     if (!ok) {
         fprintf(stderr, "failed to load %s\n", argv[optind]);
         exit(1);

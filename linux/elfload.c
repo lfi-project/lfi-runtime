@@ -1,3 +1,6 @@
+// For mremap
+#define _GNU_SOURCE
+
 #include "elfload.h"
 
 #include "align.h"
@@ -6,7 +9,10 @@
 #include "elfdefs.h"
 #include "log.h"
 
+#include <assert.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
 
 // We do not load ELF files that have more than 64 program headers.
 #define PHNUM_MAX 64
@@ -101,17 +107,22 @@ sanitize(void *p, size_t sz, int prot)
 static bool
 buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
     uintptr_t end, size_t p_offset, size_t filesz, size_t memsz, int prot,
-    struct Buf buf, size_t pagesize, size_t p_align, bool perform_map,
+    struct Buf buf, size_t pagesize, size_t p_align, int map_op,
     bool reload)
 {
+    // Only use mremap for executable segments.
+    if (map_op == ELF_REMAP && (prot & LFI_PROT_EXEC) == 0) {
+        map_op = ELF_MAP;
+    }
+
     struct LFIBox *box = proc->box;
     lfiptr p;
-    if (reload && perform_map) {
+    if (reload && map_op == ELF_MAP) {
         // The mapping already exists and is writable, we just need to reset
         // it to 0.
         memset((void *) start, 0, end - start);
         p = start;
-    } else if (perform_map && buf.fd != -1) {
+    } else if (map_op == ELF_MAP && buf.fd != -1) {
         p = lfi_box_mapat(box, p2l(box, start), end - start, prot,
             LFI_MAP_PRIVATE, buf.fd, truncp(p_offset, p_align));
         if (p == (lfiptr) -1)
@@ -129,7 +140,14 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
                     LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
             }
         }
-    } else if (perform_map) {
+    } else if (map_op == ELF_REMAP) {
+        size_t pagesize = getpagesize();
+        assert((uintptr_t) buf.data % pagesize == 0);
+        void *rm = mremap((void *) (buf.data + truncp(p_offset, p_align)), end - start, end - start, MREMAP_MAYMOVE | MREMAP_FIXED, (void *) start);
+        if (rm == (void *) -1)
+            return false;
+        p = lfi_box_mapat_register(box, p2l(box, start), end - start, prot, LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+    } else if (map_op == ELF_MAP) {
         p = lfi_box_mapat(box, p2l(box, start), end - start,
             LFI_PROT_READ | LFI_PROT_WRITE, LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS,
             -1, 0);
@@ -141,12 +159,15 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
         return false;
     }
 
+    if (map_op == ELF_REMAP)
+        if (lfi_box_mprotect(box, p2l(box, start), p2l(box, end - start), prot) < 0)
+            return false;
     // We are just registering the mapping because it has already been
     // mapped by someone else.
-    if (!perform_map)
+    if (map_op == ELF_NO_MAP)
         return true;
     // We are directly mapping from a file so we don't need to copy data in.
-    if (buf.fd != -1)
+    if (buf.fd != -1 || map_op == ELF_REMAP)
         return true;
 
     // If we have any subsequent errors, it is expected that the caller will
@@ -169,7 +190,7 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
 // Load a single in-memory ELF image into the address space.
 static bool
 elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
-    size_t pagesize, bool perform_map, bool reload, uintptr_t *p_first,
+    size_t pagesize, int map_op, bool reload, uintptr_t *p_first,
     uintptr_t *p_last, uintptr_t *p_entry, Elf64_Ehdr *ehdr)
 {
     size_t n = buf_read(elf, ehdr, sizeof(*ehdr), 0);
@@ -274,7 +295,7 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
         if (!reload || (reload && ((p->p_flags & PF_W) != 0))) {
             if (!buf_read_elfseg(proc, base + start, offset, base + end,
                     p->p_offset, p->p_filesz, p->p_memsz, pflags(p->p_flags),
-                    elf, pagesize, p->p_align, perform_map, reload)) {
+                    elf, pagesize, p->p_align, map_op, reload)) {
                 ERROR("elf_load error: reading elf segment failed");
                 goto err1;
             }
@@ -303,7 +324,7 @@ bool
 elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
     const uint8_t *prog_data, size_t prog_size, const char *interp_path,
     int interp_fd, const uint8_t *interp_data, size_t interp_size,
-    bool perform_map, bool reload, struct ELFLoadInfo *info)
+    int map_op, bool reload, struct ELFLoadInfo *info)
 {
     struct Buf prog = (struct Buf) {
         .fd = prog_fd,
@@ -323,11 +344,11 @@ elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
     size_t pagesize = lfi_opts(proc->engine->engine).pagesize;
     Elf64_Ehdr p_ehdr, i_ehdr;
 
-    if (!elf_load_one(proc, prog, base, pagesize, perform_map, reload, &p_first,
+    if (!elf_load_one(proc, prog, base, pagesize, map_op, reload, &p_first,
             &p_last, &p_entry, &p_ehdr))
         goto err;
     if (has_interp) {
-        if (!elf_load_one(proc, interp, p_last, pagesize, perform_map, reload,
+        if (!elf_load_one(proc, interp, p_last, pagesize, map_op, reload,
                 &i_first, &i_last, &i_entry, &i_ehdr))
             goto err;
     }
