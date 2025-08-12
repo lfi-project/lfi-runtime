@@ -64,7 +64,7 @@ lfi_proc_box(struct LFILinuxProc *proc)
 
 static bool
 proc_load(struct LFILinuxProc *proc, int prog_fd, uint8_t *prog,
-    size_t prog_size, const char *prog_path)
+    size_t prog_size, const char *prog_path, int map_op)
 {
     struct Buf interp = (struct Buf) { 0 };
 
@@ -126,7 +126,7 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, uint8_t *prog,
 
     struct ELFLoadInfo info;
     if (!elf_load(proc, proc->prog_path, prog_fd, prog, prog_size, interp_path,
-            interp.fd, interp.data, interp.size, true, &info))
+            interp.fd, interp.data, interp.size, map_op, &info))
         return false;
 
     lfiptr entry = info.elfentry;
@@ -159,7 +159,13 @@ EXPORT bool
 lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
     const char *prog_path)
 {
-    return proc_load(proc, -1, prog, prog_size, prog_path);
+    return proc_load(proc, -1, prog, prog_size, prog_path, ELF_MAP);
+}
+
+EXPORT bool
+lfi_proc_load_remap(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size, const char *prog_path)
+{
+    return proc_load(proc, -1, prog, prog_size, prog_path, ELF_REMAP);
 }
 
 EXPORT bool
@@ -176,7 +182,7 @@ lfi_proc_load_fd(struct LFILinuxProc *proc, int fd, const char *prog_path)
     if (prog_data == (void *) -1)
         return false;
 
-    bool ok = proc_load(proc, fd, prog_data, prog_size, prog_path);
+    bool ok = proc_load(proc, fd, prog_data, prog_size, prog_path, ELF_MAP);
     munmap(prog_data, prog_size);
     return ok;
 }
