@@ -19,7 +19,7 @@ xasprintf(const char *fmt, ...);
 
 #endif
 
-#ifdef __ANDROID__
+#if 0 && defined(__ANDROID__)
 
 #include <android/log.h>
 
