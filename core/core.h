@@ -37,7 +37,7 @@ struct LFIBox {
     lfiptr max_exec; // Largest valid executable address
 
     // Memory mapper object from libmmap.
-    struct MMAddrSpace mm;
+    MMAddrSpace mm;
 
     // Pointer to the page at the start of the sandbox holding runtime call
     // entrypoints.
