@@ -327,7 +327,7 @@ lfi_box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd,
 }
 
 static void
-cbunmap(uint64_t start, size_t len, MMInfo info, void *udata)
+cbunmap(uint64_t start, size_t len, struct MMInfo info, void *udata)
 {
     (void) udata, (void) info;
     void *p = mmap((void *) start, len, PROT_NONE,
