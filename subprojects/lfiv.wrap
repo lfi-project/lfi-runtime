@@ -1,5 +1,5 @@
 [wrap-git]
 url = https://github.com/lfi-project/lfi-verifier.git
-revision = master
+revision = 9ffc973
 directory = lfi-verifier
 patch_directory = lfi-verifier
