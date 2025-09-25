@@ -1,5 +1,0 @@
-[wrap-git]
-url = https://github.com/argp-standalone/argp-standalone
-revision = 8ded2bc942740b5d291e450af661c5090dc3ca38
-directory = libargp
-patch_directory = libargp
