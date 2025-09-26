@@ -1,0 +1,5 @@
+[wrap-git]
+url = https://github.com/aengelke/disarm.git
+revision = 2d13d3f410a52daff1c5d8ef07d623332f372560
+directory = disarm
+patch_directory = disarm

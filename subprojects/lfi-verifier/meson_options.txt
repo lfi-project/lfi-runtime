@@ -1,0 +1,4 @@
+option('arch',
+  type: 'string',
+  value: 'arm64,x64',
+  description: 'list of architectures for which to enable verification')

@@ -1,17 +1,5 @@
 .cache
 
-subprojects/fadec.wrap
-subprojects/fadec
-subprojects/disarm.wrap
-subprojects/disarm
-subprojects/libmmap
-subprojects/libboxmap
-subprojects/libargp
-subprojects/lfi-verifier
-subprojects/cwalk
-subprojects/argtable3
-subprojects/libelf
-
 install
 
 todo.txt

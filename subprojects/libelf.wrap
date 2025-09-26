@@ -1,4 +1,2 @@
-[wrap-git]
-url = https://github.com/zyedidia/libelf-bsd.git
-revision = master
+[wrap-file]
 directory = libelf
