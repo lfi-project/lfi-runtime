@@ -29,3 +29,5 @@ rm -rf libmmap/.git
 cp packagefiles/cwalk/meson.build ./cwalk
 cp packagefiles/argtable3/meson.build ./argtable3
 cp packagefiles/lfi-verifier/meson.build ./lfi-verifier
+cp lfi-verifier/subprojects/packagefiles/disarm/meson.build ./disarm
+cp lfi-verifier/subprojects/packagefiles/fadec/meson.build ./fadec

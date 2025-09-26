@@ -6,8 +6,8 @@ python3 = find_program('python3')
 # Check Python version
 py_version_res = run_command(python3, ['--version'], check: true)
 py_version = py_version_res.stdout().split(' ')[1]
-if not py_version.version_compare('>=3.9')
-  error('Python 3.9 required, got @0@'.format(py_version))
+if not py_version.version_compare('>=3.6')
+  error('Python 3.6 required, got @0@'.format(py_version))
 endif
 
 has_cpp = add_languages('cpp', required: false)
@@ -60,16 +60,6 @@ if get_option('with_decode')
   headers += files('fadec.h')
   sources += files('decode.c', 'format.c')
 endif
-if get_option('with_encode')
-  components += 'encode'
-  headers += files('fadec-enc.h')
-  sources += files('encode.c')
-endif
-if get_option('with_encode2')
-  components += 'encode2'
-  headers += files('fadec-enc2.h')
-  sources += files('encode2.c')
-endif
 
 generate_args = []
 if get_option('archmode') != 'only64'
@@ -92,35 +82,14 @@ foreach component : components
                                     '@INPUT1@', '@OUTPUT@'] + generate_args,
                           input: files('parseinstrs.py', 'instrs.txt'),
                           output: ['fadec-@0@-public.inc'.format(component),
-                                   'fadec-@0@-private.inc'.format(component)],
-                          install: true,
-                          install_dir: [get_option('includedir'), false])
+                                   'fadec-@0@-private.inc'.format(component)])
 endforeach
 
-libfadec = static_library('fadec', sources, tables, install: true)
+libfadec = static_library('fadec', sources, tables)
 fadec = declare_dependency(link_with: libfadec,
                            include_directories: include_directories('.'),
                            sources: tables)
-install_headers(headers)
-
-foreach component : components
-  test(component, executable('@0@-test'.format(component),
-                             '@0@-test.c'.format(component),
-                             dependencies: fadec))
-  if component == 'encode2' and has_cpp
-    test(component + '-cpp', executable('@0@-test-cpp'.format(component),
-                                        '@0@-test.cc'.format(component),
-                                        dependencies: fadec))
-  endif
-endforeach
 
 if meson.version().version_compare('>=0.54.0')
   meson.override_dependency('fadec', fadec)
 endif
-
-pkg = import('pkgconfig')
-pkg.generate(libraries: libfadec,
-             version: '0.1',
-             name: 'fadec',
-             filebase: 'fadec',
-             description: 'Fast Decoder for x86-32 and x86-64')
