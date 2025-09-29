@@ -41,6 +41,7 @@ struct LFIBox {
 
     // Pointer to the page at the start of the sandbox holding runtime call
     // entrypoints.
+    void *sys_page;
     struct Sys *sys;
 
     // Address of return function in this sandbox.
@@ -56,7 +57,7 @@ struct LFIBox {
 };
 
 struct Sys {
-    uintptr_t rtcalls[256];
+    uintptr_t rtcalls[32];
 };
 
 struct LFIContext {
@@ -111,6 +112,7 @@ box_footprint(size_t boxsize, struct LFIOptions opts)
 #ifdef HAVE_PKU
     return gb(4);
 #else
+    // TODO: verify that we can safely reduce this to gb(4) if Segue is enabled.
     return gb(44);
 #endif
 

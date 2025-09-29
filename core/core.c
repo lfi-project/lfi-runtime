@@ -123,7 +123,7 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
     *engine = (struct LFIEngine) {
         .bm = bm,
         .opts = opts,
-        .guardsize = kb(80),
+        .guardsize = kb(192),
     };
 
     if (!engine->opts.no_init_sigaltstack)
