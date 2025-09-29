@@ -70,12 +70,13 @@ syssetup(struct LFIBox *box)
 
     box->sys = (struct Sys *) ((char *) box->sys_page + pagesize - sizeof(struct Sys));
 
-    box->sys->rtcalls[0] = (uintptr_t) &lfi_syscall_entry;
+    size_t n = sizeof(box->sys->rtcalls) / sizeof(box->sys->rtcalls[0]);
+    box->sys->rtcalls[n - 1] = (uintptr_t) &lfi_syscall_entry;
 #ifdef SANDBOX_TLS
-    box->sys->rtcalls[1] = (uintptr_t) &lfi_get_tp;
-    box->sys->rtcalls[2] = (uintptr_t) &lfi_set_tp;
+    box->sys->rtcalls[n - 2] = (uintptr_t) &lfi_get_tp;
+    box->sys->rtcalls[n - 3] = (uintptr_t) &lfi_set_tp;
 #endif
-    box->sys->rtcalls[3] = (uintptr_t) &lfi_ret;
+    box->sys->rtcalls[n - 4] = (uintptr_t) &lfi_ret;
 
     // Map read-only.
     int r = protectmem(box->sys_page, box->engine->opts.pagesize,
