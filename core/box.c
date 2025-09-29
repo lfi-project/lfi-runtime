@@ -56,10 +56,19 @@ protectmem(void *start, size_t size, int prot, int pkey)
 static void
 syssetup(struct LFIBox *box)
 {
+    // The sys page exists at the page before the start of the sandbox. Only
+    // the last 32 slots in the page are valid pointers to runtime call
+    // entrypoints. We start by mapping it read/write, insert the runtime calls
+    // we support, and then mark it read-only. If sandboxes are densely packed,
+    // this page also exists inside the guard region of the adjacent sandbox.
+
     // Map read/write.
-    box->sys = mmap((void *) box->base, box->engine->opts.pagesize,
+    size_t pagesize = box->engine->opts.pagesize;
+    box->sys_page = mmap((void *) (box->base - pagesize), pagesize,
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
-    assert(box->sys == (void *) box->base);
+    assert(box->sys_page == (void *) (box->base - pagesize));
+
+    box->sys = (struct Sys *) ((char *) box->sys_page + pagesize - sizeof(struct Sys));
 
     box->sys->rtcalls[0] = (uintptr_t) &lfi_syscall_entry;
 #ifdef SANDBOX_TLS
@@ -69,7 +78,7 @@ syssetup(struct LFIBox *box)
     box->sys->rtcalls[3] = (uintptr_t) &lfi_ret;
 
     // Map read-only.
-    int r = protectmem((void *) box->base, box->engine->opts.pagesize,
+    int r = protectmem(box->sys_page, box->engine->opts.pagesize,
         PROT_READ, box->pkey);
     assert(r == 0);
 }
