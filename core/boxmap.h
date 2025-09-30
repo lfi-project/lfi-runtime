@@ -77,3 +77,5 @@ uintptr_t extalloc_alloc(struct ExtAlloc *a, size_t n);
 void extalloc_allocat(struct ExtAlloc *a, uintptr_t at, size_t n);
 
 void extalloc_free(struct ExtAlloc *a, uintptr_t at, size_t n);
+
+void extalloc_delete(struct ExtAlloc *a);

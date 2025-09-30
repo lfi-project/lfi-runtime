@@ -119,3 +119,10 @@ extalloc_free(struct ExtAlloc *a, uintptr_t at, size_t n)
     n /= a->chunksize;
     bitvec_set(a->bitvec, at - a->base, n, 0);
 }
+
+void
+extalloc_delete(struct ExtAlloc *a)
+{
+    free(a->bitvec);
+    free(a);
+}

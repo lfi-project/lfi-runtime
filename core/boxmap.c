@@ -37,6 +37,7 @@ struct BoxMap* boxmap_new(struct BoxMapOptions opts) {
 void boxmap_delete(struct BoxMap* map) {
     for (size_t i = 0; i < map->nregions; i++) {
         munmap(map->regions[i].base, map->regions[i].size);
+        extalloc_delete(map->regions[i].alloc);
     }
 
     free(map);
