@@ -1,11 +1,11 @@
+#include "boxmap.h"
+
 #include <assert.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <stdbool.h>
 #include <stdio.h>
-
-#include "boxmap.h"
+#include <stdlib.h>
 
 struct ExtAlloc *
 extalloc_new(uintptr_t base, size_t size, size_t chunksize)
@@ -63,7 +63,8 @@ bitvec_find_zeroes(uint8_t *bitvec, size_t bitvec_size, size_t n)
 }
 
 static void
-bitvec_set(uint8_t *bitvec, size_t start, size_t length, int val) {
+bitvec_set(uint8_t *bitvec, size_t start, size_t length, int val)
+{
     if (length == 0)
         return;
 
