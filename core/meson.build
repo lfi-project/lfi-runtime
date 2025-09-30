@@ -1,5 +1,4 @@
 lfiv = subproject('lfiv', default_options: ['arch=' + archmap[cpu]]).get_variable('lfiv').as_link_whole()
-boxmap = subproject('libboxmap').get_variable('boxmap').as_link_whole()
 
 srcs = files(
   'core.c',
@@ -10,6 +9,8 @@ srcs = files(
   'trampoline.c',
   'arch_asm.c',
   'mmap.c',
+  'boxmap.c',
+  'extalloc.c',
 )
 
 if get_option('stores_only')
@@ -22,7 +23,7 @@ liblfi_core = static_library(
   'lfi-core',
   srcs,
   c_args: c_args_warnings + defines,
-  dependencies: [lfiv, boxmap],
+  dependencies: [lfiv],
   install: true,
   include_directories: include_directories('include', 'arch/' + archmap[cpu]),
 )
