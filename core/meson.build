@@ -1,4 +1,4 @@
-lfiv = subproject('lfiv', default_options: ['arch=' + archmap[cpu]]).get_variable('lfiv').as_link_whole()
+lfiv = subproject('lfi-verifier', default_options: ['arch=' + archmap[cpu]]).get_variable('lfiv').as_link_whole()
 
 srcs = files(
   'core.c',

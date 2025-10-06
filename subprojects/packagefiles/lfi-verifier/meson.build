@@ -31,14 +31,16 @@ srcs = []
 c_defines = []
 
 if 'arm64' in arch
-  dependencies += subproject('disarm').get_variable('disarm64').as_link_whole()
+  subdir('src/decode/disarm')
+  dependencies += disarm64.as_link_whole()
   srcs += files(
     'src/arm64/verify.c',
   )
   c_defines += '-DARCH_ARM64'
 endif
 if 'x64' in arch
-  dependencies += subproject('fadec').get_variable('fadec').as_link_whole()
+  subdir('src/decode/fadec')
+  dependencies += fadec.as_link_whole()
   srcs += files(
     'src/x64/verify.c',
     'src/x64/bdd.c',
