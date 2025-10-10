@@ -81,8 +81,8 @@ db_register_load(struct LFILinuxProc *proc, const char *filename,
                 .l_ld = load_addr + dynsym,
             };
             notify_db_of_load(map);
-            LOG(proc->engine, "db_register: %s",
-                map->l_name ? map->l_name : "(embedded ELF)");
+            LOG(proc->engine, "db_register: %s at 0x%lx",
+                map->l_name ? map->l_name : "(embedded ELF)", load_addr);
         }
 #else
         LOG(proc->engine,
