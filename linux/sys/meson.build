@@ -18,6 +18,7 @@ srcs += files(
   'sys_getcwd.c',
   'sys_getdents64.c',
   'sys_getrandom.c',
+  'sys_getrlimit.c',
   'sys_gettid.c',
   'sys_ioctl.c',
   'sys_lfi_pause.c',
