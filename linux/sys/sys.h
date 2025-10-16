@@ -286,3 +286,6 @@ sys_uname(struct LFILinuxThread *t, lfiptr bufp);
 int
 sys_renameat2(struct LFILinuxThread *t, int olddir, lfiptr oldpathp, int newdir,
     lfiptr newpathp, unsigned int flags);
+
+int
+sys_getrlimit(struct LFILinuxThread *t, int resource, lfiptr rlimp);

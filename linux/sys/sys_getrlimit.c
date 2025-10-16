@@ -16,7 +16,7 @@ struct RLimit {
     uint64_t max;
 };
 
-ssize_t
+int
 sys_getrlimit(struct LFILinuxThread *t, int resource, lfiptr rlimp)
 {
     struct RLimit *rlim = bufhost(t, rlimp, sizeof(struct RLimit), alignof(struct RLimit));
