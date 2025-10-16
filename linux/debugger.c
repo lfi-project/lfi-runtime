@@ -88,5 +88,7 @@ db_register_load(struct LFILinuxProc *proc, const char *filename,
         LOG(proc->engine,
             "db_register: gdb/lldb support unavailable because _r_debug was not found");
 #endif
+        LOG(proc->engine, "add-symbol-file %s -o 0x%lx",
+            map->l_name ? map->l_name : "none", load_addr);
     }
 }
