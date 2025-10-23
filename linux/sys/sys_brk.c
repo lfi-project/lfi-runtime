@@ -14,13 +14,15 @@ sys_brk(struct LFILinuxThread *t, lfiptr addr)
             return -1;
         brkp = addr;
     }
+    size_t brkmaxsize = t->proc->engine->opts.brk_control ? t->proc->engine->opts.brk_size : BRKMAXSIZE;
+
     if (brkp < p->brkbase)
         brkp = p->brkbase;
-    if (brkp >= p->brkbase + BRKMAXSIZE)
-        brkp = p->brkbase + BRKMAXSIZE;
+    if (brkp >= p->brkbase + brkmaxsize)
+        brkp = p->brkbase + brkmaxsize;
 
     size_t newsize = brkp - p->brkbase;
-    assert(newsize < BRKMAXSIZE);
+    assert(newsize < brkmaxsize);
 
     if (newsize == p->brksize)
         return brkp;

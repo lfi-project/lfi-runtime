@@ -15,7 +15,7 @@ elf_interp(uint8_t *prog, size_t prog_size);
 bool
 elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
     uint8_t *prog, size_t prog_size, const char *interp_path, int interp_fd,
-    uint8_t *interp, size_t interp_size, bool perform_map,
+    uint8_t *interp, size_t interp_size, bool perform_map, bool reload,
     struct ELFLoadInfo *info);
 
 // Output a perf map file listing all the symbols from the ELF file. This

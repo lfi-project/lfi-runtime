@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 struct LFILinuxOptions {
-    // Stack size to use for processes.
+    // Stack size to use for processes (2mb recommended).
     size_t stacksize;
 
     // Enable verbose debug information.
@@ -37,6 +37,12 @@ struct LFILinuxOptions {
 
     // Enable debugger support by hooking into the _r_debug symbol.
     bool debug;
+
+    // Use brk_size for the the brk heap size, instead of the system default.
+    bool brk_control;
+
+    // Size to use for the default brk heap (512mb recommended).
+    size_t brk_size;
 };
 
 // An LFILinuxEngine tracks a set of LFILinuxProcs and LFILinuxThreads.
@@ -93,6 +99,11 @@ lfi_proc_load_fd(struct LFILinuxProc *proc, int fd, const char *prog_path);
 bool
 lfi_proc_load_file(struct LFILinuxProc *proc, const char *prog_path);
 
+// Reload the same ELF file that this proc was initially loaded with. The
+// reload will reset all LFI process state to its initial values.
+bool
+lfi_proc_reload(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size);
+
 // Look up the address of the given symbol name. Must be called after an ELF
 // image has been loaded in proc. Returns 0 if not found.
 uint64_t
@@ -105,6 +116,11 @@ lfi_proc_free(struct LFILinuxProc *proc);
 // Creates a new LFILinuxThread from an ELF file and a command-line.
 struct LFILinuxThread *
 lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
+    const char **envp);
+
+// Reload a LFILinuxThread by resetting it back to an initial state.
+bool
+lfi_thread_reload(struct LFILinuxThread *t, int argc, const char **argv,
     const char **envp);
 
 // Begins executed an LFILinuxThread.
