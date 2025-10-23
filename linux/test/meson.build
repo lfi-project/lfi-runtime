@@ -29,7 +29,14 @@ test_run = executable(
   dependencies: [lfi_linux],
 )
 
+test_reload = executable(
+  'test_reload.elf',
+  'test_reload.c',
+  dependencies: [lfi_linux],
+)
+
 testdata = [
+  {'bin': test_run, 'file': 'programs/empty.c', 'inputs': [], 'cflags': []},
   {'bin': test_run, 'file': 'programs/hello.c', 'inputs': [], 'cflags': []},
   {'bin': test_run, 'file': 'programs/alloc.c', 'inputs': [], 'cflags': []},
   {'bin': test_run, 'file': 'programs/argv.c', 'inputs': ['one', 'two', 'three'], 'cflags': []},

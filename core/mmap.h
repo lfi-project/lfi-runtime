@@ -10,6 +10,8 @@ struct MMInfo {
     int flags;
     int fd;
     off_t offset;
+    // Was this mapping part of the original address space of this sandbox.
+    bool original;
 };
 
 struct MMNode {
@@ -104,3 +106,11 @@ mm_protect(struct MMAddrSpace *mm, uintptr_t addr, size_t len, int prot);
 int
 mm_protect_cb(struct MMAddrSpace *mm, uintptr_t addr, size_t len, int prot,
     UpdateFn ufn, void *udata);
+
+// mm_mark_original marks all current mappings as original.
+void
+mm_mark_original(struct MMAddrSpace *mm);
+
+// mm_unmap_non_original unmaps all non-original mappings.
+void
+mm_unmap_non_original(struct MMAddrSpace *mm, UpdateFn ufn, void *udata);

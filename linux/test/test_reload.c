@@ -15,6 +15,25 @@ struct Buf {
     size_t size;
 };
 
+static struct Buf
+readfile(const char *path)
+{
+    FILE *f = fopen(path, "r");
+    if (!f) {
+        fprintf(stderr, "Cannot open %s\n", path);
+        return (struct Buf) { 0 };
+    }
+    fseek(f, 0, SEEK_END);
+    size_t sz = ftell(f);
+    void *p = mmap(NULL, sz, PROT_READ, MAP_PRIVATE, fileno(f), 0);
+    assert(p != (void *) -1);
+    fclose(f);
+    return (struct Buf) {
+        .data = p,
+        .size = sz,
+    };
+}
+
 int
 main(int argc, const char **argv)
 {
@@ -41,10 +60,11 @@ main(int argc, const char **argv)
     struct LFILinuxEngine *linux_ = lfi_linux_new(engine,
         (struct LFILinuxOptions) {
             .stacksize = mb(2),
-            .verbose = true,
             .exit_unknown_syscalls = true,
             .wd = "/",
             .dir_maps = maps,
+            .brk_control = true,
+            .brk_size = 0,
         });
     assert(linux_);
 
@@ -53,10 +73,13 @@ main(int argc, const char **argv)
         return 1;
     }
 
+    struct Buf prog = readfile(argv[1]);
+    assert(prog.data);
+
     struct LFILinuxProc *proc = lfi_proc_new(linux_);
     assert(proc);
 
-    bool ok = lfi_proc_load_file(proc, argv[1]);
+    bool ok = lfi_proc_load(proc, prog.data, prog.size, argv[1]);
     assert(ok);
 
     const char *envp[] = {
@@ -72,6 +95,15 @@ main(int argc, const char **argv)
 
     int result = lfi_thread_run(t);
     assert(result == 0);
+
+    size_t iters = 10000;
+    for (size_t i = 0; i < iters; i++) {
+        ok = lfi_proc_reload(proc, prog.data, prog.size);
+        assert(ok);
+        lfi_thread_reload(t, argc - 1, &argv[1], &envp[0]);
+        result = lfi_thread_run(t);
+        assert(result == 0);
+    }
 
     lfi_thread_free(t);
 

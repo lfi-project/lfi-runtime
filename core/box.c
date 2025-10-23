@@ -519,3 +519,15 @@ lfi_box_cbinit(struct LFIBox *box)
         "warning: lfi_box_cbinit is deprecated and is a no-op, please remove");
     return true;
 }
+
+EXPORT void
+lfi_box_mark_original(struct LFIBox *box)
+{
+    mm_mark_original(&box->mm);
+}
+
+EXPORT void
+lfi_box_unmap_non_original(struct LFIBox *box)
+{
+    mm_unmap_non_original(&box->mm, cbunmap, NULL);
+}

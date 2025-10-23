@@ -119,7 +119,7 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
     const char **envp);
 
 // Reload a LFILinuxThread by resetting it back to an initial state.
-bool
+void
 lfi_thread_reload(struct LFILinuxThread *t, int argc, const char **argv,
     const char **envp);
 

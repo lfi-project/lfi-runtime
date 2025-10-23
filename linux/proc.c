@@ -150,11 +150,13 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, uint8_t *prog,
     proc->brkbase = info.lastva;
     proc->brksize = 0;
 
-    size_t brkmaxsize = proc->engine->opts.brk_control ? proc->engine->opts.brk_size : BRKMAXSIZE;
+    size_t brkmaxsize = proc->engine->opts.brk_control ?
+        proc->engine->opts.brk_size :
+        BRKMAXSIZE;
 
     // Reserve the brk region.
     if (reload) {
-        memset((void *) proc->brkbase, 0, brkmaxsize);
+        memset((void *) lfi_box_l2p(proc->box, proc->brkbase), 0, brkmaxsize);
     } else if (brkmaxsize > 0) {
         lfiptr brkregion = lfi_box_mapat(proc->box, proc->brkbase, brkmaxsize,
             LFI_PROT_NONE, LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
@@ -210,6 +212,7 @@ lfi_proc_load_file(struct LFILinuxProc *proc, const char *prog_path)
 EXPORT bool
 lfi_proc_reload(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size)
 {
+    lfi_box_unmap_non_original(proc->box);
     return proc_load(proc, -1, prog, prog_size, NULL, true);
 }
 

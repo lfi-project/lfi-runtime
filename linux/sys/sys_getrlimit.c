@@ -19,7 +19,8 @@ struct RLimit {
 int
 sys_getrlimit(struct LFILinuxThread *t, int resource, lfiptr rlimp)
 {
-    struct RLimit *rlim = bufhost(t, rlimp, sizeof(struct RLimit), alignof(struct RLimit));
+    struct RLimit *rlim = bufhost(t, rlimp, sizeof(struct RLimit),
+        alignof(struct RLimit));
     if (!rlim)
         return -LINUX_EINVAL;
 

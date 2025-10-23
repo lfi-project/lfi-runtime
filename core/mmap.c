@@ -113,6 +113,16 @@ mm_free(struct MMAddrSpace *mm)
     mm->nodes = NULL;
 }
 
+void
+mm_mark_original(struct MMAddrSpace *mm)
+{
+    struct MMNode *node = mm->nodes;
+    while (node) {
+        node->info.original = true;
+        node = node->next;
+    }
+}
+
 static uintptr_t
 mm_mapany_cursor(struct MMAddrSpace *mm, size_t len, int prot, int flags,
     int fd, off_t offset, struct MMNode *cursor)
@@ -350,4 +360,16 @@ mm_unmap_cb(struct MMAddrSpace *mm, uintptr_t addr, size_t length, UpdateFn ufn,
         free(new);
 
     return 0;
+}
+
+void
+mm_unmap_non_original(struct MMAddrSpace *mm, UpdateFn ufn, void *udata)
+{
+    struct MMNode *node = mm->nodes;
+    while (node) {
+        if (!node->info.original)
+            mm_unmap_cb(mm, node->base << mm->p2pagesize,
+                node->len << mm->p2pagesize, ufn, udata);
+        node = node->next;
+    }
 }

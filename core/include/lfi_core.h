@@ -176,6 +176,14 @@ int
 lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size,
     int prot);
 
+// Mark all current memory mappings as original.
+void
+lfi_box_mark_original(struct LFIBox *box);
+
+// Unmap all non-original memory mappings.
+void
+lfi_box_unmap_non_original(struct LFIBox *box);
+
 // Returns whether a pointer is valid within the given sandbox.
 bool
 lfi_box_ptrvalid(struct LFIBox *box, lfiptr addr);

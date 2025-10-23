@@ -99,7 +99,8 @@ sanitize(void *p, size_t sz, int prot)
 static bool
 buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
     uintptr_t end, size_t p_offset, size_t filesz, size_t memsz, int prot,
-    struct Buf buf, size_t pagesize, size_t p_align, bool perform_map, bool reload)
+    struct Buf buf, size_t pagesize, size_t p_align, bool perform_map,
+    bool reload)
 {
     struct LFIBox *box = proc->box;
     lfiptr p;
@@ -154,8 +155,9 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
     if (n != (ssize_t) filesz) {
         return false;
     }
-    if (!reload && lfi_box_mprotect(box, p2l(box, start), p2l(box, end - start), prot) <
-        0) {
+    if (!reload &&
+        lfi_box_mprotect(box, p2l(box, start), p2l(box, end - start), prot) <
+            0) {
         return false;
     }
 
@@ -165,8 +167,8 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
 // Load a single in-memory ELF image into the address space.
 static bool
 elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
-    size_t pagesize, bool perform_map, bool reload, uintptr_t *p_first, uintptr_t *p_last,
-    uintptr_t *p_entry, Elf64_Ehdr *ehdr)
+    size_t pagesize, bool perform_map, bool reload, uintptr_t *p_first,
+    uintptr_t *p_last, uintptr_t *p_entry, Elf64_Ehdr *ehdr)
 {
     size_t n = buf_read(elf, ehdr, sizeof(*ehdr), 0);
     if (n != sizeof(*ehdr)) {
@@ -230,8 +232,6 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
             continue;
         if (p->p_memsz == 0)
             continue;
-        if (reload && (p->p_flags & PF_W) == 0)
-            continue;
 
         if (p->p_align % pagesize != 0) {
             ERROR(
@@ -267,11 +267,15 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
         LOG(proc->engine, "elf_load [0x%lx, 0x%lx] (P: %d)", base + start,
             base + end, pflags(p->p_flags));
 
-        if (!buf_read_elfseg(proc, base + start, offset, base + end,
-                p->p_offset, p->p_filesz, p->p_memsz, pflags(p->p_flags), elf,
-                pagesize, p->p_align, perform_map, reload)) {
-            ERROR("elf_load error: reading elf segment failed");
-            goto err1;
+        // Load the segment if we are doing a normal load (not reload) or if we
+        // are doing a reload and the segment is writable.
+        if (!reload || (reload && ((p->p_flags & PF_W) != 0))) {
+            if (!buf_read_elfseg(proc, base + start, offset, base + end,
+                    p->p_offset, p->p_filesz, p->p_memsz, pflags(p->p_flags),
+                    elf, pagesize, p->p_align, perform_map, reload)) {
+                ERROR("elf_load error: reading elf segment failed");
+                goto err1;
+            }
         }
 
         if (base == 0)
@@ -321,8 +325,8 @@ elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
             &p_last, &p_entry, &p_ehdr))
         goto err;
     if (has_interp) {
-        if (!elf_load_one(proc, interp, p_last, pagesize, perform_map, reload, &i_first,
-                &i_last, &i_entry, &i_ehdr))
+        if (!elf_load_one(proc, interp, p_last, pagesize, perform_map, reload,
+                &i_first, &i_last, &i_entry, &i_ehdr))
             goto err;
     }
 
