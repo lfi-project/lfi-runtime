@@ -56,6 +56,11 @@ struct LFIOptions {
     // sure that signal handlers use SA_ONSTACK. If this option is enabled,
     // the user is also responsible for creating an alternate signal stack.
     bool no_init_sigaltstack;
+
+    // Do not map runtime calls in the sandbox's null page. This option
+    // disables compatibility with old rewriters, and in a future version will
+    // become true by default.
+    bool no_rtcall_nullpage;
 };
 
 struct LFIBoxInfo {

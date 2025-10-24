@@ -78,6 +78,22 @@ syssetup(struct LFIBox *box)
 #endif
     box->sys->rtcalls[n - 4] = (uintptr_t) &lfi_ret;
 
+    if (!box->engine->opts.no_rtcall_nullpage) {
+        // Also map the rtcall page at the nullpage, for compatibility with old rewriters.
+        void *null_page = mmap((void *) box->base, pagesize,
+            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+        assert(null_page == (void *) box->base);
+
+        struct Sys *null_rtcall = (struct Sys *) null_page;
+
+        null_rtcall->rtcalls[0] = (uintptr_t) &lfi_syscall_entry;
+#ifdef SANDBOX_TLS
+        null_rtcall->rtcalls[1] = (uintptr_t) &lfi_get_tp;
+        null_rtcall->rtcalls[2] = (uintptr_t) &lfi_set_tp;
+#endif
+        null_rtcall->rtcalls[3] = (uintptr_t) &lfi_ret;
+    }
+
     // Map read-only.
     int r = protectmem(box->sys_page, box->engine->opts.pagesize,
         PROT_READ, box->pkey);
