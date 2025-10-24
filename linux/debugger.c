@@ -7,7 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_R_DEBUG
+// This mechanism abuses _r_debug from the dynamic linker, so we leave it
+// disabled for now until a better solution is found, since this is too
+// hacky to use in practice.
+#if 0 && defined(HAVE_R_DEBUG)
 struct link_map {
     uintptr_t l_addr;
     const char *l_name;
@@ -69,7 +72,7 @@ db_register_load(struct LFILinuxProc *proc, const char *filename,
     const uint8_t *prog_data, size_t prog_size, uintptr_t load_addr)
 {
     if (proc->engine->opts.debug) {
-#if HAVE_R_DEBUG
+#if 0 && defined(HAVE_R_DEBUG)
         uintptr_t dynsym;
         if (!elf_dynamic(prog_data, prog_size, &dynsym))
             return;
@@ -89,6 +92,6 @@ db_register_load(struct LFILinuxProc *proc, const char *filename,
             "db_register: gdb/lldb support unavailable because _r_debug was not found");
 #endif
         LOG(proc->engine, "add-symbol-file %s -o 0x%lx",
-            map->l_name ? map->l_name : "none", load_addr);
+            filename ? filename : "none", load_addr);
     }
 }
