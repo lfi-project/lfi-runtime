@@ -5,11 +5,13 @@
 #include <errno.h>
 #include <stdio.h>
 
+// clang-format off
 #define HOST_ERR(type, expr)                               \
     __extension__({                                        \
         type _ret = (type) expr;                           \
         _ret == (type) -1 ? (type) host_err(errno) : _ret; \
     })
+// clang-format on
 
 int
 host_fstatat(int fd, const char *path, struct Stat *stat_, int flags);

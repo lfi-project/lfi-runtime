@@ -87,11 +87,10 @@ db_register_load(struct LFILinuxProc *proc, const char *filename,
             LOG(proc->engine, "db_register: %s at 0x%lx",
                 map->l_name ? map->l_name : "(embedded ELF)", load_addr);
         }
-#else
-        LOG(proc->engine,
-            "db_register: gdb/lldb support unavailable because _r_debug was not found");
 #endif
-        LOG(proc->engine, "add-symbol-file %s -o 0x%lx",
-            filename ? filename : "none", load_addr);
     }
+        const char *name = filename ? filename : "none";
+        LOG(proc->engine, "gdb: add-symbol-file %s -o 0x%lx", name, load_addr);
+        LOG(proc->engine, "lldb: image add %s", name);
+        LOG(proc->engine, "lldb: target modules load --file %s --slide 0x%lx", name, load_addr);
 }
