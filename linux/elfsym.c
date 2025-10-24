@@ -60,7 +60,7 @@ load_libsyms(struct LFILinuxProc *proc)
 }
 
 static bool
-load_dynshs(uint8_t *elfdat, size_t elfsize, Elf64_Shdr **o_dynsym_sh,
+load_dynshs(const uint8_t *elfdat, size_t elfsize, Elf64_Shdr **o_dynsym_sh,
     Elf64_Shdr **o_dynstr_sh)
 {
     Elf64_Ehdr *ehdr = (Elf64_Ehdr *) elfdat;
@@ -107,7 +107,7 @@ load_dynshs(uint8_t *elfdat, size_t elfsize, Elf64_Shdr **o_dynsym_sh,
 }
 
 bool
-elf_dynamic(uint8_t *elfdat, size_t elfsize, uintptr_t *o_dynamic)
+elf_dynamic(const uint8_t *elfdat, size_t elfsize, uintptr_t *o_dynamic)
 {
     struct Buf prog = (struct Buf) {
         .data = elfdat,
@@ -134,7 +134,7 @@ elf_dynamic(uint8_t *elfdat, size_t elfsize, uintptr_t *o_dynamic)
 }
 
 bool
-elf_loadsyms(struct LFILinuxProc *proc, uint8_t *elfdat, size_t elfsize)
+elf_loadsyms(struct LFILinuxProc *proc, const uint8_t *elfdat, size_t elfsize)
 {
     Elf64_Shdr *dynsym_sh;
     Elf64_Shdr *dynstr_sh;

@@ -66,10 +66,10 @@ notify_db_of_load(struct link_map *map)
 
 void
 db_register_load(struct LFILinuxProc *proc, const char *filename,
-    uint8_t *prog_data, size_t prog_size, uintptr_t load_addr)
+    const uint8_t *prog_data, size_t prog_size, uintptr_t load_addr)
 {
     if (proc->engine->opts.debug) {
-#ifdef HAVE_R_DEBUG
+#if HAVE_R_DEBUG
         uintptr_t dynsym;
         if (!elf_dynamic(prog_data, prog_size, &dynsym))
             return;

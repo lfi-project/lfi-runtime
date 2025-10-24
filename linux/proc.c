@@ -63,7 +63,7 @@ lfi_proc_box(struct LFILinuxProc *proc)
 }
 
 static bool
-proc_load(struct LFILinuxProc *proc, int prog_fd, uint8_t *prog,
+proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
     size_t prog_size, const char *prog_path, bool reload)
 {
     struct Buf interp = (struct Buf) { 0 };
@@ -171,7 +171,7 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, uint8_t *prog,
 }
 
 EXPORT bool
-lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
+lfi_proc_load(struct LFILinuxProc *proc, const uint8_t *prog, size_t prog_size,
     const char *prog_path)
 {
     return proc_load(proc, -1, prog, prog_size, prog_path, false);
@@ -210,7 +210,7 @@ lfi_proc_load_file(struct LFILinuxProc *proc, const char *prog_path)
 }
 
 EXPORT bool
-lfi_proc_reload(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size)
+lfi_proc_reload(struct LFILinuxProc *proc, const uint8_t *prog, size_t prog_size)
 {
     lfi_box_unmap_non_original(proc->box);
     return proc_load(proc, -1, prog, prog_size, NULL, true);

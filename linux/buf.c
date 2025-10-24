@@ -35,7 +35,8 @@ err:
 void
 buf_close(struct Buf *buf)
 {
-    if (buf->fd != -1)
+    if (buf->fd != -1) {
         close(buf->fd);
-    munmap(buf->data, buf->size);
+        munmap((void *) buf->data, buf->size);
+    }
 }

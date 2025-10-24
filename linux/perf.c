@@ -7,7 +7,7 @@
 #ifndef __linux__
 
 bool
-perf_output_jit_interface_file(uint8_t *elf_data, size_t size, uintptr_t offset)
+perf_output_jit_interface_file(const uint8_t *elf_data, size_t size, uintptr_t offset)
 {
     (void) elf_data, (void) size, (void) offset;
     ERROR("perf is not supported on non-linux platforms");
@@ -34,7 +34,7 @@ direxists(const char *dirname)
 }
 
 bool
-perf_output_jit_interface_file(uint8_t *elf_data, size_t size, uintptr_t offset)
+perf_output_jit_interface_file(const uint8_t *elf_data, size_t size, uintptr_t offset)
 {
     char *tmpdir = "/data/local/tmp";
     if (!direxists(tmpdir))

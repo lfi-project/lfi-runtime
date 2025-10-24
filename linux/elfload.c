@@ -6,6 +6,8 @@
 #include "elfdefs.h"
 #include "log.h"
 
+#include <stdlib.h>
+
 // We do not load ELF files that have more than 64 program headers.
 #define PHNUM_MAX 64
 // We do not allow interpreter paths longer than 1024 bytes.
@@ -20,7 +22,7 @@ p2l(struct LFIBox *box, uintptr_t p)
 }
 
 char *
-elf_interp(uint8_t *prog_data, size_t prog_size)
+elf_interp(const uint8_t *prog_data, size_t prog_size)
 {
     struct Buf prog = (struct Buf) {
         .data = prog_data,
@@ -299,8 +301,8 @@ err1:
 
 bool
 elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
-    uint8_t *prog_data, size_t prog_size, const char *interp_path,
-    int interp_fd, uint8_t *interp_data, size_t interp_size, bool perform_map,
+    const uint8_t *prog_data, size_t prog_size, const char *interp_path,
+    int interp_fd, const uint8_t *interp_data, size_t interp_size, bool perform_map,
     bool reload, struct ELFLoadInfo *info)
 {
     struct Buf prog = (struct Buf) {

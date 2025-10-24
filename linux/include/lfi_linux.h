@@ -86,7 +86,7 @@ lfi_proc_box(struct LFILinuxProc *proc);
 // debugging, and can be NULL if unknown. The buffer is not modified by the
 // loader and can be freed after loading is complete.
 bool
-lfi_proc_load(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
+lfi_proc_load(struct LFILinuxProc *proc, const uint8_t *prog, size_t prog_size,
     const char *prog_path);
 
 // Load an ELF program directly from a readable file descriptor. The path is
@@ -102,7 +102,7 @@ lfi_proc_load_file(struct LFILinuxProc *proc, const char *prog_path);
 // Reload the same ELF file that this proc was initially loaded with. The
 // reload will reset all LFI process state to its initial values.
 bool
-lfi_proc_reload(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size);
+lfi_proc_reload(struct LFILinuxProc *proc, const uint8_t *prog, size_t prog_size);
 
 // Look up the address of the given symbol name. Must be called after an ELF
 // image has been loaded in proc. Returns 0 if not found.
