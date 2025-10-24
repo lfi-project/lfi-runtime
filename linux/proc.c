@@ -213,7 +213,12 @@ EXPORT bool
 lfi_proc_reload(struct LFILinuxProc *proc, const uint8_t *prog,
     size_t prog_size)
 {
+    // Process must have no active threads in order to be reloaded.
+    assert(proc->active_threads == 0);
     lfi_box_unmap_non_original(proc->box);
+    fdfree(&proc->fdtable);
+    free(proc->interp_path);
+    free(proc->prog_path);
     return proc_load(proc, -1, prog, prog_size, NULL, true);
 }
 

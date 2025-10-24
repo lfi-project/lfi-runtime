@@ -69,6 +69,10 @@ fdfree(struct FDTable *t)
         if (t->fds[i] == -1)
             continue;
         close(t->fds[i]);
-        free(t->dirs[i]);
+        t->fds[i] = -1;
+        if (t->dirs[i]) {
+            free(t->dirs[i]);
+            t->dirs[i] = NULL;
+        }
     }
 }
