@@ -210,7 +210,8 @@ lfi_proc_load_file(struct LFILinuxProc *proc, const char *prog_path)
 }
 
 EXPORT bool
-lfi_proc_reload(struct LFILinuxProc *proc, const uint8_t *prog, size_t prog_size)
+lfi_proc_reload(struct LFILinuxProc *proc, const uint8_t *prog,
+    size_t prog_size)
 {
     lfi_box_unmap_non_original(proc->box);
     return proc_load(proc, -1, prog, prog_size, NULL, true);

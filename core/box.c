@@ -68,7 +68,8 @@ syssetup(struct LFIBox *box)
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
     assert(box->sys_page == (void *) (box->base - pagesize));
 
-    box->sys = (struct Sys *) ((char *) box->sys_page + pagesize - sizeof(struct Sys));
+    box->sys = (struct Sys *) ((char *) box->sys_page + pagesize -
+        sizeof(struct Sys));
 
     size_t n = sizeof(box->sys->rtcalls) / sizeof(box->sys->rtcalls[0]);
     box->sys->rtcalls[n - 1] = (uintptr_t) &lfi_syscall_entry;
@@ -79,9 +80,11 @@ syssetup(struct LFIBox *box)
     box->sys->rtcalls[n - 4] = (uintptr_t) &lfi_ret;
 
     if (!box->engine->opts.no_rtcall_nullpage) {
-        // Also map the rtcall page at the nullpage, for compatibility with old rewriters.
+        // Also map the rtcall page at the nullpage, for compatibility with old
+        // rewriters.
         void *null_page = mmap((void *) box->base, pagesize,
-            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1,
+            0);
         assert(null_page == (void *) box->base);
 
         struct Sys *null_rtcall = (struct Sys *) null_page;
@@ -95,8 +98,8 @@ syssetup(struct LFIBox *box)
     }
 
     // Map read-only.
-    int r = protectmem(box->sys_page, box->engine->opts.pagesize,
-        PROT_READ, box->pkey);
+    int r = protectmem(box->sys_page, box->engine->opts.pagesize, PROT_READ,
+        box->pkey);
     assert(r == 0);
 }
 

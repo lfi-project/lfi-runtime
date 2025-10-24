@@ -302,8 +302,8 @@ err1:
 bool
 elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
     const uint8_t *prog_data, size_t prog_size, const char *interp_path,
-    int interp_fd, const uint8_t *interp_data, size_t interp_size, bool perform_map,
-    bool reload, struct ELFLoadInfo *info)
+    int interp_fd, const uint8_t *interp_data, size_t interp_size,
+    bool perform_map, bool reload, struct ELFLoadInfo *info)
 {
     struct Buf prog = (struct Buf) {
         .fd = prog_fd,

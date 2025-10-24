@@ -1,3 +1,4 @@
+// clang-format off
 #pragma once
 
 #ifndef CWK_LIBRARY_H
