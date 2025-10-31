@@ -1,0 +1,6 @@
+dup: original fd=1, dup fd=6
+dup3: original fd=1, target fd=10
+test
+test
+test
+dup test passed

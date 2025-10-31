@@ -19,7 +19,7 @@ sys_uname(struct LFILinuxThread *t, lfiptr bufp)
     if (!uts)
         return -LINUX_EINVAL;
     strcpy(uts->sysname, "Linux LFI");
-    strcpy(uts->nodename, "");
+    strcpy(uts->nodename, "lfi-sandbox");
     strcpy(uts->release, LINUX_VERSION "-lfi");
     strcpy(uts->version, "0.0.0-unknown");
 #if defined(LFI_ARCH_X64)

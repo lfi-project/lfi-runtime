@@ -27,6 +27,8 @@
 #define LINUX_SYS_sched_yield       24
 #define LINUX_SYS_mremap            25
 #define LINUX_SYS_madvise           28
+#define LINUX_SYS_dup               32
+#define LINUX_SYS_dup2              33
 #define LINUX_SYS_nanosleep         35
 #define LINUX_SYS_getpid            39
 #define LINUX_SYS_socket            41

@@ -16,6 +16,11 @@ fdassign(struct FDTable *t, int fd, int host_fd, char *dir);
 int
 fdget(struct FDTable *t, int fd);
 
+// Adjust newfd so that it now points to oldfd. If newfd is -1, allocates a new
+// file descriptor for newfd automatically (same behavior as dup).
+int
+fddup2(struct FDTable *t, int oldfd, int newfd);
+
 // Close the host file descriptor associated with fd and remove the
 // slot for fd in the table.
 bool

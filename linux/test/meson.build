@@ -52,6 +52,7 @@ testdata = [
   {'bin': test_run, 'file': 'programs/truncate.c', 'inputs': ['programs/inputs/truncate.txt'], 'cflags': []},
   {'bin': test_run, 'file': 'programs/stat.c', 'inputs': ['programs/inputs/file.txt'], 'cflags': []},
   {'bin': test_run, 'file': 'programs/uname.c', 'inputs': [], 'cflags': []},
+  {'bin': test_run, 'file': 'programs/dup.c', 'inputs': [], 'cflags': []},
   # requires rmdir
   # {'bin': test_run, 'file': 'programs/mkdir.c', 'inputs': [], 'cflags': []},
 ]

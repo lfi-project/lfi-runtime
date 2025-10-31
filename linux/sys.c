@@ -181,6 +181,16 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
         SYS(readlink,
                 sys_readlinkat(t, LINUX_AT_FDCWD, a0, a1, a2))
 #endif
+        SYS(dup,
+                sys_dup(t, a0))
+#ifdef LINUX_SYS_dup2
+        SYS(dup2,
+                sys_dup3(t, a0, a1, 0))
+#endif
+#ifdef LINUX_SYS_dup3
+        SYS(dup3,
+                sys_dup3(t, a0, a1, a2))
+#endif
 
         // Working directory syscalls.
         SYS(chdir,

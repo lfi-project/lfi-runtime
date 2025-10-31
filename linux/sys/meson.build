@@ -6,6 +6,8 @@ srcs += files(
   'sys_clock_gettime.c',
   'sys_clone.c',
   'sys_close.c',
+  'sys_dup.c',
+  'sys_dup3.c',
   'sys_exit.c',
   'sys_exit_group.c',
   'sys_faccessat.c',

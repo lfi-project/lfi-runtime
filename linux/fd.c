@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 bool
@@ -29,6 +30,54 @@ fdget(struct FDTable *t, int fd)
         return false;
     LOCK_WITH_DEFER(&t->lk, lk);
     return t->fds[fd];
+}
+
+int
+fddup2(struct FDTable *t, int oldfd, int newfd)
+{
+    if (oldfd < 0 || oldfd >= LINUX_NOFILE || newfd < -1 || newfd >= LINUX_NOFILE)
+        return -LINUX_EBADF;
+    LOCK_WITH_DEFER(&t->lk, lk);
+    int koldfd = t->fds[oldfd];
+    if (koldfd == -1)
+        return -LINUX_EBADF;
+    char *dir = NULL;
+    if (t->dirs[oldfd]) {
+        dir = malloc(FILENAME_MAX);
+        if (!dir)
+            return false;
+    }
+    int knewfd;
+    if (newfd == -1) {
+        knewfd = dup(koldfd);
+        if (knewfd == -1)
+            goto err;
+        newfd = knewfd;
+        t->fds[newfd] = knewfd;
+    } else {
+        knewfd = t->fds[newfd];
+        if (knewfd == -1)
+            knewfd = newfd;
+        if (dup2(koldfd, knewfd) < 0)
+            goto err;
+        t->fds[newfd] = knewfd;
+        if (t->dirs[newfd]) {
+            free(t->dirs[newfd]);
+            t->dirs[newfd] = NULL;
+        }
+    }
+
+    if (t->dirs[oldfd]) {
+        assert(t->dirs[newfd] == NULL && dir != NULL);
+        t->dirs[newfd] = dir;
+        strncpy(t->dirs[newfd], t->dirs[oldfd], FILENAME_MAX - 1);
+    }
+    return newfd;
+
+err:
+    if (dir)
+        free(dir);
+    return -LINUX_EINVAL;
 }
 
 bool

@@ -289,3 +289,9 @@ sys_renameat2(struct LFILinuxThread *t, int olddir, lfiptr oldpathp, int newdir,
 
 int
 sys_getrlimit(struct LFILinuxThread *t, int resource, lfiptr rlimp);
+
+int
+sys_dup(struct LFILinuxThread *t, int oldfd);
+
+int
+sys_dup3(struct LFILinuxThread *t, int oldfd, int newfd, int flags);
