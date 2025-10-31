@@ -11,7 +11,7 @@ fdassign(struct FDTable *t, int fd, int host_fd, char *dir)
 {
     if (t->passthrough)
         return true;
-    if (fd >= LINUX_NOFILE)
+    if (fd < 0 || fd >= LINUX_NOFILE)
         return false;
     LOCK_WITH_DEFER(&t->lk, t_lk);
     assert(t->fds[fd] == -1);
@@ -25,6 +25,8 @@ fdget(struct FDTable *t, int fd)
 {
     if (t->passthrough)
         return fd;
+    if (fd < 0 || fd >= LINUX_NOFILE)
+        return false;
     LOCK_WITH_DEFER(&t->lk, lk);
     return t->fds[fd];
 }
@@ -34,6 +36,8 @@ fdclose(struct FDTable *t, int fd)
 {
     if (t->passthrough)
         return true;
+    if (fd < 0 || fd >= LINUX_NOFILE)
+        return false;
     LOCK_WITH_DEFER(&t->lk, lk);
     if (t->fds[fd] == -1)
         return false;
