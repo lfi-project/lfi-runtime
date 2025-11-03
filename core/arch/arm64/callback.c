@@ -139,9 +139,12 @@ register_cb(struct LFIBox *box, void *fn, uint64_t lfi_callback_fn)
     }
 
     assert(fn);
-    assert(cbfind(box, fn) == -1 && "fn is already registered as a callback");
 
-    ssize_t slot = cbfreeslot(box);
+    ssize_t slot = cbfind(box, fn);
+    if (slot != -1)
+        return &box->cbinfo.cbentries[slot].code[0];
+
+    slot = cbfreeslot(box);
     if (slot == -1)
         return NULL;
 
