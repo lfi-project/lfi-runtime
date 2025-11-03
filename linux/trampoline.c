@@ -154,3 +154,14 @@ lfi_lib_free(struct LFIBox *box, struct LFIContext **ctxp, void *p)
     LFI_INVOKE(proc->box, ctxp, proc->libsyms.free, void, (lfiptr),
         lfi_box_p2l(proc->box, (uintptr_t) p));
 }
+
+EXPORT int
+lfi_lib_setjmp(struct LFIBox *box, struct LFIContext **ctxp, void *env)
+{
+    struct LFILinuxProc *proc = lfi_box_data(box);
+    ensure(proc->libsyms.setjmp);
+
+    int r = LFI_INVOKE(proc->box, ctxp, proc->libsyms.setjmp, int, (lfiptr),
+        lfi_box_p2l(proc->box, (uintptr_t) env));
+    return r;
+}

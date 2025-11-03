@@ -56,6 +56,8 @@ load_libsyms(struct LFILinuxProc *proc)
         LOG(proc->engine, "warning: _lfi_calloc not found");
     if (!loadsym(proc, &proc->libsyms.free, "_lfi_free"))
         LOG(proc->engine, "warning: _lfi_free not found");
+    if (!loadsym(proc, &proc->libsyms.setjmp, "_lfi_setjmp"))
+        LOG(proc->engine, "warning: _lfi_setjmp not found");
     return true;
 }
 

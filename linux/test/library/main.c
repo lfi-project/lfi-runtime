@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <setjmp.h>
 
 #define LFI_SYS_pause 1024
 
@@ -95,6 +96,12 @@ _lfi_ret(void)
     // clang-format on
 }
 
+int
+_lfi_setjmp(jmp_buf env)
+{
+    return setjmp(env);
+}
+
 void *symbols[] = {
     &_lfi_thread_create,
     &_lfi_thread_destroy,
@@ -106,6 +113,7 @@ void *symbols[] = {
     &_lfi_calloc,
     &_lfi_free,
     &_lfi_ret,
+    &_lfi_setjmp,
 };
 
 int

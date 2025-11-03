@@ -56,6 +56,7 @@ struct LibSymbols {
     lfiptr realloc;
     lfiptr calloc;
     lfiptr free;
+    lfiptr setjmp;
 };
 
 struct LFILinuxProc {
