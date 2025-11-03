@@ -154,8 +154,8 @@ lfi_lib_calloc(struct LFIBox *box, struct LFIContext **ctxp, size_t count,
 void
 lfi_lib_free(struct LFIBox *box, struct LFIContext **ctxp, void *p);
 
-int
-lfi_lib_setjmp(struct LFIBox *box, struct LFIContext **ctxp, void *env);
+void
+lfi_lib_setjmp(struct LFIBox *box, struct LFIContext **ctxp, void *env, void *host_env, void (*callback)(void *, int));
 
 #ifdef __cplusplus
 }

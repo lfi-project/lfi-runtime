@@ -155,13 +155,14 @@ lfi_lib_free(struct LFIBox *box, struct LFIContext **ctxp, void *p)
         lfi_box_p2l(proc->box, (uintptr_t) p));
 }
 
-EXPORT int
-lfi_lib_setjmp(struct LFIBox *box, struct LFIContext **ctxp, void *env)
+EXPORT void
+lfi_lib_setjmp(struct LFIBox *box, struct LFIContext **ctxp, void *env, void *host_env, void (*callback)(void *, int))
 {
     struct LFILinuxProc *proc = lfi_box_data(box);
     ensure(proc->libsyms.setjmp);
 
-    int r = LFI_INVOKE(proc->box, ctxp, proc->libsyms.setjmp, int, (lfiptr),
-        lfi_box_p2l(proc->box, (uintptr_t) env));
-    return r;
+    LFI_INVOKE(proc->box, ctxp, proc->libsyms.setjmp, int, (lfiptr, lfiptr, lfiptr),
+        lfi_box_p2l(proc->box, (uintptr_t) env),
+        lfi_box_p2l(proc->box, (uintptr_t) host_env),
+        lfi_box_p2l(proc->box, (uintptr_t) callback));
 }
