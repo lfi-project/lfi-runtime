@@ -22,8 +22,8 @@ init_verifier(struct LFIVerifier *v, struct LFIOptions *opts)
         v->opts.box = LFI_BOX_STORES;
     else
         v->opts.box = LFI_BOX_FULL;
-    if (opts->verbose)
-        v->opts.err = logerr;
+
+    v->opts.err = logerr;
 
 #if defined(LFI_ARCH_ARM64)
     v->verify = lfiv_verify_arm64;
