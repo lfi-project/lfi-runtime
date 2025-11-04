@@ -189,6 +189,7 @@ allocslot(struct BoxMap *map, size_t size)
         }
     }
     assert(!"unreachable: engine was full");
+    return 0;
 }
 
 static void
