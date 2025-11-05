@@ -30,4 +30,5 @@ sys_exit_group(struct LFILinuxThread *t, int code)
     }
     lfi_ctx_exit(t->ctx, code);
     assert(!"unreachable");
+    return 0;
 }

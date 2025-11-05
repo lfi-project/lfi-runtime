@@ -36,4 +36,5 @@ sys_exit(struct LFILinuxThread *t, int code)
     clearctid(t);
     lfi_ctx_exit(t->ctx, code);
     assert(!"unreachable");
+    return 0;
 }

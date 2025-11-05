@@ -5,4 +5,5 @@ sys_lfi_pause(struct LFILinuxThread *t)
 {
     lfi_ctx_exit(t->ctx, 0);
     assert(!"unreachable");
+    return 0;
 }
