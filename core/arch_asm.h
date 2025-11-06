@@ -94,6 +94,9 @@
 
 #define REG_BASE    r14
 
+#define CTX_ABORT_CALLBACK 448
+#define CTX_ABORT_STATUS   456
+
 // clang-format off
 #ifdef __ASSEMBLER__
 .macro get_ctx reg

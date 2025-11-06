@@ -76,6 +76,15 @@
     callq *%r10
     popq %r11
 
+    cmpq $1, CTX_ABORT_CALLBACK(%r11)
+    jne 1f
+
+    movq $0, CTX_ABORT_CALLBACK(%r11)
+    movq $1, CTX_ABORT_STATUS(%r11)
+    movq %r11, %rdi
+    callq lfi_ret_end
+1:
+
 #ifdef ENABLE_SEGUE
 # ifndef SEGUE_SINGLE_SANDBOX
     wrgsbase %REG_BASE

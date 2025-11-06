@@ -75,3 +75,15 @@ lfi_cur_ctx(void)
 {
     return *lfi_invoke_info.ctx;
 }
+
+EXPORT void
+lfi_ctx_abort_callback(struct LFIContext *ctx)
+{
+    ctx->abort_callback = 1;
+}
+
+EXPORT bool
+lfi_ctx_abort_status(struct LFIContext *ctx)
+{
+    return ctx->abort_status == 1;
+}
