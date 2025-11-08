@@ -82,6 +82,19 @@
     movq $0, CTX_ABORT_CALLBACK(%r11)
     movq $1, CTX_ABORT_STATUS(%r11)
     movq %r11, %rdi
+
+    // Restore old sandbox stack pointer in the Regs struct.
+    popq REGS_RSP(%r11)
+
+    // Pop saved r12, to restore the host stack as it was when entering this symbol.
+    popq %r12
+
+    // Right now, HOST_SP contains the sandbox stack pointer. This is
+    // problematic, as `lfi_ret_end` will attemt to restore the host stack
+    // pointer from that slot. So we save the real host stack pointer back into
+    // that struct before jumping to it.
+    movq %rsp, REGS_HOST_SP(%r11)
+
     callq lfi_ret_end
 1:
 
