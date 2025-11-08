@@ -239,11 +239,11 @@ lfi_box_unregister_cb(struct LFIBox *box, void *fn);
 // Mark the current callback as 'aborted' meaning it will directly return
 // instead of going back to the sandbox.
 void
-lfi_ctx_abort_cb(struct LFIContext *ctx);
+lfi_ctx_abort_callback(struct LFIContext *ctx);
 
 // Returns true if the most recent callback was aborted.
 bool
-lfi_ctx_abort_cb_status(struct LFIContext *ctx);
+lfi_ctx_abort_status(struct LFIContext *ctx);
 
 // Frees all resources associated with box and deallocates its reservation in
 // the LFIEngine in which it was allocated.
