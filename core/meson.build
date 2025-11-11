@@ -11,6 +11,7 @@ srcs = files(
   'mmap.c',
   'boxmap.c',
   'extalloc.c',
+  'trapsys.c',
 )
 
 if get_option('stores_only')
