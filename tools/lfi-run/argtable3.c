@@ -1070,7 +1070,8 @@ static void setup_append_buf(arg_dstr_t res, int newSpace);
 
 arg_dstr_t arg_dstr_create(void) {
     _internal_arg_dstr_t* h = (_internal_arg_dstr_t*)xmalloc(sizeof(_internal_arg_dstr_t));
-    assert(h);
+    if (!h)
+        __builtin_unreachable();
     memset(h, 0, sizeof(_internal_arg_dstr_t));
     h->sbuf[0] = 0;
     h->data = h->sbuf;

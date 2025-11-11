@@ -188,8 +188,7 @@ allocslot(struct BoxMap *map, size_t size)
             return extalloc_alloc(map->regions[i].alloc, size);
         }
     }
-    assert(!"unreachable: engine was full");
-    return 0;
+    __builtin_unreachable();
 }
 
 static void

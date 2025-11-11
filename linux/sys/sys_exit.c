@@ -27,7 +27,7 @@ sys_exit(struct LFILinuxThread *t, int code)
     if (t->box_pthread) {
         clearctid(t);
         lfi_ret_end(t->ctx);
-        assert(!"unreachable");
+        __builtin_unreachable();
     }
     {
         LOCK_WITH_DEFER(&t->proc->lk_threads, lk_threads);
@@ -35,6 +35,5 @@ sys_exit(struct LFILinuxThread *t, int code)
     }
     clearctid(t);
     lfi_ctx_exit(t->ctx, code);
-    assert(!"unreachable");
-    return 0;
+    __builtin_unreachable();
 }
