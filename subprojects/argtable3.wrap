@@ -1,5 +1,0 @@
-[wrap-git]
-url = https://github.com/argtable/argtable3.git
-revision = v3.2.2.f25c624
-directory = argtable3
-patch_directory = argtable3
