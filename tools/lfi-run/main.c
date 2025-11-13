@@ -1,8 +1,8 @@
-#include "argtable3.h"
 #include "lfi_linux.h"
 
 #include <assert.h>
 #include <errno.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,73 +46,116 @@ readfile(const char *path)
     };
 }
 
-static const char **
-strarray(struct arg_str *vals)
+static void
+usage(const char *prog_name)
 {
-    const char **array = malloc(sizeof(char *) * (vals->count + 1));
-    if (!array) {
-        fprintf(stderr, "failed to allocate\n");
-        exit(1);
-    }
-    for (int i = 0; i < vals->count; i++) {
-        array[i] = vals->sval[i];
-    }
-    array[vals->count] = NULL;
-    return array;
+    printf("Usage: %s [OPTION...] INPUT...\n\n", prog_name);
+    printf("  -h, --help             show help\n");
+    printf("  -V, --verbose          verbose output\n");
+    printf("  --perf                 enable perf support\n");
+    printf("  -v, --verify           enable verification\n");
+    printf("  --no-debug             disable debugging support\n");
+    printf("  -p, --sys-passthrough  pass most system calls directly to the host\n");
+    printf("  --pagesize=<int>       system page size\n");
+    printf("  --env=<var=val>        set environment variable\n");
+    printf("  --dir=<box=host>       map sandbox path to host directory\n");
+    printf("  --wd=<dir>             working directory within sandbox\n");
+    printf("  -r, --restricted       apply --dir and --wd flags (default is --dir /=/ --wd $PWD for testing)\n");
+    printf("  <input>                input command\n");
 }
 
 int
 main(int argc, char **argv)
 {
-    struct arg_lit *help = arg_lit0("h", "help", "show help");
-    struct arg_lit *verbose = arg_lit0("V", "verbose", "verbose output");
-    struct arg_lit *perf = arg_lit0(NULL, "perf", "enable perf support");
-    struct arg_lit *verify = arg_lit0("v", "verify", "enable verification");
-    struct arg_lit *no_debug = arg_lit0(NULL, "no-debug",
-        "disable debugging support");
-    struct arg_lit *sys_passthrough = arg_lit0("p", "sys-passthrough",
-        "pass most system calls directly to the host");
-    struct arg_int *pagesize = arg_intn(NULL, "pagesize", "<int>", 0, 1,
-        "system page size");
-    struct arg_str *envs = arg_strn(NULL, "env", "<var=val>", 0, 100,
-        "set environment variable");
-    struct arg_str *dirs = arg_strn(NULL, "dir", "<box=host>", 0, 100,
-        "map sandbox path to host directory");
-    struct arg_str *wd = arg_strn(NULL, "wd", "<dir>", 0, 1,
-        "working directory within sandbox");
-    struct arg_lit *restricted = arg_lit0("r", "restricted",
-        "apply --dir and --wd flags (default is --dir /=/ --wd $PWD for testing)");
-    struct arg_str *inputs = arg_strn(NULL, NULL, "<input>", 0, 1000,
-        "input command");
-    struct arg_end *end = arg_end(20);
+    bool help = false;
+    bool verbose = false;
+    bool perf = false;
+    bool verify = false;
+    bool no_debug = false;
+    bool sys_passthrough = false;
+    int pagesize = 0;
+    const char **envs = NULL;
+    int envs_count = 0;
+    const char **dirs = NULL;
+    int dirs_count = 0;
+    const char *wd = NULL;
+    bool restricted = false;
 
-    void *argtable[] = { help, verbose, perf, verify, sys_passthrough, pagesize,
-        envs, dirs, wd, restricted, inputs, end };
+    static struct option long_options[] = {
+        { "help", no_argument, 0, 'h' },
+        { "verbose", no_argument, 0, 'V' },
+        { "perf", no_argument, 0, 1 },
+        { "verify", no_argument, 0, 'v' },
+        { "no-debug", no_argument, 0, 2 },
+        { "sys-passthrough", no_argument, 0, 'p' },
+        { "pagesize", required_argument, 0, 3 },
+        { "env", required_argument, 0, 4 },
+        { "dir", required_argument, 0, 5 },
+        { "wd", required_argument, 0, 6 },
+        { "restricted", no_argument, 0, 'r' },
+        { 0, 0, 0, 0 }
+    };
 
-    if (arg_nullcheck(argtable) != 0) {
-        fprintf(stderr, "Memory allocation error\n");
-        return 1;
+    int opt;
+    int option_index = 0;
+    while ((opt = getopt_long(argc, argv, "hVvp:r", long_options,
+                &option_index)) != -1) {
+        switch (opt) {
+        case 'h':
+            help = true;
+            break;
+        case 'V':
+            verbose = true;
+            break;
+        case 1:
+            perf = true;
+            break;
+        case 'v':
+            verify = true;
+            break;
+        case 2:
+            no_debug = true;
+            break;
+        case 'p':
+            sys_passthrough = true;
+            break;
+        case 3:
+            pagesize = atoi(optarg);
+            break;
+        case 4:
+            envs_count++;
+            envs = realloc(envs, sizeof(char *) * envs_count);
+            envs[envs_count - 1] = optarg;
+            break;
+        case 5:
+            dirs_count++;
+            dirs = realloc(dirs, sizeof(char *) * dirs_count);
+            dirs[dirs_count - 1] = optarg;
+            break;
+        case 6:
+            wd = optarg;
+            break;
+        case 'r':
+            restricted = true;
+            break;
+        case '?':
+            return 1;
+        default:
+            abort();
+        }
     }
 
-    int nerrors = arg_parse(argc, argv, argtable);
-
-    if (help->count > 0 || argc == 1) {
-        printf("Usage: %s [OPTION...] INPUT...\n\n", argv[0]);
-        arg_print_glossary(stdout, argtable, "  %-25s %s\n");
+    if (help || argc == 1) {
+        usage(argv[0]);
         return 0;
-    }
-
-    if (nerrors > 0) {
-        arg_print_errors(stderr, end, argv[0]);
-        return 1;
     }
 
     struct LFIEngine *engine = lfi_new(
         (struct LFIOptions) {
             .boxsize = gb(4),
-            .pagesize = pagesize->count > 0 ? pagesize->ival[0] : getpagesize(),
-            .no_verify = verify->count == 0,
-            .verbose = verbose->count > 0,
+            .pagesize = pagesize > 0 ? pagesize : getpagesize(),
+            .no_verify = !verify,
+            .verbose = verbose,
         },
         4);
     if (!engine) {
@@ -129,33 +172,34 @@ main(int argc, char **argv)
         NULL,
     };
 
-    const char **strdirs = strarray(dirs);
+    dirs_count++;
+    dirs = realloc(dirs, sizeof(char *) * dirs_count);
+    dirs[dirs_count - 1] = NULL;
 
     struct LFILinuxEngine *linux_ = lfi_linux_new(engine,
         (struct LFILinuxOptions) {
             .stacksize = mb(2),
-            .verbose = verbose->count > 0,
+            .verbose = verbose,
             .exit_unknown_syscalls = true,
-            .dir_maps = restricted->count > 0 ? strdirs : all,
-            .wd = restricted->count > 0 ? (wd->count > 0 ? wd->sval[0] : NULL) :
-                                          cwd,
-            .sys_passthrough = sys_passthrough->count > 0,
-            .perf = perf->count > 0,
-            .debug = no_debug->count == 0,
+            .dir_maps = restricted ? dirs : all,
+            .wd = restricted ? wd : cwd,
+            .sys_passthrough = sys_passthrough,
+            .perf = perf,
+            .debug = !no_debug,
         });
     if (!linux_) {
         fprintf(stderr, "failed to create LFI Linux engine\n");
         exit(1);
     }
 
-    if (inputs->count == 0) {
+    if (optind >= argc) {
         fprintf(stderr, "no input file provided\n");
         exit(1);
     }
 
-    struct Buf prog = readfile(inputs->sval[0]);
+    struct Buf prog = readfile(argv[optind]);
     if (!prog.data) {
-        fprintf(stderr, "failed to open %s: %s\n", inputs->sval[0],
+        fprintf(stderr, "failed to open %s: %s\n", argv[optind],
             strerror(errno));
         exit(1);
     }
@@ -166,16 +210,17 @@ main(int argc, char **argv)
         exit(1);
     }
 
-    bool ok = lfi_proc_load(proc, prog.data, prog.size, inputs->sval[0]);
+    bool ok = lfi_proc_load(proc, prog.data, prog.size, argv[optind]);
     if (!ok) {
-        fprintf(stderr, "failed to load %s\n", inputs->sval[0]);
+        fprintf(stderr, "failed to load %s\n", argv[optind]);
         exit(1);
     }
 
-    const char **box_argv = strarray(inputs);
-    const char **box_envp = strarray(envs);
-    struct LFILinuxThread *t = lfi_thread_new(proc, inputs->count, box_argv,
-        box_envp);
+    envs_count++;
+    envs = realloc(envs, sizeof(char *) * envs_count);
+    envs[envs_count - 1] = NULL;
+    struct LFILinuxThread *t = lfi_thread_new(proc, argc - optind,
+        (const char **)&argv[optind], envs);
     if (!t) {
         fprintf(stderr, "failed to create LFI thread\n");
         exit(1);
@@ -183,9 +228,8 @@ main(int argc, char **argv)
 
     int result = lfi_thread_run(t);
 
-    free(box_argv);
-    free(box_envp);
-    free(strdirs);
+    free(envs);
+    free(dirs);
 
     lfi_linux_free(linux_);
 
