@@ -5,7 +5,7 @@ endif
 
 executable(
   'lfi-run',
-  files('main.c', 'argtable3.c'),
+  files('main.c'),
   c_args: c_args_warnings,
   dependencies: [lfi_linux],
   link_args: link_args,
