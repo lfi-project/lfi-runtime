@@ -105,6 +105,8 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
             LOG(proc->engine,
                 "dynamic linker ignored because it is relative path: %s",
                 interp_path);
+            free(interp_path);
+            interp_path = NULL;
         }
 #else
         LOG(proc->engine,
