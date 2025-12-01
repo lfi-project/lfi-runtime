@@ -180,7 +180,7 @@ lfi_proc_load(struct LFILinuxProc *proc, const uint8_t *prog, size_t prog_size,
 }
 
 EXPORT bool
-lfi_proc_load_remap(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size, const char *prog_path)
+lfi_proc_load_remap(struct LFILinuxProc *proc, const uint8_t *prog, size_t prog_size, const char *prog_path)
 {
     return proc_load(proc, -1, prog, prog_size, prog_path, ELF_REMAP, false);
 }

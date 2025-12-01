@@ -101,8 +101,8 @@ lfi_proc_load_fd(struct LFILinuxProc *proc, int fd, const char *prog_path);
 // loaded mapping will be backed by a file if the input buffer is backed by a
 // file. The input buffer is invalidated by this call and becomes inaccessible.
 bool
-lfi_proc_load_remap(struct LFILinuxProc *proc, uint8_t *prog, size_t prog_size,
-    const char *prog_path);
+lfi_proc_load_remap(struct LFILinuxProc *proc, const uint8_t *prog,
+    size_t prog_size, const char *prog_path);
 
 // Load an ELF program directly from a file.
 bool
