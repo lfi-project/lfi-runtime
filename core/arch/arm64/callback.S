@@ -156,11 +156,13 @@
 .p2align 4
 .global lfi_callback
 lfi_callback:
+    bti jc
     lfi_callback_gen 0
 
 .p2align 4
 .global lfi_callback_struct
 lfi_callback_struct:
+    bti jc
     lfi_callback_gen 1
 
 #ifndef __APPLE__

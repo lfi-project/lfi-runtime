@@ -8,6 +8,7 @@
 .p2align 4
 _lfi_ctx_entry:
 lfi_ctx_entry:
+    bti jc
     // save callee-saved registers to stack
     stp d8, d9,   [sp, #-16]!
     stp d10, d11, [sp, #-16]!
@@ -96,6 +97,7 @@ lfi_ctx_entry:
 .global lfi_ctx_end
 .p2align 4
 lfi_ctx_end:
+    bti jc
     // restore host_sp
     ldr x19, [x0, REGS_HOST_SP]
     mov sp, x19
@@ -120,6 +122,7 @@ lfi_ctx_end:
 .global lfi_syscall_entry
 .p2align 4
 lfi_syscall_entry:
+    bti jc
     get_ctx REG_BASE
     // save registers
     stp x0, x1,   [REG_BASE, REGS_X(0)]
@@ -205,6 +208,7 @@ lfi_syscall_entry:
 .global lfi_get_tp
 .p2align 4
 lfi_get_tp:
+    bti jc
     get_ctx x0
     ldr x0, [x0, REGS_TP]
     add x30, REG_BASE, w30, uxtw
@@ -213,6 +217,7 @@ lfi_get_tp:
 .global lfi_set_tp
 .p2align 4
 lfi_set_tp:
+    bti jc
     get_ctx REG_BASE
     str x0, [REG_BASE, REGS_TP]
     // reload REG_BASE

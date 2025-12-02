@@ -177,6 +177,7 @@ lfi_trampoline:
 .global lfi_trampoline_direct
 .p2align 4
 lfi_trampoline_direct:
+    bti jc
     ldp x10, x13, [sp], #16
     ldp x11, x12, [sp], #16
 
@@ -242,12 +243,14 @@ lfi_trampoline_direct:
 .global lfi_ret_end
 .p2align 4
 lfi_ret_end:
+    bti jc
     mov REG_BASE, x0
     b .lfi_ret_internal
 
 .global lfi_ret
 .p2align 4
 lfi_ret:
+    bti jc
     get_ctx REG_BASE
     // restore host thread control block
     ldr x19, [REG_BASE, REGS_HOST_TP]
