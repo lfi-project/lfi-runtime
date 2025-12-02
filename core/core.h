@@ -65,6 +65,12 @@ struct LFIContext {
     // are stored here.
     struct LFIRegs regs;
 
+    // Set to 1 if a lfi_ret_end should be automatically called when returning
+    // from a callback to abort further sandbox execution of the callback.
+    uint64_t abort_callback;
+    // Set to 1 if the most recent callback was aborted.
+    uint64_t abort_status;
+
     // User-provided data pointer -- tracks per-sandbox context for Linux
     // runtime.
     void *userdata;

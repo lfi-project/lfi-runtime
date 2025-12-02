@@ -2,6 +2,7 @@
 
 #include "lfi_arch.h"
 #include "lfi_core.h"
+#include "core.h"
 
 #include <stddef.h>
 
@@ -82,6 +83,11 @@ _Static_assert(offsetof(struct LFIRegs, REG_BASE) == REGS_BASE,
 
 _Static_assert(offsetof(struct LFIRegs, xmm) % 16 == 0,
     "incorrect xmm alignment");
+
+_Static_assert(offsetof(struct LFIContext, abort_callback) == CTX_ABORT_CALLBACK,
+    "incorrect abort_callback offset");
+_Static_assert(offsetof(struct LFIContext, abort_status) == CTX_ABORT_STATUS,
+    "incorrect abort_callback offset");
 
 #elif defined(LFI_ARCH_RISCV64)
 
