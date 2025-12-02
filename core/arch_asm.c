@@ -36,6 +36,11 @@ _Static_assert(offsetof(struct LFIRegs, vector) == REGS_V0,
 _Static_assert(offsetof(struct LFIRegs, vector) % 16 == 0,
     "incorrect vector alignment");
 
+_Static_assert(offsetof(struct LFIContext, abort_callback) == CTX_ABORT_CALLBACK,
+    "incorrect abort_callback offset");
+_Static_assert(offsetof(struct LFIContext, abort_status) == CTX_ABORT_STATUS,
+    "incorrect abort_status offset");
+
 #elif defined(LFI_ARCH_X64)
 
 _Static_assert(offsetof(struct LFIRegs, pkey) == REGS_PKEY,

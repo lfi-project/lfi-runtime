@@ -32,6 +32,9 @@
 #define REGS_V0   288
 #define REGS_V(n) (REGS_V0 + 16 * n)
 
+#define CTX_ABORT_CALLBACK 800
+#define CTX_ABORT_STATUS   808
+
 #define REG_BASE  x27
 #define REG_ADDR  x28
 

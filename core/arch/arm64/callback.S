@@ -105,6 +105,20 @@
     mov x18, x23
     mov x9, x22
 
+    // Check if abort_callback is set.
+    ldr x10, [x9, CTX_ABORT_CALLBACK]
+    cmp x10, #1
+    bne 1f
+
+    // Clear abort_callback and set abort_status.
+    str xzr, [x9, CTX_ABORT_CALLBACK]
+    mov x10, #1
+    str x10, [x9, CTX_ABORT_STATUS]
+    // Call lfi_ret_end with ctx as argument.
+    mov x0, x9
+    bl lfi_ret_end
+1:
+
 .if \with_struct
     ldr x0, [x9, #REGS_X(0)]
     ldr x1, [x9, #REGS_X(1)]
