@@ -36,6 +36,7 @@ srcs += files(
   'sys_passthrough.c',
   'sys_prctl.c',
   'sys_pread64.c',
+  'sys_pwrite64.c',
   'sys_read.c',
   'sys_readlinkat.c',
   'sys_readv.c',

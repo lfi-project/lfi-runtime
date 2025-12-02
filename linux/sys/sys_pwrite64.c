@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 ssize_t
-sys_pread64(struct LFILinuxThread *t, int fd, lfiptr bufp, size_t size,
+sys_pwrite64(struct LFILinuxThread *t, int fd, lfiptr bufp, size_t size,
     off_t offset)
 {
     if (size == 0)
@@ -14,5 +14,5 @@ sys_pread64(struct LFILinuxThread *t, int fd, lfiptr bufp, size_t size,
     uint8_t *buf = bufhost(t, bufp, size, 1);
     if (!buf)
         return -LINUX_EFAULT;
-    return HOST_ERR(ssize_t, pread(kfd, buf, size, offset));
+    return HOST_ERR(ssize_t, pwrite(kfd, buf, size, offset));
 }

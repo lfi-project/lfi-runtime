@@ -184,7 +184,11 @@ sys_lseek(struct LFILinuxThread *t, int fd, off_t offset, int whence);
 
 ssize_t
 sys_pread64(struct LFILinuxThread *t, int fd, lfiptr bufp, size_t size,
-    ssize_t offset);
+    off_t offset);
+
+ssize_t
+sys_pwrite64(struct LFILinuxThread *t, int fd, lfiptr bufp, size_t size,
+    off_t offset);
 
 int
 sys_openat(struct LFILinuxThread *t, int dirfd, lfiptr pathp, int flags,

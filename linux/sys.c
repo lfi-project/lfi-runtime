@@ -116,6 +116,8 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
                 sys_lseek(t, a0, a1, a2))
         SYS(pread64,
                 sys_pread64(t, a0, a1, a2, a3))
+        SYS(pwrite64,
+                sys_pwrite64(t, a0, a1, a2, a3))
         SYS(getdents64,
                 sys_getdents64(t, a0, a1, a2))
         SYS(newfstatat,
