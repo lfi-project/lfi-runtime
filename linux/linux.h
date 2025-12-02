@@ -40,6 +40,7 @@ typedef int64_t linux_time_t;
 
 #define LINUX_EPERM                1
 #define LINUX_ENOENT               2
+#define LINUX_ENXIO                6
 #define LINUX_EBADF                9
 #define LINUX_EAGAIN               11
 #define LINUX_ENOMEM               12

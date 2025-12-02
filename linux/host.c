@@ -38,6 +38,8 @@ host_err(int err)
         return -LINUX_EMFILE;
     case EFAULT:
         return -LINUX_EFAULT;
+    case ENXIO:
+        return -LINUX_ENXIO;
     default:
         return -LINUX_EINVAL;
     }

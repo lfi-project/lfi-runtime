@@ -28,7 +28,7 @@ fdget(struct FDTable *t, int fd)
     if (t->passthrough)
         return fd;
     if (fd < 0 || fd >= LINUX_NOFILE)
-        return false;
+        return -1;
     LOCK_WITH_DEFER(&t->lk, lk);
     return t->fds[fd];
 }
