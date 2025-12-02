@@ -10,11 +10,19 @@
 
 // Assign the host file descriptor to fd.
 bool
-fdassign(struct FDTable *t, int fd, int host_fd, char *dir);
+fdassign(struct FDTable *t, int fd, int host_fd, char *dir, int flags);
 
 // Returns the host file descriptor associated with fd.
 int
 fdget(struct FDTable *t, int fd);
+
+// Returns the open flags associated with fd.
+int
+fdgetflags(struct FDTable *t, int fd);
+
+// Returns true if fd is a directory.
+bool
+fdisdir(struct FDTable *t, int fd);
 
 // Adjust newfd so that it now points to oldfd. If newfd is -1, allocates a new
 // file descriptor for newfd automatically (same behavior as dup).

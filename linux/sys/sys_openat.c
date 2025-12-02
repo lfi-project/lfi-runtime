@@ -31,8 +31,8 @@ sys_openat(struct LFILinuxThread *t, int dirfd, lfiptr pathp, int flags,
         free(path);
         return host_err(errno);
     }
-    bool isdir = host_isdir(host_path);
-    fdassign(&t->proc->fdtable, kfd, kfd, isdir ? path : NULL);
+    bool isdir = host_checkdir(host_path) == 0;
+    fdassign(&t->proc->fdtable, kfd, kfd, isdir ? path : NULL, flags);
     LOG(t->proc->engine, "sys_open(\"%s\") = %d", path, kfd);
     if (!isdir)
         free(path);

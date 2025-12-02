@@ -181,7 +181,7 @@ host_getdents64(int fd, void *dirp, size_t count)
 #endif
 
 int
-host_isdir(const char *path)
+host_checkdir(const char *path)
 {
     struct stat path_stat;
     if (stat(path, &path_stat) != 0) {

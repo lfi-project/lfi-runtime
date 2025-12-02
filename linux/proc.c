@@ -300,7 +300,7 @@ chdircheck(struct LFILinuxProc *p, const char *path)
     char resolved[FILENAME_MAX];
     if (!path_resolve(p, path, resolved, sizeof(resolved)))
         return -LINUX_ENOENT;
-    return host_isdir(resolved);
+    return host_checkdir(resolved);
 }
 
 // Change the proc's cwd to the given sandbox path.

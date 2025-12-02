@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 bool
-fdassign(struct FDTable *t, int fd, int host_fd, char *dir)
+fdassign(struct FDTable *t, int fd, int host_fd, char *dir, int flags)
 {
     if (t->passthrough)
         return true;
@@ -18,6 +18,7 @@ fdassign(struct FDTable *t, int fd, int host_fd, char *dir)
     assert(t->fds[fd] == -1);
     t->fds[fd] = host_fd;
     t->dirs[fd] = dir;
+    t->flags[fd] = flags;
     return true;
 }
 
@@ -30,6 +31,28 @@ fdget(struct FDTable *t, int fd)
         return false;
     LOCK_WITH_DEFER(&t->lk, lk);
     return t->fds[fd];
+}
+
+int
+fdgetflags(struct FDTable *t, int fd)
+{
+    if (t->passthrough)
+        return 0;
+    if (fd < 0 || fd >= LINUX_NOFILE)
+        return 0;
+    LOCK_WITH_DEFER(&t->lk, lk);
+    return t->flags[fd];
+}
+
+bool
+fdisdir(struct FDTable *t, int fd)
+{
+    if (t->passthrough)
+        return false;
+    if (fd < 0 || fd >= LINUX_NOFILE)
+        return false;
+    LOCK_WITH_DEFER(&t->lk, lk);
+    return t->dirs[fd] != NULL;
 }
 
 int
@@ -72,6 +95,7 @@ fddup2(struct FDTable *t, int oldfd, int newfd)
         t->dirs[newfd] = dir;
         strncpy(t->dirs[newfd], t->dirs[oldfd], FILENAME_MAX - 1);
     }
+    t->flags[newfd] = t->flags[oldfd];
     return newfd;
 
 err:
@@ -92,6 +116,7 @@ fdclose(struct FDTable *t, int fd)
         return false;
     close(t->fds[fd]);
     t->fds[fd] = -1;
+    t->flags[fd] = 0;
     if (t->dirs[fd]) {
         free(t->dirs[fd]);
         t->dirs[fd] = NULL;

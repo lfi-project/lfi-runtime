@@ -46,6 +46,7 @@ typedef int64_t linux_time_t;
 #define LINUX_EACCES               13
 #define LINUX_EFAULT               14
 #define LINUX_ENOTDIR              20
+#define LINUX_EISDIR               21
 #define LINUX_EINVAL               22
 #define LINUX_EMFILE               24
 #define LINUX_ENOSYS               38

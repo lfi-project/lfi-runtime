@@ -32,4 +32,4 @@ ssize_t
 host_getrandom(void *buf, size_t size, unsigned int flags);
 
 int
-host_isdir(const char *path);
+host_checkdir(const char *path);
