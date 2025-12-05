@@ -92,8 +92,8 @@ mm_unmap_cb(struct MMAddrSpace *mm, uintptr_t addr, size_t len, UpdateFn ufn,
 bool
 mm_querypage(struct MMAddrSpace *mm, uintptr_t addr, struct MMInfo *info);
 
-// mm_protect updates the 'prot' info associated with a region. All pages
-// affected by the new protections must be in a mapped region.
+// mm_protect updates the 'prot' info associated with a region. Unmapped pages
+// within the range are skipped (matches Linux mprotect behavior).
 //
 // Returns 0 on success or a negative error code on failure.
 int

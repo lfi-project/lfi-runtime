@@ -373,3 +373,135 @@ mm_unmap_non_original(struct MMAddrSpace *mm, UpdateFn ufn, void *udata)
         node = node->next;
     }
 }
+
+bool
+mm_querypage(struct MMAddrSpace *mm, uintptr_t addr, struct MMInfo *info)
+{
+    addr = mmtrunc(mm, addr);
+
+    struct MMNode *node = mm->nodes;
+    while (node) {
+        if (addr >= node->base && addr < node->base + node->len) {
+            *info = node->info;
+            return true;
+        }
+        if (node->base > addr)
+            break;
+        node = node->next;
+    }
+
+    return false;
+}
+
+int
+mm_protect(struct MMAddrSpace *mm, uintptr_t addr, size_t len, int prot)
+{
+    return mm_protect_cb(mm, addr, len, prot, NULL, NULL);
+}
+
+int
+mm_protect_cb(struct MMAddrSpace *mm, uintptr_t addr, size_t len, int prot,
+    UpdateFn ufn, void *udata)
+{
+    if (addr % (1 << mm->p2pagesize) != 0 || len == 0)
+        return -LINUX_EINVAL;
+
+    uint64_t start = mmtrunc(mm, addr);
+    uint64_t end = start + mmceil(mm, len);
+
+    if (!mmvalid(mm, start, end - start))
+        return -LINUX_EINVAL;
+
+    // Apply protection changes to mapped regions, splitting nodes as needed.
+    // Unmapped gaps within the range are allowed (matches Linux mprotect behavior).
+    struct MMNode *node = mm->nodes;
+    while (node && start < end) {
+        // Skip nodes before our range.
+        if (node->base + node->len <= start) {
+            node = node->next;
+            continue;
+        }
+
+        // Stop if we've passed the range.
+        if (node->base >= end)
+            break;
+
+        uint64_t node_end = node->base + node->len;
+        uint64_t overlap_start = start > node->base ? start : node->base;
+        uint64_t overlap_end = end < node_end ? end : node_end;
+
+        if (overlap_start == node->base && overlap_end == node_end) {
+            // Entire node is covered.
+            if (ufn)
+                ufn(node->base << mm->p2pagesize, node->len << mm->p2pagesize,
+                    node->info, udata);
+            node->info.prot = prot;
+            node = node->next;
+        } else if (overlap_start == node->base) {
+            // Overlap at the start of the node - split off the end.
+            struct MMNode *new = malloc(sizeof(struct MMNode));
+            if (!new)
+                return -1;
+            *new = (struct MMNode) {
+                .base = overlap_end,
+                .len = node_end - overlap_end,
+                .info = node->info,
+            };
+            node_insert_after(mm, node, new);
+            node->len = overlap_end - node->base;
+            if (ufn)
+                ufn(node->base << mm->p2pagesize, node->len << mm->p2pagesize,
+                    node->info, udata);
+            node->info.prot = prot;
+            node = new;
+        } else if (overlap_end == node_end) {
+            // Overlap at the end of the node - split off the start.
+            struct MMNode *new = malloc(sizeof(struct MMNode));
+            if (!new)
+                return -1;
+            *new = (struct MMNode) {
+                .base = overlap_start,
+                .len = node_end - overlap_start,
+                .info = node->info,
+            };
+            node_insert_after(mm, node, new);
+            node->len = overlap_start - node->base;
+            if (ufn)
+                ufn(new->base << mm->p2pagesize, new->len << mm->p2pagesize,
+                    new->info, udata);
+            new->info.prot = prot;
+            node = new->next;
+        } else {
+            // Overlap in the middle - need two splits.
+            struct MMNode *mid = malloc(sizeof(struct MMNode));
+            struct MMNode *tail = malloc(sizeof(struct MMNode));
+            if (!mid || !tail) {
+                free(mid);
+                free(tail);
+                return -1;
+            }
+            *mid = (struct MMNode) {
+                .base = overlap_start,
+                .len = overlap_end - overlap_start,
+                .info = node->info,
+            };
+            *tail = (struct MMNode) {
+                .base = overlap_end,
+                .len = node_end - overlap_end,
+                .info = node->info,
+            };
+            node_insert_after(mm, node, mid);
+            node_insert_after(mm, mid, tail);
+            node->len = overlap_start - node->base;
+            if (ufn)
+                ufn(mid->base << mm->p2pagesize, mid->len << mm->p2pagesize,
+                    mid->info, udata);
+            mid->info.prot = prot;
+            node = tail;
+        }
+
+        start = overlap_end;
+    }
+
+    return 0;
+}

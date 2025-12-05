@@ -80,6 +80,13 @@ struct LFIBoxInfo {
     lfiptr max_exec;
 };
 
+struct LFIMapInfo {
+    int prot;
+    int flags;
+    int fd;
+    off_t offset;
+};
+
 #define LFI_PROT_NONE  0
 #define LFI_PROT_READ  1
 #define LFI_PROT_WRITE 2
@@ -180,6 +187,11 @@ lfi_box_mprotect(struct LFIBox *box, lfiptr addr, size_t size, int prot);
 int
 lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size,
     int prot);
+
+// Queries memory mapping information for a page. Returns true if the page is
+// mapped and places the info in 'info', or false if the page is not mapped.
+bool
+lfi_box_mquery(struct LFIBox *box, lfiptr addr, struct LFIMapInfo *info);
 
 // Mark all current memory mappings as original.
 void

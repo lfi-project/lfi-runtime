@@ -405,9 +405,9 @@ lfi_box_mprotect(struct LFIBox *box, lfiptr addr, size_t size, int prot)
 {
     assert(l2p(box, addr) >= box->min && l2p(box, addr) + size <= box->max);
 
-    // TODO: we are not registering this change of protection with libmmap,
-    // meaning we could get incorrect results if we try to use mm_query.
-    // Currently not an issue.
+    int r = mm_protect(&box->mm, l2p(box, addr), size, prot);
+    if (r < 0)
+        return r;
     return protectverify(box, l2p(box, addr), size, prot, false);
 }
 
@@ -415,8 +415,25 @@ EXPORT int
 lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size,
     int prot)
 {
-    // Same todo as above.
+    int r = mm_protect(&box->mm, l2p(box, addr), size, prot);
+    if (r < 0)
+        return r;
     return protectverify(box, l2p(box, addr), size, prot, true);
+}
+
+EXPORT bool
+lfi_box_mquery(struct LFIBox *box, lfiptr addr, struct LFIMapInfo *info)
+{
+    struct MMInfo mminfo;
+    if (!mm_querypage(&box->mm, l2p(box, addr), &mminfo))
+        return false;
+    *info = (struct LFIMapInfo) {
+        .prot = mminfo.prot,
+        .flags = mminfo.flags,
+        .fd = mminfo.fd,
+        .offset = mminfo.offset,
+    };
+    return true;
 }
 
 EXPORT int
