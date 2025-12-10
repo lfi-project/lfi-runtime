@@ -1,7 +1,7 @@
 #pragma once
 
-#ifdef HAVE_ELF_H
-#include <elf.h>
-#else
+#ifdef USE_GELF_H
 #include <gelf.h>
+#else
+#include <elf.h>
 #endif

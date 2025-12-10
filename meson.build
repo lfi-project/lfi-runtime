@@ -105,10 +105,9 @@ int main() {
 if compiler.links(r_debug_code, name: 'has _r_debug')
   defines += '-DHAVE_R_DEBUG'
 endif
-have_elf_h = false
-if compiler.has_header('elf.h')
-  defines += '-DHAVE_ELF_H'
-  have_elf_h = true
+have_elf_h = compiler.has_header('elf.h')
+if not have_elf_h
+  defines += '-DUSE_GELF_H'
 endif
 
 if get_option('enable_tlsdesc') and cpu == 'x86_64'
