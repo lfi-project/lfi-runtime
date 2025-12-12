@@ -143,10 +143,16 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
     } else if (map_op == ELF_REMAP) {
         size_t pagesize = getpagesize();
         assert((uintptr_t) buf.data % pagesize == 0);
-        void *rm = mremap((void *) (buf.data + truncp(p_offset, p_align)), end - start, end - start, MREMAP_MAYMOVE | MREMAP_FIXED, (void *) start);
+        void *old = (void *) (buf.data + truncp(p_offset, p_align));
+        void *rm = mremap(old, end - start, end - start, MREMAP_MAYMOVE | MREMAP_FIXED, (void *) start);
         if (rm == (void *) -1)
             return false;
         p = lfi_box_mapat_register(box, p2l(box, start), end - start, prot, LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+        // Put the remapped mapping back so that we can still access its data from the buf object.
+        old = mmap(old, end - start, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+        if (old == (void *) -1)
+            return false;
+        memcpy(old, rm, end - start);
     } else if (map_op == ELF_MAP) {
         p = lfi_box_mapat(box, p2l(box, start), end - start,
             LFI_PROT_READ | LFI_PROT_WRITE, LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS,
