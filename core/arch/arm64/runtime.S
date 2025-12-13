@@ -9,6 +9,7 @@
 _lfi_ctx_entry:
 lfi_ctx_entry:
     bti jc
+    paciasp
     // save callee-saved registers to stack
     stp d8, d9,   [sp, #-16]!
     stp d10, d11, [sp, #-16]!
@@ -98,6 +99,7 @@ lfi_ctx_entry:
 .p2align 4
 lfi_ctx_end:
     bti jc
+    paciasp
     // restore host_sp
     ldr x19, [x0, REGS_HOST_SP]
     mov sp, x19
@@ -117,6 +119,7 @@ lfi_ctx_end:
     ldp d12, d13, [sp], 16
     ldp d10, d11, [sp], 16
     ldp d8, d9,   [sp], 16
+    autiasp
     ret
 
 .global lfi_syscall_entry
@@ -227,4 +230,17 @@ lfi_set_tp:
 
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits
+
+// GNU property note for BTI and PAC support
+.pushsection .note.gnu.property, "a"
+.balign 8
+.long 4           // namesz
+.long 0x10        // descsz
+.long 5           // type: NT_GNU_PROPERTY_TYPE_0
+.asciz "GNU"      // name
+.long 0xc0000000  // GNU_PROPERTY_AARCH64_FEATURE_1_AND
+.long 4           // pr_datasz
+.long 3           // GNU_PROPERTY_AARCH64_FEATURE_1_BTI | GNU_PROPERTY_AARCH64_FEATURE_1_PAC
+.long 0           // padding
+.popsection
 #endif
