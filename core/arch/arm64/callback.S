@@ -169,4 +169,17 @@ lfi_callback_struct:
 
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits
+
+// GNU property note for BTI and PAC support
+.pushsection .note.gnu.property, "a"
+.balign 8
+.long 4           // namesz
+.long 0x10        // descsz
+.long 5           // type: NT_GNU_PROPERTY_TYPE_0
+.asciz "GNU"      // name
+.long 0xc0000000  // GNU_PROPERTY_AARCH64_FEATURE_1_AND
+.long 4           // pr_datasz
+.long 3           // GNU_PROPERTY_AARCH64_FEATURE_1_BTI | GNU_PROPERTY_AARCH64_FEATURE_1_PAC
+.long 0           // padding
+.popsection
 #endif

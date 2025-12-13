@@ -109,6 +109,7 @@ Lloh1:
 .p2align 4
 lfi_trampoline_struct:
     bti jc
+    paciasp
     stp d8, d9,   [sp, #-16]!
     stp d10, d11, [sp, #-16]!
     stp d12, d13, [sp, #-16]!
@@ -151,6 +152,7 @@ lfi_trampoline_struct:
 .p2align 4
 lfi_trampoline:
     bti jc
+    paciasp
     stp d8, d9,   [sp, #-16]!
     stp d10, d11, [sp, #-16]!
     stp d12, d13, [sp, #-16]!
@@ -180,6 +182,7 @@ lfi_trampoline:
 .p2align 4
 lfi_trampoline_direct:
     bti jc
+    paciasp
     ldp x10, x13, [sp], #16
     ldp x11, x12, [sp], #16
 
@@ -281,11 +284,13 @@ lfi_ret:
     ldp d12, d13, [sp], 16
     ldp d10, d11, [sp], 16
     ldp d8, d9,   [sp], 16
+    autiasp
     ret
 
 // Slowpath taken when the sandbox context needs to be initialized.
 .p2align 4
 .trampoline_clone:
+    paciasp
     stp x29, x30, [sp, #-16]!
     stp x0, x1, [sp, #-16]!
     stp x2, x3, [sp, #-16]!
@@ -308,8 +313,22 @@ lfi_ret:
     ldp x2, x3, [sp], 16
     ldp x0, x1, [sp], 16
     ldp x29, x30, [sp], 16
+    autiasp
     ret
 
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits
+
+// GNU property note for BTI and PAC support
+.pushsection .note.gnu.property, "a"
+.balign 8
+.long 4           // namesz
+.long 0x10        // descsz
+.long 5           // type: NT_GNU_PROPERTY_TYPE_0
+.asciz "GNU"      // name
+.long 0xc0000000  // GNU_PROPERTY_AARCH64_FEATURE_1_AND
+.long 4           // pr_datasz
+.long 3           // GNU_PROPERTY_AARCH64_FEATURE_1_BTI | GNU_PROPERTY_AARCH64_FEATURE_1_PAC
+.long 0           // padding
+.popsection
 #endif
