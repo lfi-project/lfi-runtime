@@ -198,9 +198,14 @@ lfi_box_info(struct LFIBox *box)
 static int
 host_prot(int prot)
 {
-    return ((prot & LFI_PROT_READ) ? PROT_READ : 0) |
+    int p = ((prot & LFI_PROT_READ) ? PROT_READ : 0) |
         ((prot & LFI_PROT_WRITE) ? PROT_WRITE : 0) |
         ((prot & LFI_PROT_EXEC) ? PROT_EXEC : 0);
+#if defined(LFI_ARCH_ARM64)
+    if (prot & LFI_PROT_BTI)
+        p |= PROT_BTI;
+#endif
+    return p;
 }
 
 static int

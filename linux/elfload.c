@@ -21,6 +21,66 @@
 // We do not allow executable segments above 1GiB.
 #define CODE_MAX (1UL * 1024 * 1024 * 1024)
 
+// Check if the ELF has BTI enabled via PT_GNU_PROPERTY.
+static bool
+elf_has_bti(struct Buf elf, Elf64_Ehdr *ehdr, Elf64_Phdr *phdrs)
+{
+#if defined(__aarch64__)
+    for (int i = 0; i < ehdr->e_phnum; i++) {
+        if (phdrs[i].p_type != PT_GNU_PROPERTY)
+            continue;
+
+        // Parse GNU property notes to find BTI flag.
+        size_t offset = phdrs[i].p_offset;
+        size_t end = offset + phdrs[i].p_filesz;
+
+        while (offset + sizeof(Elf64_Nhdr) <= end) {
+            Elf64_Nhdr nhdr;
+            size_t n = buf_read(elf, &nhdr, sizeof(nhdr), offset);
+            if (n != sizeof(nhdr))
+                break;
+
+            size_t name_size = (nhdr.n_namesz + 3) & ~3; // Align to 4 bytes
+            size_t desc_size = (nhdr.n_descsz + 3) & ~3;
+
+            if (nhdr.n_type == NT_GNU_PROPERTY_TYPE_0 && nhdr.n_namesz == 4) {
+                char name[4];
+                buf_read(elf, name, 4, offset + sizeof(nhdr));
+                if (memcmp(name, "GNU", 4) == 0) {
+                    // Parse the property descriptors.
+                    size_t desc_offset = offset + sizeof(nhdr) + name_size;
+                    size_t desc_end = desc_offset + nhdr.n_descsz;
+
+                    while (desc_offset + 8 <= desc_end) {
+                        uint32_t pr_type, pr_datasz;
+                        buf_read(elf, &pr_type, 4, desc_offset);
+                        buf_read(elf, &pr_datasz, 4, desc_offset + 4);
+
+                        if (pr_type == GNU_PROPERTY_AARCH64_FEATURE_1_AND &&
+                            pr_datasz >= 4) {
+                            uint32_t features;
+                            buf_read(elf, &features, 4, desc_offset + 8);
+                            if (features & GNU_PROPERTY_AARCH64_FEATURE_1_BTI)
+                                return true;
+                        }
+
+                        // Move to next property (8-byte aligned).
+                        desc_offset += 8 + ((pr_datasz + 7) & ~7);
+                    }
+                }
+            }
+
+            offset += sizeof(nhdr) + name_size + desc_size;
+        }
+    }
+#else
+    (void) elf;
+    (void) ehdr;
+    (void) phdrs;
+#endif
+    return false;
+}
+
 static lfiptr
 p2l(struct LFIBox *box, uintptr_t p)
 {
@@ -73,11 +133,14 @@ elf_interp(const uint8_t *prog_data, size_t prog_size)
 
 // Convert ELF protection flags to LFI mmap protection flags.
 static int
-pflags(int prot)
+pflags(int prot, bool bti)
 {
-    return ((prot & PF_R) ? LFI_PROT_READ : 0) |
+    int p = ((prot & PF_R) ? LFI_PROT_READ : 0) |
         ((prot & PF_W) ? LFI_PROT_WRITE : 0) |
         ((prot & PF_X) ? LFI_PROT_EXEC : 0);
+    if (bti && (prot & PF_X))
+        p |= LFI_PROT_BTI;
+    return p;
 }
 
 // Sanity-check the ELF header.
@@ -244,6 +307,8 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
         goto err1;
     }
 
+    bool bti = elf_has_bti(elf, ehdr, phdrs);
+
     if (ehdr->e_entry >= CODE_MAX) {
         ERROR("elf_load error: e_entry (0x%lx) is larger than CODE_MAX (0x%lx)",
             (unsigned long) ehdr->e_entry, CODE_MAX);
@@ -294,13 +359,13 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
         laststart = start;
 
         LOG(proc->engine, "elf_load [0x%lx, 0x%lx] (P: %d)", base + start,
-            base + end, pflags(p->p_flags));
+            base + end, pflags(p->p_flags, bti));
 
         // Load the segment if we are doing a normal load (not reload) or if we
         // are doing a reload and the segment is writable.
         if (!reload || (reload && ((p->p_flags & PF_W) != 0))) {
             if (!buf_read_elfseg(proc, base + start, offset, base + end,
-                    p->p_offset, p->p_filesz, p->p_memsz, pflags(p->p_flags),
+                    p->p_offset, p->p_filesz, p->p_memsz, pflags(p->p_flags, bti),
                     elf, pagesize, p->p_align, map_op, reload)) {
                 ERROR("elf_load error: reading elf segment failed");
                 goto err1;
