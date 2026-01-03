@@ -91,6 +91,7 @@ struct LFIMapInfo {
 #define LFI_PROT_READ  1
 #define LFI_PROT_WRITE 2
 #define LFI_PROT_EXEC  4
+#define LFI_PROT_BTI   16
 
 // CAUTION: the runtime must be careful allowing mappings with MAP_SHARED,
 // since such a page could be mapped twice: once as W and once as X. Thus, the
