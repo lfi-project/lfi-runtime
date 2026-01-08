@@ -58,6 +58,8 @@
 .endm
 
 .macro lfi_callback_gen with_struct
+    // reset REG_ADDR
+    mov REG_ADDR, REG_BASE
     get_ctx x9
 
     // Save and replace tpidr_el0 with host value.

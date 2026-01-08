@@ -123,6 +123,8 @@ lfi_ctx_end:
 .p2align 4
 lfi_syscall_entry:
     bti jc
+    // reset REG_ADDR
+    mov REG_ADDR, REG_BASE
     get_ctx REG_BASE
     // save registers
     stp x0, x1,   [REG_BASE, REGS_X(0)]
@@ -209,6 +211,8 @@ lfi_syscall_entry:
 .p2align 4
 lfi_get_tp:
     bti jc
+    // reset REG_ADDR
+    mov REG_ADDR, REG_BASE
     get_ctx x0
     ldr x0, [x0, REGS_TP]
     add x30, REG_BASE, w30, uxtw
@@ -218,6 +222,8 @@ lfi_get_tp:
 .p2align 4
 lfi_set_tp:
     bti jc
+    // reset REG_ADDR
+    mov REG_ADDR, REG_BASE
     get_ctx REG_BASE
     str x0, [REG_BASE, REGS_TP]
     // reload REG_BASE
