@@ -17,7 +17,9 @@
     mov x22, #0
     mov x23, #0
     mov x24, #0
+#ifndef CTXREG
     mov x25, #0
+#endif
     mov x26, #0
     // skip x27 (base)
     // skip x28 (addr)

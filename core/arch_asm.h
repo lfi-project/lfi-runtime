@@ -34,13 +34,23 @@
 
 #define CTX_ABORT_CALLBACK 800
 #define CTX_ABORT_STATUS   808
+#define CTX_CTXREG         816
 
 #define REG_BASE  x27
 #define REG_ADDR  x28
 
 // clang-format off
 #ifdef __ASSEMBLER__
-# if defined(__APPLE__)
+# if defined(CTXREG)
+// With CTXREG, x25 points to the ctxreg array and ctxreg[0] holds the context pointer.
+.macro get_ctx reg
+    ldr \reg, [x25]
+.endm
+
+// With CTXREG, we never need to write the ctx.
+.macro write_ctx reg tmp
+.endm
+# elif defined(__APPLE__)
 // We save and restore whatever tpidrro_el0 points to. This probably will
 // completely break behavior inside signal handlers if we receive a signal
 // during sandbox execution...
@@ -102,6 +112,15 @@
 
 // clang-format off
 #ifdef __ASSEMBLER__
+#ifdef CTXREG
+// With CTXREG, r15 points to the ctxreg array and ctxreg[0] holds the context pointer.
+.macro get_ctx reg
+    movq (%r15), \reg
+.endm
+
+.macro write_ctx reg
+.endm
+#else
 .macro get_ctx reg
     movq %fs:(8*TLS_SLOT_LFI), \reg
 .endm
@@ -109,6 +128,7 @@
 .macro write_ctx reg
     movq \reg, %fs:(8*TLS_SLOT_LFI)
 .endm
+#endif
 
 // Allow access to all PKU regions.
 .macro pku_all_access

@@ -23,6 +23,9 @@ init_verifier(struct LFIVerifier *v, struct LFIOptions *opts)
     else
         v->opts.box = LFI_BOX_FULL;
 
+#ifdef CTXREG
+    v->opts.ctxreg = true;
+#endif
     v->opts.err = logerr;
 
 #if defined(LFI_ARCH_ARM64)

@@ -71,6 +71,13 @@ struct LFIContext {
     // Set to 1 if the most recent callback was aborted.
     uint64_t abort_status;
 
+#ifdef CTXREG
+    // Context register storage. The first slot holds a pointer to this
+    // LFIContext, and remaining slots are available for thread-local data
+    // (e.g., thread pointer).
+    uint64_t ctxreg[8];
+#endif
+
     // User-provided data pointer -- tracks per-sandbox context for Linux
     // runtime.
     void *userdata;

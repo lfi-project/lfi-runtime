@@ -66,3 +66,8 @@ option('sandbox_tls',
   type: 'boolean',
   value: true,
   description: 'enable support for thread-local storage in the sandbox')
+
+option('ctxreg',
+  type: 'boolean',
+  value: false,
+  description: 'enable context register (x25 on arm64, r15 on x64) for storing runtime context')

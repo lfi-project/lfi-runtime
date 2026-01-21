@@ -126,6 +126,9 @@ endif
 if get_option('sandbox_tls')
   defines += '-DSANDBOX_TLS'
 endif
+if get_option('ctxreg')
+  defines += '-DCTXREG'
+endif
 
 if not meson.is_subproject()
   add_global_arguments(c_args, language: 'c')

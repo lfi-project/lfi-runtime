@@ -9,7 +9,9 @@
     xorq %r12, %r12
     xorq %r13, %r13
     // skip %r14 (base)
+#ifdef CTXREG
     xorq %r15, %r15
+#endif
     xorps %xmm8, %xmm8
     xorps %xmm9, %xmm9
     xorps %xmm10, %xmm10
