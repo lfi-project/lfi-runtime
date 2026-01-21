@@ -14,8 +14,8 @@ struct LFIRegs {
     // directly modified.
     uint64_t host_sp;
     uint64_t host_tp;
-    // Sandbox thread pointer.
-    uint64_t tp;
+    // Sandbox thread pointer (use lfi_ctx_get_tp/lfi_ctx_set_tp instead).
+    uint64_t _tp;
     // Return address for lfi_trampoline invocations (generally this should be
     // a pointer to a function in the sandbox that calls lfi_ret).
     uint64_t retaddr;
@@ -66,7 +66,8 @@ struct LFIRegs {
     // directly modifying %fs (where the thread pointer is stored on x86-64) is
     // a slow operation: wrfsbase can take up to 40 cycles.
     uint64_t host_tp;
-    uint64_t tp;
+    // Sandbox thread pointer (use lfi_ctx_get_tp/lfi_ctx_set_tp instead).
+    uint64_t _tp;
     uint64_t retaddr;
     uint64_t pkey;
 
@@ -100,8 +101,8 @@ struct LFIRegs {
     // Host context saving
     uint64_t host_sp;
     uint64_t host_tp;
-    // Sandbox thread pointer
-    uint64_t tp;
+    // Sandbox thread pointer (use lfi_ctx_get_tp/lfi_ctx_set_tp instead).
+    uint64_t _tp;
     // Return address for lfi_trampoline invocations
     uint64_t retaddr;
 

@@ -18,12 +18,14 @@ lfi_ctx_entry:
     // put entrypoint in %r11
     movq %rdx, %r11
 
+#ifndef CTXREG
     // set the sandbox thread control block by saving the old value of
     // %fs:TLS_SLOT_LFI into the context and setting it to point to the context
     // itself.
     get_ctx %rax
     movq %rax, REGS_HOST_TP(%rdi)
     write_ctx %rdi
+#endif
 
     // load all registers
     movq REGS_RSP(%rdi), %rsp
@@ -83,9 +85,11 @@ lfi_ctx_entry:
 lfi_ctx_end:
     // restore host_sp
     movq REGS_HOST_SP(%rdi), %rsp
+#ifndef CTXREG
     // restore host_tp
     movq REGS_HOST_TP(%rdi), %rbp
     write_ctx %rbp
+#endif
     // put val in the return register
     movq %rsi, %rax
     // restore callee-saved registers saved in lfi_ctx_entry
@@ -139,9 +143,11 @@ lfi_syscall_entry:
     movq %xmm14, REGS_XMM(14)(%rcx)
     movq %xmm15, REGS_XMM(15)(%rcx)
 
+#ifndef CTXREG
     // swap the thread control block back to the host one
     movq REGS_HOST_TP(%rcx), %rdi
     write_ctx %rdi
+#endif
 
     // restore host stack and call handler
     movq REGS_HOST_SP(%rcx), %rsp
@@ -150,8 +156,10 @@ lfi_syscall_entry:
     callq lfi_syscall_handler
     popq %rcx
 
+#ifndef CTXREG
     // swap thread control block back to context pointer
     write_ctx %rcx
+#endif
 
     // NOTE: consider removing this entirely if we can assume that syscall
     // execution never modifies %gs (i.e., never calls into another sandbox).

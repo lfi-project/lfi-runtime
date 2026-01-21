@@ -13,7 +13,7 @@ _Static_assert(offsetof(struct LFIRegs, host_sp) == REGS_HOST_SP,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, host_tp) == REGS_HOST_TP,
     "incorrect REGS offset");
-_Static_assert(offsetof(struct LFIRegs, tp) == REGS_TP,
+_Static_assert(offsetof(struct LFIRegs, _tp) == REGS_TP,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, retaddr) == REGS_RETADDR,
     "incorrect REGS offset");

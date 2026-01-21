@@ -284,6 +284,14 @@ lfi_ctx_free(struct LFIContext *ctx);
 struct LFIRegs *
 lfi_ctx_regs(struct LFIContext *ctx);
 
+// Returns the sandbox thread pointer.
+uint64_t
+lfi_ctx_get_tp(struct LFIContext *ctx);
+
+// Sets the sandbox thread pointer.
+void
+lfi_ctx_set_tp(struct LFIContext *ctx, uint64_t tp);
+
 // Initializes registers to values that maintain sandbox invariants
 // (essentially, this sets all sandbox-reserved registers to the sandbox base
 // address).

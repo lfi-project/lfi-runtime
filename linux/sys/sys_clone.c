@@ -164,7 +164,7 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
 
     struct LFIRegs *regs = lfi_ctx_regs(p2->ctx);
     if (flags & LINUX_CLONE_SETTLS) {
-        regs->tp = tls;
+        lfi_ctx_set_tp(p2->ctx, tls);
     }
     if (flags & LINUX_CLONE_CHILD_CLEARTID) {
         p2->ctidp = ctidp;
