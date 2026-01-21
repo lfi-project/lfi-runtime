@@ -1,9 +1,12 @@
 #include "trampoline.h"
 
+#include "lfi_arch.h"
+#include "lfi_core.h"
 #include "lock.h"
 #include "proc.h"
 
 #include <assert.h>
+#include <stdlib.h>
 
 #define ensure(expr)                                                   \
     do {                                                               \
@@ -11,7 +14,49 @@
             ERROR("%s:%d: ensure failed: " #expr, __FILE__, __LINE__); \
     } while (0)
 
-#ifdef SANDBOX_TLS
+#ifdef SYS_MINIMAL
+// Simplified clone callback for sys_minimal mode.
+// Just allocates a stack and creates a context - no pthread involvement.
+static struct LFIContext *
+lfi_linux_clone_cb_minimal(struct LFIBox *box)
+{
+    struct LFILinuxProc *proc = lfi_box_data(box);
+
+    // Create thread structure.
+    struct LFILinuxThread *t = calloc(sizeof(struct LFILinuxThread), 1);
+    if (!t)
+        return NULL;
+
+    t->proc = proc;
+    t->ctx = lfi_ctx_new(box, t);
+    if (!t->ctx) {
+        free(t);
+        return NULL;
+    }
+
+    // Allocate stack in sandbox memory.
+    size_t stacksize = proc->engine->opts.stacksize;
+    t->stack = lfi_box_mapany(box, stacksize,
+        LFI_PROT_READ | LFI_PROT_WRITE,
+        LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+    if (t->stack == (lfiptr) -1) {
+        lfi_ctx_free(t->ctx);
+        free(t);
+        return NULL;
+    }
+    t->stack_size = stacksize;
+
+    // Set stack pointer to top of stack (stack grows down).
+    lfi_ctx_regs(t->ctx)->sp = t->stack + stacksize;
+
+    // Set tp to 0 (no TLS support in sys_minimal mode).
+    lfi_ctx_set_tp(t->ctx, 0);
+
+    return t->ctx;
+}
+#endif
+
+#if defined(SANDBOX_TLS) && !defined(SYS_MINIMAL)
 // This is where sys_clone places new contexts that are created via clone.
 thread_local struct LFIContext *new_ctx;
 
@@ -63,7 +108,10 @@ thread_destructor(void *p)
 EXPORT void
 lfi_linux_init_clone(struct LFILinuxThread *main)
 {
-#ifdef SANDBOX_TLS
+#ifdef SYS_MINIMAL
+    // Simple clone callback - just allocates stack, no pthread/TLS.
+    lfi_set_clone_cb(lfi_box_engine(main->proc->box), lfi_linux_clone_cb_minimal);
+#elif defined(SANDBOX_TLS)
     // Make sure the _lfi_thread_create symbol exists.
     ensure(main->proc->libsyms.thread_create);
 

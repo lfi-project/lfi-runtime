@@ -24,18 +24,6 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
             sys_mmap(t, a0, a1, a2, a3, a4, a5))
     SYS(munmap,
             sys_munmap(t, a0, a1))
-    // Clone signature is different on aarch64 and x86-64.
-#if defined(LFI_ARCH_X64)
-    // syscall: clone(flags, stack, ptid, ctid, tls, func)
-    SYS(clone,
-            sys_clone(t, a0, a1, a2, a3, a4, a5))
-#elif defined(LFI_ARCH_ARM64)
-    // syscall: clone(flags, stack, ptid, tls, ctid, func)
-    SYS(clone,
-            sys_clone(t, a0, a1, a2, a4, a3, a5))
-#else
-#error "invalid arch"
-#endif
     SYS(exit_group,
             sys_exit_group(t, a0))
     SYS(exit,
@@ -44,15 +32,6 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
     // LFI syscall for pausing execution.
     LFI(pause,
             sys_lfi_pause(t))
-
-    SYS(write,
-            sys_write(t, a0, a1, a2))
-    SYS(writev,
-            sys_writev(t, a0, a1, a2))
-
-    // Other syscalls.
-    SYS(ioctl,
-            sys_ioctl(t, a0, a1, a2, a3, a4, a5))
 
     // Unsupported syscalls that we ignore or purposefully return ENOSYS for.
     SYS(set_tid_address,

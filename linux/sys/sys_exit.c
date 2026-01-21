@@ -6,12 +6,16 @@
 static void
 clearctid(struct LFILinuxThread *t)
 {
+#ifndef SYS_MINIMAL
     _Atomic(int) *ctid;
     if (t->ctidp) {
         ctid = (_Atomic(int) *) ptrhost(t, t->ctidp);
         atomic_store_explicit(ctid, 0, memory_order_seq_cst);
     }
     sys_futex(t, t->ctidp, LINUX_FUTEX_WAKE, INT_MAX, 0, 0, 0);
+#else
+    (void) t;
+#endif
 }
 
 extern void
