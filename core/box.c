@@ -32,7 +32,7 @@ p2l(struct LFIBox *box, uintptr_t p)
 // Runtime call entrypoints. These are defined in runtime.S.
 extern void
 lfi_syscall_entry(void) __asm__("lfi_syscall_entry");
-#ifdef SANDBOX_TLS
+#ifndef SYS_MINIMAL
 extern void
 lfi_get_tp(void) __asm__("lfi_get_tp");
 extern void
@@ -73,7 +73,7 @@ syssetup(struct LFIBox *box)
 
     size_t n = sizeof(box->sys->rtcalls) / sizeof(box->sys->rtcalls[0]);
     box->sys->rtcalls[n - 1] = (uintptr_t) &lfi_syscall_entry;
-#ifdef SANDBOX_TLS
+#ifndef SYS_MINIMAL
     box->sys->rtcalls[n - 2] = (uintptr_t) &lfi_get_tp;
     box->sys->rtcalls[n - 3] = (uintptr_t) &lfi_set_tp;
 #endif
@@ -90,7 +90,7 @@ syssetup(struct LFIBox *box)
         struct Sys *null_rtcall = (struct Sys *) null_page;
 
         null_rtcall->rtcalls[0] = (uintptr_t) &lfi_syscall_entry;
-#ifdef SANDBOX_TLS
+#ifndef SYS_MINIMAL
         null_rtcall->rtcalls[1] = (uintptr_t) &lfi_get_tp;
         null_rtcall->rtcalls[2] = (uintptr_t) &lfi_set_tp;
 #endif

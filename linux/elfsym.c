@@ -42,7 +42,7 @@ loadsym(struct LFILinuxProc *proc, lfiptr *p, const char *sym)
 static bool
 load_libsyms(struct LFILinuxProc *proc)
 {
-#ifdef SANDBOX_TLS
+#ifndef SYS_MINIMAL
     if (!loadsym(proc, &proc->libsyms.thread_create, "_lfi_thread_create"))
         LOG(proc->engine, "warning: _lfi_thread_create not found");
     if (!loadsym(proc, &proc->libsyms.thread_destroy, "_lfi_thread_destroy"))

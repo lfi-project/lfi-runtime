@@ -56,7 +56,7 @@ lfi_linux_clone_cb_minimal(struct LFIBox *box)
 }
 #endif
 
-#if defined(SANDBOX_TLS) && !defined(SYS_MINIMAL)
+#ifndef SYS_MINIMAL
 // This is where sys_clone places new contexts that are created via clone.
 thread_local struct LFIContext *new_ctx;
 
@@ -111,7 +111,7 @@ lfi_linux_init_clone(struct LFILinuxThread *main)
 #ifdef SYS_MINIMAL
     // Simple clone callback - just allocates stack, no pthread/TLS.
     lfi_set_clone_cb(lfi_box_engine(main->proc->box), lfi_linux_clone_cb_minimal);
-#elif defined(SANDBOX_TLS)
+#else
     // Make sure the _lfi_thread_create symbol exists.
     ensure(main->proc->libsyms.thread_create);
 
@@ -130,8 +130,6 @@ lfi_linux_init_clone(struct LFILinuxThread *main)
     // Initialize our pthread key so that we get a callback when host threads
     // that have associated sandbox threads exit.
     pthread_key_create(&thread_key, thread_destructor);
-#else
-    (void) main;
 #endif
 }
 

@@ -123,8 +123,8 @@ endif
 if get_option('segue_single_sandbox')
   defines += '-DSEGUE_SINGLE_SANDBOX'
 endif
-if get_option('sandbox_tls')
-  defines += '-DSANDBOX_TLS'
+if get_option('sys_minimal')
+  defines += '-DSYS_MINIMAL'
 endif
 if get_option('ctxreg')
   defines += '-DCTXREG'

@@ -13,7 +13,6 @@ isfork(uint64_t flags)
         (LINUX_CLONE_VM | LINUX_CLONE_VFORK | LINUX_SIGCHLD);
 }
 
-#ifdef SANDBOX_TLS
 // Receiver for SIGLFI when the main thread wants to kill child threads.
 static void
 thread_signal(int sig)
@@ -103,23 +102,11 @@ end:
     free(ss.ss_sp);
     return NULL;
 }
-#endif
 
 static int
 spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
     uint64_t ctidp, uint64_t tls, uint64_t func)
 {
-#ifdef SANDBOX_TLS
-
-#if defined(SYS_MINIMAL)
-    // In the minimal configuration we only support spawning fake threads to
-    // attach to host threads that already exist. Using clone to create new
-    // threads from the sandbox is not permitted.
-    if (p->ctx != p->proc->clone_ctx) {
-        return -LINUX_ENOSYS;
-    }
-#endif
-
     if ((flags & 0xff) != 0 && (flags & 0xff) != LINUX_SIGCHLD) {
         LOG(p->proc->engine, "unsupported clone signal: %x",
             (unsigned) flags & 0xff);
@@ -222,12 +209,6 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
         atomic_store_explicit(ptid, tid, memory_order_release);
     }
     return tid;
-
-#else
-
-    return -LINUX_ENOSYS;
-
-#endif
 }
 
 int

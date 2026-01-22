@@ -17,7 +17,6 @@ srcs = files(
 
 if get_option('sys_minimal')
   srcs += files('sys_minimal.c')
-  defines += '-DSYS_MINIMAL'
 else
   srcs += files('sys.c')
 endif
