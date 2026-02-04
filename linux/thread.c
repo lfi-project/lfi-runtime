@@ -11,6 +11,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef SAFESTACK
+#include <sys/mman.h>
+#endif
+
 #ifdef HAVE_GETAUXVAL
 #include <sys/auxv.h>
 static unsigned long
@@ -188,6 +192,41 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
     return stack_start;
 }
 
+#ifdef SAFESTACK
+void*
+alloc_safestack(struct LFILinuxThread *t) {
+  // NOTE: get stacksize as a cmdline arg?
+  // NOTE: decide Guard page size
+  size_t safestack_size = 1 << 20; // 1MiB
+  size_t guard_size = 1 << 12; // 4KiB
+  t->safestack = mmap(NULL, safestack_size + 2 * guard_size, PROT_NONE,
+      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (t->safestack == (void *)-1) {
+    LOG(t->proc->engine, "failed to map safestack");
+    return NULL;
+  }
+  if (mprotect(t->safestack + guard_size, safestack_size, PROT_READ | PROT_WRITE) != 0) {
+    LOG(t->proc->engine, "failed to mprotect safestack");
+    munmap(t->safestack, safestack_size + 2 * guard_size);
+    return NULL;
+  }
+  t->safestack += guard_size;
+  t->safestack_size = safestack_size;
+
+  return t->safestack;
+}
+
+static void
+unsafestack_sp_init(struct LFILinuxThread *t, lfiptr unsafe_sp) {
+#if defined(LFI_ARCH_X64)
+  t->ctx->ctxreg[2] = unsafe_sp;
+#else
+#error "invalid arch"
+#endif
+  LOG(t->proc->engine, "UnsafeStack starts from %p", unsafe_sp);
+}
+#endif
+
 static void
 sp_init(struct LFILinuxThread *t, lfiptr sp)
 {
@@ -210,7 +249,14 @@ lfi_thread_reload(struct LFILinuxThread *t, int argc, const char **argv,
     lfiptr sp = stack_init(t, argc, argv, envp);
     *lfi_ctx_regs(t->ctx) = (struct LFIRegs) { 0 };
     lfi_ctx_regs_init(t->ctx);
+#ifndef SAFESTACK
     sp_init(t, sp);
+#else
+    uintptr_t safestack_start = truncp((uintptr_t)t->safestack + t->safestack_size, 16);
+    // WARN: type conversion
+    sp_init(t, (lfiptr)safestack_start);
+    unsafestack_sp_init(t, sp);
+#endif
 }
 
 EXPORT struct LFILinuxThread *
@@ -238,9 +284,18 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
         goto err3;
     }
     t->stack_size = stacksize;
-
     lfiptr sp = stack_init(t, argc, argv, envp);
+#ifndef SAFESTACK
     sp_init(t, sp);
+#else
+    void *safestack_start = alloc_safestack(t);
+    if (safestack_start == NULL) {
+        goto err3;
+    }
+    // WARN: type conversion
+    sp_init(t, (lfiptr)safestack_start);
+    unsafestack_sp_init(t, sp);
+#endif
 
     lfi_box_mark_original(t->proc->box);
 
