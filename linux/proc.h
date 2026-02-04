@@ -157,6 +157,10 @@ struct LFILinuxThread {
     pthread_cond_t cond_ready;
 
     struct LFILinuxProc *proc;
+
+    // Set to true when sys_exit or sys_exit_group is called. If called again
+    // while already exited, abort() is called instead of ctx_exit.
+    bool exited;
 };
 
 int

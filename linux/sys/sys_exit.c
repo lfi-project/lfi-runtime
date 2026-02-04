@@ -2,6 +2,7 @@
 
 #include <limits.h>
 #include <stdatomic.h>
+#include <stdlib.h>
 
 static void
 clearctid(struct LFILinuxThread *t)
@@ -33,6 +34,14 @@ sys_exit(struct LFILinuxThread *t, int code)
         lfi_ret_end(t->ctx);
         __builtin_unreachable();
     }
+
+    // If already exited (e.g., after a pause in library mode), abort instead
+    // of calling ctx_exit again.
+    if (t->exited) {
+        abort();
+    }
+    t->exited = true;
+
     {
         LOCK_WITH_DEFER(&t->proc->lk_threads, lk_threads);
         list_remove(&t->proc->threads, &t->threads_elem);
