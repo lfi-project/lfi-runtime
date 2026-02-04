@@ -129,6 +129,9 @@ endif
 if get_option('ctxreg')
   defines += '-DCTXREG'
 endif
+if get_option('safestack')
+  defines += '-DSAFESTACK'
+endif
 
 if not meson.is_subproject()
   add_global_arguments(c_args, language: 'c')

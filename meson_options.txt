@@ -66,3 +66,8 @@ option('ctxreg',
   type: 'boolean',
   value: false,
   description: 'enable context register (x25 on arm64, r15 on x64) for storing runtime context')
+
+option('safestack',
+  type: 'boolean',
+  value: false,
+  description: 'enable safestack, allocating the safe stack out of the sandbox memory')
