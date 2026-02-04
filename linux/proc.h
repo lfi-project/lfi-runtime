@@ -135,6 +135,11 @@ struct LFILinuxThread {
     lfiptr stack;
     size_t stack_size;
 
+#ifdef SAFESTACK
+    void *safestack;
+    size_t safestack_size;
+#endif
+
     // Child tid pointer location.
     lfiptr ctidp;
 
@@ -175,3 +180,6 @@ thread_clone(struct LFILinuxThread *t);
 
 int
 proc_chdir(struct LFILinuxProc *p, const char *path);
+
+void*
+alloc_safestack(struct LFILinuxThread *t);

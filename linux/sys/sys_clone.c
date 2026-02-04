@@ -160,6 +160,15 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
         atomic_store_explicit(ctid, p2->tid, memory_order_release);
     }
 
+#ifdef SAFESTACK
+    void *safestack_start = alloc_safestack(p2);
+    if (safestack_start == NULL) {
+        return -LINUX_EFAULT;
+    }
+    // WARN: type conversion
+    stack = (lfiptr)safestack_start;
+#endif
+
     LOG(p->proc->engine, "sys_clone(%lx, %lx, %lx, %lx, %lx) = %d",
         (long) flags, (long) stack, (long) ptidp, (long) ctidp, (long) tls,
         (int) p2->tid);

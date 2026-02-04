@@ -292,6 +292,10 @@ lfi_ctx_get_tp(struct LFIContext *ctx);
 void
 lfi_ctx_set_tp(struct LFIContext *ctx, uint64_t tp);
 
+// Sets the sandbox unsafe stack pointer.
+void
+lfi_ctx_set_unsafesp(struct LFIContext *ctx, uint64_t tp);
+
 // Initializes registers to values that maintain sandbox invariants
 // (essentially, this sets all sandbox-reserved registers to the sandbox base
 // address).
