@@ -110,6 +110,12 @@
 #define CTX_ABORT_CALLBACK 448
 #define CTX_ABORT_STATUS   456
 
+#ifdef CTXREG
+#define CTX_SCS_LIMIT      984
+#define CTX_SCS_SAVE_STACK 1000
+#define CTX_SCS_SAVE_SP    1256
+#endif
+
 // clang-format off
 #ifdef __ASSEMBLER__
 #ifdef CTXREG

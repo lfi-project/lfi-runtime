@@ -40,6 +40,14 @@ lfi_set_tp(void) __asm__("lfi_set_tp");
 #endif
 extern void
 lfi_ret(void) __asm__("lfi_ret");
+#if defined(LFI_ARCH_X64) && defined(CTXREG)
+extern void
+lfi_scs_save(void) __asm__("lfi_scs_save");
+extern void
+lfi_scs_restore(void) __asm__("lfi_scs_restore");
+extern void
+lfi_scs_unwind(void) __asm__("lfi_scs_unwind");
+#endif
 
 static int
 protectmem(void *start, size_t size, int prot, int pkey)
@@ -78,6 +86,11 @@ syssetup(struct LFIBox *box)
     box->sys->rtcalls[n - 3] = (uintptr_t) &lfi_set_tp;
 #endif
     box->sys->rtcalls[n - 4] = (uintptr_t) &lfi_ret;
+#if defined(LFI_ARCH_X64) && defined(CTXREG)
+    box->sys->rtcalls[n - 5] = (uintptr_t) &lfi_scs_save;
+    box->sys->rtcalls[n - 6] = (uintptr_t) &lfi_scs_restore;
+    box->sys->rtcalls[n - 7] = (uintptr_t) &lfi_scs_unwind;
+#endif
 
     if (!box->engine->opts.no_rtcall_nullpage) {
         // Also map the rtcall page at the nullpage, for compatibility with old
@@ -95,6 +108,11 @@ syssetup(struct LFIBox *box)
         null_rtcall->rtcalls[2] = (uintptr_t) &lfi_set_tp;
 #endif
         null_rtcall->rtcalls[3] = (uintptr_t) &lfi_ret;
+#if defined(LFI_ARCH_X64) && defined(CTXREG)
+        null_rtcall->rtcalls[4] = (uintptr_t) &lfi_scs_save;
+        null_rtcall->rtcalls[5] = (uintptr_t) &lfi_scs_restore;
+        null_rtcall->rtcalls[6] = (uintptr_t) &lfi_scs_unwind;
+#endif
     }
 
     // Map read-only.

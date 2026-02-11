@@ -2,6 +2,8 @@
 #include "lfi_core.h"
 
 #include <stdlib.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 extern int
 lfi_ctx_entry(struct LFIContext *ctx, uintptr_t *host_sp_ptr,
@@ -26,6 +28,30 @@ lfi_ctx_new(struct LFIBox *box, void *userdata)
 
     lfi_ctx_regs_init(ctx);
 
+#ifdef CTXREG
+    enum { SCS_SIZE = 128 * 1024 };
+    size_t pagesize = getpagesize();
+    size_t total = pagesize + SCS_SIZE + pagesize;
+    void *region = mmap(NULL, total, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (region == MAP_FAILED) {
+        free(ctx);
+        lfi_error = LFI_ERR_ALLOC;
+        return NULL;
+    }
+    void *scs = (char *) region + pagesize;
+    if (mprotect(scs, SCS_SIZE, PROT_READ | PROT_WRITE) != 0) {
+        munmap(region, total);
+        free(ctx);
+        lfi_error = LFI_ERR_ALLOC;
+        return NULL;
+    }
+    ctx->scs_base = region;
+    ctx->scs_limit = (char *) scs + SCS_SIZE;
+    ctx->scs_total = total;
+    ctx->ctxreg[2] = (uint64_t) scs + SCS_SIZE;
+    ctx->scs_save_sp = ctx->scs_save_stack;
+#endif
+
     return ctx;
 }
 
@@ -48,6 +74,9 @@ lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
 EXPORT void
 lfi_ctx_free(struct LFIContext *ctx)
 {
+#ifdef CTXREG
+    munmap(ctx->scs_base, ctx->scs_total);
+#endif
     free(ctx);
 }
 

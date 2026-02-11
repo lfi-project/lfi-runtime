@@ -94,6 +94,15 @@ _Static_assert(offsetof(struct LFIContext, abort_callback) == CTX_ABORT_CALLBACK
 _Static_assert(offsetof(struct LFIContext, abort_status) == CTX_ABORT_STATUS,
     "incorrect abort_callback offset");
 
+#ifdef CTXREG
+_Static_assert(offsetof(struct LFIContext, scs_limit) == CTX_SCS_LIMIT,
+    "incorrect CTX_SCS_LIMIT offset");
+_Static_assert(offsetof(struct LFIContext, scs_save_stack) == CTX_SCS_SAVE_STACK,
+    "incorrect CTX_SCS_SAVE_STACK offset");
+_Static_assert(offsetof(struct LFIContext, scs_save_sp) == CTX_SCS_SAVE_SP,
+    "incorrect CTX_SCS_SAVE_SP offset");
+#endif
+
 #elif defined(LFI_ARCH_RISCV64)
 
 _Static_assert(offsetof(struct LFIRegs, zero) == REGS_ZERO,
