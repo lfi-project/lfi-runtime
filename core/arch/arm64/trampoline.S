@@ -182,9 +182,9 @@ lfi_trampoline:
 .p2align 4
 lfi_trampoline_direct:
     bti jc
-    paciasp
     ldp x10, x13, [sp], #16
     ldp x11, x12, [sp], #16
+    paciasp
 
     stp d8, d9,   [sp, #-16]!
     stp d10, d11, [sp, #-16]!
