@@ -259,100 +259,33 @@ lfi_set_tp:
 
 #ifdef CTXREG
 
-// Shadow call stack runtime calls.
-//
-// The SCS pointer lives at 16(%r15) (ctxreg[2]). These runtime calls manage
-// an internal save stack in the LFIContext for setjmp/longjmp and C++ exception
-// unwinding support. All registers except %rax (output for save) are preserved.
-//
-// We switch to the host stack (via ctx->regs.host_sp) so we can freely
-// push/pop to save registers.
-
-// SCS save: push current SCS pointer onto save stack, return index in %rax.
-.global lfi_scs_save
-.p2align 4
-lfi_scs_save:
-    // Switch to host stack.
-    movq %rsp, 24(%r15)                        // save sandbox rsp to temp slot
-    movq (%r15), %rsp                           // rsp = ctx (ctxreg[0])
-    movq REGS_HOST_SP(%rsp), %rsp               // rsp = host stack
-
-    pushq %rcx
-    pushq %rdi
-
-    movq (%r15), %rdi                           // rdi = ctx
-    movq CTX_SCS_SAVE_SP(%rdi), %rcx            // rcx = save_sp
-
-    // Bounds check: save_sp < &scs_save_stack[32]
-    leaq (CTX_SCS_SAVE_STACK + 32*8)(%rdi), %rax
-    cmpq %rax, %rcx
-    jae .Lscs_save_full
-
-    // *save_sp = current SCS pointer
-    movq 16(%r15), %rax
-    movq %rax, (%rcx)
-
-    // Advance save_sp
-    addq $8, %rcx
-    movq %rcx, CTX_SCS_SAVE_SP(%rdi)
-
-    // Compute index = (save_sp_old - &scs_save_stack[0]) / 8
-    subq $8, %rcx                               // rcx = save_sp before advance
-    leaq CTX_SCS_SAVE_STACK(%rdi), %rax
-    subq %rax, %rcx                             // byte offset
-    shrq $3, %rcx                               // index
-    movq %rcx, %rax                             // return value
-
-    popq %rdi
-    popq %rcx
-    movq 24(%r15), %rsp
-    jmpq *%r11
-
-.Lscs_save_full:
-    movq $-1, %rax
-    popq %rdi
-    popq %rcx
-    movq 24(%r15), %rsp
-    jmpq *%r11
-
-// SCS restore: restore SCS pointer from save stack at index %edi, pop above.
-.global lfi_scs_restore
-.p2align 4
-lfi_scs_restore:
-    movq %rsp, 24(%r15)
-    movq (%r15), %rsp
-    movq REGS_HOST_SP(%rsp), %rsp
-
-    pushq %rax
-    pushq %rcx
-
-    movq (%r15), %rax                           // rax = ctx
-
-    // Bounds check: index < 32 (unsigned)
-    cmpl $32, %edi
-    jae .Lscs_restore_oob
-
-    // Compute &save_stack[index]
-    movl %edi, %ecx                             // zero-extend index
-    leaq CTX_SCS_SAVE_STACK(%rax,%rcx,8), %rcx
-
-    // Set save_sp = &save_stack[index] (invalidate index and above)
-    movq %rcx, CTX_SCS_SAVE_SP(%rax)
-
-    // Restore SCS pointer from save_stack[index]
-    movq (%rcx), %rcx
-    movq %rcx, 16(%r15)
-
-.Lscs_restore_oob:
-    popq %rcx
-    popq %rax
-    movq 24(%r15), %rsp
-    jmpq *%r11
-
-// SCS unwind: pop n entries from SCS (add n*8 to SCS pointer), clamped to limit.
+// SCS unwind: pop n entries from the shadow call stack.
+// Input: %edi = number of entries to unwind.
 .global lfi_scs_unwind
 .p2align 4
 lfi_scs_unwind:
+#ifdef HW_SHSTK
+    // Hardware shadow stack: use INCSSPQ to advance the hardware SSP.
+    // INCSSPQ reads only bits[7:0] of the operand, so we loop for counts > 255.
+    testl %edi, %edi
+    jz .Lhw_done
+    movq %rax, 24(%r15)                        // save rax to ctxreg[3] temp
+    movl %edi, %eax
+.Lhw_loop:
+    cmpl $255, %eax
+    jbe .Lhw_last
+    movl $255, %edi
+    .byte 0xf3, 0x48, 0x0f, 0xae, 0xef        // INCSSPQ %rdi
+    subl $255, %eax
+    jmp .Lhw_loop
+.Lhw_last:
+    movl %eax, %edi
+    .byte 0xf3, 0x48, 0x0f, 0xae, 0xef        // INCSSPQ %rdi
+    movq 24(%r15), %rax                        // restore rax
+.Lhw_done:
+    jmpq *%r11
+#else
+    // Software shadow call stack: add n*8 to SCS pointer, clamped to limit.
     movq %rsp, 24(%r15)
     movq (%r15), %rsp
     movq REGS_HOST_SP(%rsp), %rsp
@@ -378,6 +311,7 @@ lfi_scs_unwind:
     popq %rax
     movq 24(%r15), %rsp
     jmpq *%r11
+#endif
 
 #endif
 

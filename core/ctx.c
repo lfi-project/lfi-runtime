@@ -28,7 +28,7 @@ lfi_ctx_new(struct LFIBox *box, void *userdata)
 
     lfi_ctx_regs_init(ctx);
 
-#ifdef CTXREG
+#if defined(CTXREG) && !defined(HW_SHSTK)
     enum { SCS_SIZE = 128 * 1024 };
     size_t pagesize = getpagesize();
     size_t total = pagesize + SCS_SIZE + pagesize;
@@ -49,7 +49,6 @@ lfi_ctx_new(struct LFIBox *box, void *userdata)
     ctx->scs_limit = (char *) scs + SCS_SIZE;
     ctx->scs_total = total;
     ctx->ctxreg[2] = (uint64_t) scs + SCS_SIZE;
-    ctx->scs_save_sp = ctx->scs_save_stack;
 #endif
 
     return ctx;
@@ -74,7 +73,7 @@ lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
 EXPORT void
 lfi_ctx_free(struct LFIContext *ctx)
 {
-#ifdef CTXREG
+#if defined(CTXREG) && !defined(HW_SHSTK)
     munmap(ctx->scs_base, ctx->scs_total);
 #endif
     free(ctx);

@@ -129,6 +129,9 @@ endif
 if get_option('ctxreg')
   defines += '-DCTXREG'
 endif
+if get_option('hw_shstk')
+  defines += '-DHW_SHSTK'
+endif
 
 if not meson.is_subproject()
   add_global_arguments(c_args, language: 'c')
