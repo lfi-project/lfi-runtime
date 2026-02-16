@@ -83,7 +83,7 @@ syssetup(struct LFIBox *box)
 #endif
     box->sys->rtcalls[n - 4] = (uintptr_t) &lfi_ret;
 #if defined(LFI_ARCH_X64) && defined(CTXREG)
-    box->sys->rtcalls[n - 5] = (uintptr_t) &lfi_scs_unwind;
+    box->sys->rtcalls[n - 7] = (uintptr_t) &lfi_scs_unwind;
 #endif
 
     if (!box->engine->opts.no_rtcall_nullpage) {
@@ -103,7 +103,7 @@ syssetup(struct LFIBox *box)
 #endif
         null_rtcall->rtcalls[3] = (uintptr_t) &lfi_ret;
 #if defined(LFI_ARCH_X64) && defined(CTXREG)
-        null_rtcall->rtcalls[4] = (uintptr_t) &lfi_scs_unwind;
+        null_rtcall->rtcalls[6] = (uintptr_t) &lfi_scs_unwind;
 #endif
     }
 
