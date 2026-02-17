@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sys/auxv.h>
+#include <asm/hwcap.h>
 
 // We do not load ELF files that have more than 64 program headers.
 #define PHNUM_MAX 64
@@ -307,7 +309,11 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
         goto err1;
     }
 
-    bool bti = elf_has_bti(elf, ehdr, phdrs);
+    bool bti = false;
+#ifdef LFI_ARCH_ARM64
+    bti = elf_has_bti(elf, ehdr, phdrs) &&
+        (getauxval(AT_HWCAP2) & HWCAP2_BTI);
+#endif
 
     if (ehdr->e_entry >= CODE_MAX) {
         ERROR("elf_load error: e_entry (0x%lx) is larger than CODE_MAX (0x%lx)",
