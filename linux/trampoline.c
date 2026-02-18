@@ -47,7 +47,11 @@ lfi_linux_clone_cb_minimal(struct LFIBox *box)
     t->stack_size = stacksize;
 
     // Set stack pointer to top of stack (stack grows down).
+# if defined(__aarch64__) || defined(_riscv)
     lfi_ctx_regs(t->ctx)->sp = t->stack + stacksize;
+# elif defined(__x86_64__)
+    lfi_ctx_regs(t->ctx)->rsp = t->stack + stacksize;
+# endif
 
     // Set tp to 0 (no TLS support in sys_minimal mode).
     lfi_ctx_set_tp(t->ctx, 0);

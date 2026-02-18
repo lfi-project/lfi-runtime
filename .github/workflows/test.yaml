@@ -31,3 +31,7 @@ jobs:
       run: |
         meson setup build-san -Db_sanitize=address,undefined -Dbuildtype=debugoptimized && ninja -C build-san test
         meson setup build-tsan -Db_sanitize=thread -Dbuildtype=debugoptimized && ninja -C build-tsan test
+
+    - name: Build SYS_MINIMAL
+      run: |
+        meson setup build-min -Dsys_minimal=true && ninja -C build-min
