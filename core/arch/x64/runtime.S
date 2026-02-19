@@ -166,7 +166,7 @@ lfi_syscall_entry:
     // NOTE: consider removing this entirely if we can assume that syscall
     // execution never modifies %gs (i.e., never calls into another sandbox).
 #ifdef ENABLE_SEGUE
-# ifndef SEGUE_SINGLE_SANDBOX
+# ifndef SINGLE_SANDBOX
     wrgsbase %REG_BASE
 # endif
 #endif

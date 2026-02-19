@@ -210,7 +210,7 @@ lfi_trampoline_direct:
     movq REGS_BASE(%r11), %REG_BASE
     // also write base to %gs
 #ifdef ENABLE_SEGUE
-# ifndef SEGUE_SINGLE_SANDBOX
+# ifndef SINGLE_SANDBOX
     wrgsbase %REG_BASE
 # endif
 #endif

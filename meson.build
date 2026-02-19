@@ -120,8 +120,8 @@ endif
 if get_option('enable_segue')
   defines += '-DENABLE_SEGUE'
 endif
-if get_option('segue_single_sandbox')
-  defines += '-DSEGUE_SINGLE_SANDBOX'
+if get_option('single_sandbox')
+  defines += '-DSINGLE_SANDBOX'
 endif
 if get_option('sys_minimal')
   defines += '-DSYS_MINIMAL'
