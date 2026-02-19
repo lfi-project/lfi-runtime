@@ -47,6 +47,11 @@ option('single_sandbox',
   value: false,
   description: 'assume that %gs is never modified by the host, and there is only one sandbox (x86-64 only)')
 
+option('large_sandbox',
+  type: 'boolean',
+  value: false,
+  description: 'allow creation of sandboxes with sizes larger than 4GB (x86-64 only)')
+
 option('enable_pku',
   type: 'boolean',
   value: false,

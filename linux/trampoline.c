@@ -75,6 +75,7 @@ lfi_linux_clone_cb(struct LFIBox *box)
 
     // Invoke thread_create in clone_ctx and return the resulting new_ctx.
     LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
+    lfi_ctx_thread_regs_init(proc->clone_ctx);
     lfiptr pt = LFI_INVOKE(box, &proc->clone_ctx, proc->libsyms.thread_create,
         lfiptr, (void) );
 
@@ -82,6 +83,7 @@ lfi_linux_clone_cb(struct LFIBox *box)
     thread->box_pthread = pt;
     pthread_setspecific(thread_key, new_ctx);
 
+    lfi_ctx_thread_regs_init(new_ctx);
     return new_ctx;
 }
 
@@ -102,6 +104,7 @@ thread_destructor(void *p)
         thread->box_pthread);
 
     LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
+    lfi_ctx_thread_regs_init(proc->clone_ctx);
     LFI_INVOKE(proc->box, &proc->clone_ctx, proc->libsyms.free, void, (lfiptr),
         thread->box_pthread);
 

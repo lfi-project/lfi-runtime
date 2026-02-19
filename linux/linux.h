@@ -38,6 +38,9 @@ struct SysInfo {
 typedef int linux_clockid_t;
 typedef int64_t linux_time_t;
 
+// First TID, to avoid using low TID numbers.
+#define BASE_TID 10000
+
 #define LINUX_EPERM                1
 #define LINUX_ENOENT               2
 #define LINUX_ENXIO                6

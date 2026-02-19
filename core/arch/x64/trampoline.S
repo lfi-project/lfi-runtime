@@ -215,6 +215,11 @@ lfi_trampoline_direct:
 # endif
 #endif
 
+#ifdef LARGE_SANDBOX
+    // load sandbox mask
+    movq REGS_MASK(%r11), %REG_MASK
+#endif
+
     // load address of the lfi_retfn function that will make the return rtcall
     movq REGS_RETADDR(%r11), %r11
     // align stack
@@ -225,7 +230,124 @@ lfi_trampoline_direct:
     // load address of the target function
     movq %r12, %r11
     // apply mask just to be safe
+#ifdef LARGE_SANDBOX
+    andq %r15, %r11
+    andq $0xffffffffffffffe0, %r11
+#else
     andl $0xffffffe0, %r11d
+#endif
+    addq %REG_BASE, %r11
+
+    // set the sandbox thread control block by saving the old value of
+    // %fs:TLS_SLOT_LFI into the context and setting it to point to the context
+    // itself
+    get_ctx %r12
+    movq (%r13), %r13
+    movq %r12, REGS_HOST_TP(%r13)
+    write_ctx %r13
+
+#ifndef STORES_ONLY
+    fldcw REGS_FCW(%r13)
+    ldmxcsr REGS_MXCSR(%r13)
+#endif
+
+#ifdef HAVE_PKU
+    movq %rcx, %rbx
+    movq %rdx, %rbp
+    pku_box_access REGS_PKEY(%r13)
+    movq %rbp, %rdx
+    movq %rbx, %rcx
+#endif
+
+#ifndef STORES_ONLY
+    // Zero non-argument registers for full LFI.
+    zero_regs
+#endif
+
+    // this function should return via a runtime call
+    jmpq *%r11
+    int3
+
+// Direct trampoline that doesn't involve a thread-local lookup. Instead the
+// info usually passed via the lfi_invoke_info thread-local are passed via
+// the stack:
+// (%rsp+24): n_stack (unused)
+// (%rsp+16): lfiptr target
+// (%rsp+8): struct LFIContext *box
+// (%rsp): struct LFIContext **ctxp
+.global lfi_trampoline_stack_args
+.p2align 4
+lfi_trampoline_stack_args:
+    // ctxp
+    popq %r11
+    // box
+    popq %r10
+
+    // save callee-saved registers
+    xchgq %r15, (%rsp)
+    // xchgq %r14, -8(%rsp) not included yet
+    pushq %r14
+    pushq %r13
+    pushq %r12
+    pushq %rbx
+    pushq %rbp
+
+    // Put arguments where we expect them.
+    movq %r15, %r12 // target
+    movq %r11, %r13 // ctxp
+    movq %r14, %r15 // n_stack
+    movq %r10, %r14 // box
+
+    lazy_ctx_clone
+
+    // dummy push to keep the stack aligned
+    pushq %rbp
+    // push sandbox rsp
+    pushq REGS_RSP(%r11)
+
+    // save current host stack
+    movq %rsp, REGS_HOST_SP(%r11)
+    // load sandbox rsp
+    movq REGS_RSP(%r11), %rsp
+    // load sandbox base
+    movq REGS_BASE(%r11), %REG_BASE
+    // also write base to %gs
+#ifdef ENABLE_SEGUE
+# ifndef SINGLE_SANDBOX
+    wrgsbase %REG_BASE
+# endif
+#endif
+
+#ifdef LARGE_SANDBOX
+    // load sandbox mask
+    movq REGS_MASK(%r11), %REG_MASK
+#endif
+
+    // save application stack pointer to copy arguments below
+    movq REGS_HOST_SP(%r11), %r10
+    // load address of the lfi_retfn function that will make the return rtcall
+    movq REGS_RETADDR(%r11), %r11
+    // align stack
+    andq $0xfffffffffffffff0, %rsp
+
+    // copy stack arguments
+    pushq 96(%r10)
+    pushq 88(%r10)
+    pushq 80(%r10)
+    pushq 72(%r10)
+
+    // push this as the return address onto the sandbox stack
+    pushq %r11
+
+    // load address of the target function
+    movq %r12, %r11
+    // apply mask just to be safe
+#ifdef LARGE_SANDBOX
+    andq %r15, %r11
+    andq $0xffffffffffffffe0, %r11
+#else
+    andl $0xffffffe0, %r11d
+#endif
     addq %REG_BASE, %r11
 
     // set the sandbox thread control block by saving the old value of

@@ -33,8 +33,6 @@ host_getauxval(unsigned long type)
 }
 #endif
 
-// First TID, to avoid using low TID numbers.
-#define BASE_TID 10000
 // Maximum number of argv arguments.
 #define ARGV_MAX 1024
 // Maxmimum number of envp arguments.

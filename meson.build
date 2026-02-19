@@ -123,6 +123,9 @@ endif
 if get_option('single_sandbox')
   defines += '-DSINGLE_SANDBOX'
 endif
+if get_option('large_sandbox')
+  defines += '-DLARGE_SANDBOX'
+endif
 if get_option('sys_minimal')
   defines += '-DSYS_MINIMAL'
 endif

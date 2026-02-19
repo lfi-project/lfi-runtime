@@ -41,6 +41,7 @@ threadspawn_fake(struct LFILinuxThread *t)
 #error "invalid arch"
 #endif
 
+    lfi_ctx_thread_regs_init(t->ctx);
     int code = lfi_ctx_run(t->ctx, entry);
     assert(code == 0);
 }
@@ -90,6 +91,7 @@ threadspawn(void *arg)
     pthread_cond_signal(&t->cond_ready);
     unlock(&t->lk_ready);
 
+    lfi_ctx_thread_regs_init(t->ctx);
     lfi_ctx_run(t->ctx, entry);
 
 end:
@@ -152,6 +154,8 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
     struct LFIRegs *regs = lfi_ctx_regs(p2->ctx);
     if (flags & LINUX_CLONE_SETTLS) {
         lfi_ctx_set_tp(p2->ctx, tls);
+    } else {
+        lfi_ctx_set_tp(p2->ctx, 0);
     }
     if (flags & LINUX_CLONE_CHILD_CLEARTID) {
         p2->ctidp = ctidp;
@@ -184,6 +188,10 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
         threadspawn_fake(p2);
         lfi_invoke_info = old;
         new_ctx = p2->ctx;
+
+        // threadspawn_fake may have clobbered context specific per-thread
+        // registers.
+        lfi_ctx_thread_regs_init(p->ctx);
     } else {
         pthread_t *thread = malloc(sizeof(pthread_t));
         pthread_attr_t attr;

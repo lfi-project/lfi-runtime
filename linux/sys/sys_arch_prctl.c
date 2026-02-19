@@ -13,6 +13,7 @@ sys_arch_prctl(struct LFILinuxThread *t, int code, lfiptr addr)
         return -LINUX_ENOSYS;
 #else
         lfi_ctx_set_tp(t->ctx, addr);
+        lfi_ctx_thread_regs_init(t->ctx);
         return 0;
 #endif
     default:
