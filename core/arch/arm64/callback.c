@@ -185,3 +185,11 @@ lfi_box_unregister_cb(struct LFIBox *box, void *fn)
     atomic_store_explicit(&box->cbinfo.dataentries_alias[slot].trampoline, 0,
         memory_order_seq_cst);
 }
+
+void
+lfi_box_cb_free(struct LFIBox *box)
+{
+    if (box->cbinfo.dataentries_alias)
+        munmap(box->cbinfo.dataentries_alias,
+            MAXCALLBACKS * sizeof(struct CallbackDataEntry));
+}

@@ -367,10 +367,11 @@ mm_unmap_non_original(struct MMAddrSpace *mm, UpdateFn ufn, void *udata)
 {
     struct MMNode *node = mm->nodes;
     while (node) {
+        struct MMNode *next = node->next;
         if (!node->info.original)
             mm_unmap_cb(mm, node->base << mm->p2pagesize,
                 node->len << mm->p2pagesize, ufn, udata);
-        node = node->next;
+        node = next;
     }
 }
 

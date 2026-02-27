@@ -89,6 +89,8 @@ struct LFIContext {
 extern thread_local int lfi_error;
 extern thread_local char *lfi_error_desc;
 
+void lfi_box_cb_free(struct LFIBox *box);
+
 static inline size_t
 kb(size_t x)
 {

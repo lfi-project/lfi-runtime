@@ -197,9 +197,9 @@ lfi_trampoline_direct:
     stp x27, x28, [sp, #-16]!
     stp x29, x30, [sp, #-16]!
 
-    mov x22, x10
-    mov x20, x11
-    mov x21, x12
+    mov x20, x10
+    mov x21, x13
+    mov x22, x11
 
     lazy_ctx_clone
 

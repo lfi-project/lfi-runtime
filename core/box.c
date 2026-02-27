@@ -95,6 +95,10 @@ syssetup(struct LFIBox *box)
         null_rtcall->rtcalls[2] = (uintptr_t) &lfi_set_tp;
 #endif
         null_rtcall->rtcalls[3] = (uintptr_t) &lfi_ret;
+
+        int r2 = protectmem((void *) box->base, pagesize, PROT_READ,
+            box->pkey);
+        assert(r2 == 0);
     }
 
     // Map read-only.
@@ -129,7 +133,7 @@ lfi_box_new(struct LFIEngine *engine)
         else
             LOG(engine, "could not allocate pkey: invalid argument");
         lfi_error = LFI_ERR_PKU;
-        return NULL;
+        goto err1;
     }
     assert(pkey != 0);
     int r = pkey_mprotect((void *) base, size, PROT_NONE, pkey);
@@ -331,6 +335,15 @@ mapverify(struct LFIBox *box, uintptr_t start, size_t size, int prot, int flags,
     return protectmem((void *) start, size, host_prot(prot), box->pkey);
 }
 
+static void
+cbunmap(uint64_t start, size_t len, struct MMInfo info, void *udata)
+{
+    (void) udata, (void) info;
+    void *p = mmap((void *) start, len, PROT_NONE,
+        MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+    assert(p == (void *) start);
+}
+
 static lfiptr
 box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd,
     off_t off, bool no_verify)
@@ -340,7 +353,7 @@ box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd,
         return (lfiptr) -1;
     int r = mapverify(box, addr, size, prot, flags, fd, off, no_verify);
     if (r < 0) {
-        mm_unmap(&box->mm, addr, size);
+        mm_unmap_cb(&box->mm, addr, size, cbunmap, NULL);
         return (lfiptr) -1;
     }
     return p2l(box, addr);
@@ -360,20 +373,11 @@ lfi_box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd,
     return box_mapany(box, size, prot, flags, fd, off, false);
 }
 
-static void
-cbunmap(uint64_t start, size_t len, struct MMInfo info, void *udata)
-{
-    (void) udata, (void) info;
-    void *p = mmap((void *) start, len, PROT_NONE,
-        MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-    assert(p == (void *) start);
-}
-
 EXPORT lfiptr
 lfi_box_mapat(struct LFIBox *box, lfiptr addr, size_t size, int prot, int flags,
     int fd, off_t off)
 {
-    assert(l2p(box, addr) >= box->min && l2p(box, addr) + size <= box->max);
+    assert(lfi_box_bufvalid(box, addr, size));
 
     uintptr_t m_addr = mm_mapat_cb(&box->mm, l2p(box, addr), size, prot, flags,
         fd, off, cbunmap, NULL);
@@ -381,7 +385,7 @@ lfi_box_mapat(struct LFIBox *box, lfiptr addr, size_t size, int prot, int flags,
         return (lfiptr) -1;
     int r = mapverify(box, m_addr, size, prot, flags, fd, off, false);
     if (r < 0) {
-        mm_unmap(&box->mm, m_addr, size);
+        mm_unmap_cb(&box->mm, m_addr, size, cbunmap, NULL);
         return (lfiptr) -1;
     }
     return p2l(box, m_addr);
@@ -391,14 +395,14 @@ EXPORT lfiptr
 lfi_box_mapat_register(struct LFIBox *box, lfiptr addr, size_t size, int prot,
     int flags, int fd, off_t off)
 {
-    assert(l2p(box, addr) >= box->min && l2p(box, addr) + size <= box->max);
+    assert(lfi_box_bufvalid(box, addr, size));
 
     uintptr_t m_addr = mm_mapat_cb(&box->mm, l2p(box, addr), size, prot, flags,
         fd, off, cbunmap, NULL);
     if (m_addr == (uintptr_t) -1)
         return (lfiptr) -1;
-    int r = verify(box, m_addr, size, prot);
-    if (r < 0) {
+    bool r = verify(box, m_addr, size, prot);
+    if (!r) {
         mm_unmap(&box->mm, m_addr, size);
         return (lfiptr) -1;
     }
@@ -408,22 +412,22 @@ lfi_box_mapat_register(struct LFIBox *box, lfiptr addr, size_t size, int prot,
 EXPORT int
 lfi_box_mprotect(struct LFIBox *box, lfiptr addr, size_t size, int prot)
 {
-    assert(l2p(box, addr) >= box->min && l2p(box, addr) + size <= box->max);
+    assert(lfi_box_bufvalid(box, addr, size));
 
-    int r = mm_protect(&box->mm, l2p(box, addr), size, prot);
+    int r = protectverify(box, l2p(box, addr), size, prot, false);
     if (r < 0)
         return r;
-    return protectverify(box, l2p(box, addr), size, prot, false);
+    return mm_protect(&box->mm, l2p(box, addr), size, prot);
 }
 
 EXPORT int
 lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size,
     int prot)
 {
-    int r = mm_protect(&box->mm, l2p(box, addr), size, prot);
+    int r = protectverify(box, l2p(box, addr), size, prot, true);
     if (r < 0)
         return r;
-    return protectverify(box, l2p(box, addr), size, prot, true);
+    return mm_protect(&box->mm, l2p(box, addr), size, prot);
 }
 
 EXPORT bool
@@ -444,7 +448,7 @@ lfi_box_mquery(struct LFIBox *box, lfiptr addr, struct LFIMapInfo *info)
 EXPORT int
 lfi_box_munmap(struct LFIBox *box, lfiptr addr, size_t size)
 {
-    if (l2p(box, addr) >= box->min && l2p(box, addr) + size < box->max)
+    if (lfi_box_bufvalid(box, addr, size))
         return mm_unmap_cb(&box->mm, l2p(box, addr), size, cbunmap, NULL);
     return -1;
 }
@@ -452,9 +456,11 @@ lfi_box_munmap(struct LFIBox *box, lfiptr addr, size_t size)
 EXPORT void
 lfi_box_free(struct LFIBox *box)
 {
-    void *p = mmap((void *) box->base, box->size, PROT_NONE,
-        MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-    assert(p == (void *) box->base);
+    size_t pagesize = box->engine->opts.pagesize;
+    void *p = mmap((void *) (box->base - pagesize), box->size + pagesize,
+        PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+    assert(p == (void *) (box->base - pagesize));
+    lfi_box_cb_free(box);
     boxmap_rmspace(box->engine->bm, box->base,
         box_footprint(box->size, box->engine->opts));
 #ifdef HAVE_PKU
@@ -476,7 +482,7 @@ EXPORT bool
 lfi_box_bufvalid(struct LFIBox *box, lfiptr addr, size_t size)
 {
     lfiptr lp = l2p(box, addr);
-    return lp >= box->min && lp + size <= box->max;
+    return lp >= box->min && lp <= box->max && size <= box->max - lp;
 }
 
 EXPORT void *

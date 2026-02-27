@@ -143,6 +143,7 @@ lfi_syscall_entry:
     stp x12, x13, [REG_BASE, REGS_X(12)]
     stp x14, x15, [REG_BASE, REGS_X(14)]
     stp x16, x17, [REG_BASE, REGS_X(16)]
+    str x18, [REG_BASE, REGS_X(18)]
     str REG_ADDR, [REG_BASE, REGS_ADDR]
     mov x1, sp
     stp x30, x1,  [REG_BASE, REGS_X(30)]
@@ -191,6 +192,7 @@ lfi_syscall_entry:
     ldp x12, x13, [x0, REGS_X(12)]
     ldp x14, x15, [x0, REGS_X(14)]
     ldp x16, x17, [x0, REGS_X(16)]
+    ldr x18, [x0, REGS_X(18)]
     ldr REG_ADDR, [x0, REGS_ADDR]
     ldr REG_BASE, [x0, REGS_BASE]
     ldp x30, x1,  [x0, REGS_X(30)]

@@ -29,3 +29,9 @@ lfi_box_unregister_cb(struct LFIBox *box, void *fn)
 {
     assert(!"unimplemented");
 }
+
+void
+lfi_box_cb_free(struct LFIBox *box)
+{
+    (void) box;
+}

@@ -236,7 +236,7 @@ lfi_get_tp:
 .p2align 4
 lfi_set_tp:
 #ifdef HAVE_PKU
-    pushq %rax
+    pushq %rdx
     pushq %rcx
     pushq %rax
     pku_all_access
