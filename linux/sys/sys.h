@@ -304,3 +304,10 @@ sys_dup(struct LFILinuxThread *t, int oldfd);
 
 int
 sys_dup3(struct LFILinuxThread *t, int oldfd, int newfd, int flags);
+
+int
+sys_rt_sigaction(struct LFILinuxThread *t, int sig, lfiptr actp, lfiptr oldp,
+    uint64_t sigsetsize);
+
+uintptr_t
+sys_rt_sigreturn(struct LFILinuxThread *t);

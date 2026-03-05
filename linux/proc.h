@@ -61,6 +61,11 @@ struct LibSymbols {
     lfiptr setjmp;
 };
 
+struct SigActionEntry {
+    bool valid;
+    struct SigAction entry;
+};
+
 struct LFILinuxProc {
     // Underlying sandbox information.
     struct LFIBox *box;
@@ -124,6 +129,9 @@ struct LFILinuxProc {
     pthread_mutex_t lk_proc;
 
     struct LFILinuxEngine *engine;
+
+    // Per-signal handler table.
+    struct SigActionEntry signals[LINUX_NSIG];
 };
 
 struct LFILinuxThread {

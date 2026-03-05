@@ -102,7 +102,41 @@ typedef int64_t linux_time_t;
 #define LINUX_CLONE_CHILD_SETTID   0x1000000
 #define LINUX_CLONE_IO             0x80000000UL
 
-#define LINUX_SIGCHLD              0x11
+#define LINUX_SIGHUP               1
+#define LINUX_SIGINT               2
+#define LINUX_SIGQUIT              3
+#define LINUX_SIGILL               4
+#define LINUX_SIGTRAP              5
+#define LINUX_SIGABRT              6
+#define LINUX_SIGBUS               7
+#define LINUX_SIGFPE               8
+#define LINUX_SIGKILL              9
+#define LINUX_SIGUSR1              10
+#define LINUX_SIGSEGV              11
+#define LINUX_SIGUSR2              12
+#define LINUX_SIGPIPE              13
+#define LINUX_SIGALRM              14
+#define LINUX_SIGTERM              15
+#define LINUX_SIGSTKFLT            16
+#define LINUX_SIGCHLD              17
+#define LINUX_SIGCONT              18
+#define LINUX_SIGSTOP              19
+#define LINUX_SIGTSTP              20
+#define LINUX_SIGTTIN              21
+#define LINUX_SIGTTOU              22
+#define LINUX_SIGURG               23
+#define LINUX_SIGXCPU              24
+#define LINUX_SIGXFSZ              25
+#define LINUX_SIGVTALRM            26
+#define LINUX_SIGPROF              27
+#define LINUX_SIGWINCH             28
+#define LINUX_SIGIO                29
+#define LINUX_SIGPWR               30
+#define LINUX_SIGSYS               31
+#define LINUX_NSIG                 32
+
+#define LINUX_SIG_DFL              0
+#define LINUX_SIG_IGN              1
 
 #define LINUX_PR_SET_NAME          15
 

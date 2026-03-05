@@ -38,10 +38,17 @@ lfi_ctx_data(struct LFIContext *ctx)
 EXPORT int
 lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
 {
+    // Save and restore invoke_info.ctx so that nested calls (e.g. running a
+    // signal handler while sandbox execution is still live on this thread)
+    // leave the outer ctx intact.
+    struct LFIContext **saved_ctxp = lfi_invoke_info.ctx;
+
     // Save the ctx in invoke info so it can be retrieved via lfi_cur_ctx.
     lfi_invoke_info.ctx = &ctx;
     // Enter the sandbox, saving the stack pointer to host_sp.
     int ret = lfi_ctx_entry(ctx, (uintptr_t *) &ctx->regs.host_sp, entry);
+
+    lfi_invoke_info.ctx = saved_ctxp;
     return ret;
 }
 

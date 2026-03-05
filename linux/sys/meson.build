@@ -56,6 +56,7 @@ if not get_option('sys_minimal')
     'sys_truncate.c',
     'sys_unlinkat.c',
     'sys_uname.c',
+    'sys_signal.c',
     'sys_write.c',
     'sys_writev.c',
   )
