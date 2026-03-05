@@ -2,6 +2,8 @@
 
 #include "lfi_core.h"
 
+#include <signal.h>
+
 #define LINUX_SYS_read              0
 #define LINUX_SYS_write             1
 #define LINUX_SYS_open              2
@@ -97,3 +99,7 @@
 
 void
 arch_syshandle(struct LFIContext *ctx);
+
+bool
+arch_forward_signal(struct LFIContext *ctx, int sig, siginfo_t *si,
+    void *ucontext);
