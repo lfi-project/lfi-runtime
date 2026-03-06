@@ -285,6 +285,7 @@ lfi_ret_end:
     movq %rbp, REGS_RSP(%rdi)
     popq %rbp // pop dummy value
     // return value should already be in %rax
+    cld
     popq %rbp
     popq %rbx
     popq %r12

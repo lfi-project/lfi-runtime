@@ -73,6 +73,7 @@
 
     // Save %r11 across the call (and stack alignment).
     pushq %r11
+    cld
     callq *%r10
     popq %r11
 
