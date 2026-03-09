@@ -79,10 +79,17 @@ fddup2(struct FDTable *t, int oldfd, int newfd)
         t->fds[newfd] = knewfd;
     } else {
         knewfd = t->fds[newfd];
-        if (knewfd == -1)
-            knewfd = newfd;
-        if (dup2(koldfd, knewfd) < 0)
-            goto err;
+        if (knewfd == -1) {
+            // Slot is unoccupied: allocate a new kernel fd rather than
+            // using the raw sandbox fd number, which could collide with
+            // monitor-internal file descriptors.
+            knewfd = dup(koldfd);
+            if (knewfd == -1)
+                goto err;
+        } else {
+            if (dup2(koldfd, knewfd) < 0)
+                goto err;
+        }
         t->fds[newfd] = knewfd;
         if (t->dirs[newfd]) {
             free(t->dirs[newfd]);
@@ -133,9 +140,11 @@ fdinit(struct LFILinuxEngine *engine, struct FDTable *t)
         t->fds[i] = -1;
     }
 
+#ifndef SYS_MINIMAL
     t->fds[0] = dup(STDIN_FILENO);
     t->fds[1] = dup(STDOUT_FILENO);
     t->fds[2] = dup(STDERR_FILENO);
+#endif
 
     t->passthrough = engine->opts.sys_passthrough;
 }

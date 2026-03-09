@@ -377,7 +377,8 @@ EXPORT lfiptr
 lfi_box_mapat(struct LFIBox *box, lfiptr addr, size_t size, int prot, int flags,
     int fd, off_t off)
 {
-    assert(lfi_box_bufvalid(box, addr, size));
+    if (!lfi_box_bufvalid(box, addr, size))
+        return (lfiptr) -1;
 
     uintptr_t m_addr = mm_mapat_cb(&box->mm, l2p(box, addr), size, prot, flags,
         fd, off, cbunmap, NULL);
@@ -395,7 +396,8 @@ EXPORT lfiptr
 lfi_box_mapat_register(struct LFIBox *box, lfiptr addr, size_t size, int prot,
     int flags, int fd, off_t off)
 {
-    assert(lfi_box_bufvalid(box, addr, size));
+    if (!lfi_box_bufvalid(box, addr, size))
+        return (lfiptr) -1;
 
     uintptr_t m_addr = mm_mapat_cb(&box->mm, l2p(box, addr), size, prot, flags,
         fd, off, cbunmap, NULL);
@@ -412,7 +414,8 @@ lfi_box_mapat_register(struct LFIBox *box, lfiptr addr, size_t size, int prot,
 EXPORT int
 lfi_box_mprotect(struct LFIBox *box, lfiptr addr, size_t size, int prot)
 {
-    assert(lfi_box_bufvalid(box, addr, size));
+    if (!lfi_box_bufvalid(box, addr, size))
+        return -1;
 
     int r = protectverify(box, l2p(box, addr), size, prot, false);
     if (r < 0)
@@ -424,6 +427,9 @@ EXPORT int
 lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size,
     int prot)
 {
+    if (!lfi_box_bufvalid(box, addr, size))
+        return -1;
+
     int r = protectverify(box, l2p(box, addr), size, prot, true);
     if (r < 0)
         return r;

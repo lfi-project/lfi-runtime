@@ -204,7 +204,7 @@ mm_mapat_cb(struct MMAddrSpace *mm, uintptr_t addr, size_t length, int prot,
     length = mmceil(mm, length);
 
     if (!mmvalid(mm, addr, length))
-        return -LINUX_EINVAL;
+        return (uintptr_t) -1;
 
     struct MMNode *new = malloc(sizeof(struct MMNode));
     if (!new)

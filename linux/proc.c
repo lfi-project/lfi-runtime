@@ -97,8 +97,8 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
             // should do the same thing with the interpreter, even if we could
             // load it directly from the file.
             if (prog_fd == -1) {
-                interp.fd = -1;
                 close(interp.fd);
+                interp.fd = -1;
             }
             LOG(proc->engine, "using sandbox dynamic linker: %s", interp_path);
         } else {

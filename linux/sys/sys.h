@@ -88,11 +88,16 @@ pathcopy(struct LFILinuxThread *t, lfiptr pathp)
 {
     if (!ptrcheck(t, pathp))
         return NULL;
+    // Clamp the copy length to the sandbox boundary so we never read past
+    // the end of the sandbox's valid address range.
+    size_t maxlen = t->proc->box_info.max - pathp;
+    if (maxlen > FILENAME_MAX - 1)
+        maxlen = FILENAME_MAX - 1;
     char *host = malloc(FILENAME_MAX);
     if (!host)
         return NULL;
-    strncpy(host, (char *) lfi_box_p2l(t->proc->box, pathp), FILENAME_MAX - 1);
-    host[FILENAME_MAX - 1] = 0;
+    strncpy(host, (char *) lfi_box_l2p(t->proc->box, pathp), maxlen);
+    host[maxlen] = 0;
     return host;
 }
 
