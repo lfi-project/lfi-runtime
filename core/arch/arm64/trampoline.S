@@ -240,8 +240,8 @@ lfi_trampoline_direct:
 #endif
 
     // enter sandbox
-    add x10, REG_BASE, w10, uxtw
-    br x10
+    add x16, REG_BASE, w10, uxtw
+    br x16
     // the previous call should return through lfi_ret
     udf #0
 
