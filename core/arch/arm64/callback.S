@@ -62,9 +62,11 @@
     mov REG_ADDR, REG_BASE
     get_ctx x9
 
+#ifndef CTXREG
     // Save and replace tpidr_el0 with host value.
     ldr x12, [x9, REGS_HOST_TP]
     write_ctx x12, x11
+#endif
 
 .if \with_struct
     str x0, [x9, #REGS_X(0)]
