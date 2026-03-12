@@ -70,6 +70,16 @@ lfi_linux_lib_engine(void)
 }
 
 EXPORT void
+lfi_linux_lib_free(void)
+{
+    if (lib_engine) {
+        lfi_free(lib_engine->engine);
+        free(lib_engine);
+        lib_engine = NULL;
+    }
+}
+
+EXPORT void
 lfi_linux_free(struct LFILinuxEngine *engine)
 {
     free(engine);
