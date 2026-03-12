@@ -16,7 +16,7 @@
 
 #endif
 
-#if 0 && defined(__ANDROID__)
+#if defined(__ANDROID__)
 
 #include <android/log.h>
 

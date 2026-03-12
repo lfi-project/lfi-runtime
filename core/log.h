@@ -19,15 +19,22 @@ xasprintf(const char *fmt, ...);
 
 #endif
 
-#if 0 && defined(__ANDROID__)
+#if defined(__ANDROID__)
 
 #include <android/log.h>
+#include <stdio.h>
 
-#define LOG_(...) \
-    ((void) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__))
+#define LOG_(fmt, ...) \
+    do { \
+        __android_log_print(ANDROID_LOG_INFO, LOG_TAG, fmt, ##__VA_ARGS__); \
+        fprintf(stderr, "[" LOG_TAG "] " fmt "\n", ##__VA_ARGS__); \
+    } while (0)
 
-#define ERROR(...) \
-    ((void) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__))
+#define ERROR(fmt, ...) \
+    do { \
+        __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, fmt, ##__VA_ARGS__); \
+        fprintf(stderr, "[" LOG_TAG "] " fmt "\n", ##__VA_ARGS__); \
+    } while (0)
 
 #else
 
