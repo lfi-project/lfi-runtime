@@ -42,7 +42,7 @@ lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
 static struct LFILinuxEngine *lib_engine;
 
 // Total number of procs (libraries) that the lib_engine is initialized for.
-#define MAX_LIBRARIES 16
+#define MAX_LIBRARIES 1
 
 EXPORT bool
 lfi_linux_lib_init(struct LFIOptions opts, struct LFILinuxOptions linux_opts)

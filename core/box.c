@@ -117,8 +117,7 @@ lfi_box_new(struct LFIEngine *engine)
     }
 
     size_t size = engine->opts.boxsize;
-    uintptr_t base = boxmap_addspace(engine->bm,
-        box_footprint(size, engine->opts));
+    uintptr_t base = boxmap_addspace(engine->bm, box_footprint(size));
     if (base == 0) {
         lfi_error = LFI_ERR_BOXMAP;
         goto err1;
@@ -145,9 +144,9 @@ lfi_box_new(struct LFIEngine *engine)
         .base = base,
         .size = size,
         .engine = engine,
-        .min = base + engine->guardsize + engine->opts.pagesize,
-        .max = base + size - engine->guardsize,
-        .max_exec = base + size - engine->guardsize,
+        .min = base + engine->opts.pagesize,
+        .max = base + size - BOX_INTERNAL_GUARD,
+        .max_exec = base + size - BOX_INTERNAL_GUARD,
     };
     syssetup(box);
 
@@ -161,7 +160,7 @@ lfi_box_new(struct LFIEngine *engine)
     return box;
 
 err2:
-    boxmap_rmspace(engine->bm, base, box_footprint(size, engine->opts));
+    boxmap_rmspace(engine->bm, base, box_footprint(size));
 err1:
     free(box);
     return NULL;
@@ -467,8 +466,7 @@ lfi_box_free(struct LFIBox *box)
         PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
     assert(p == (void *) (box->base - pagesize));
     lfi_box_cb_free(box);
-    boxmap_rmspace(box->engine->bm, box->base,
-        box_footprint(box->size, box->engine->opts));
+    boxmap_rmspace(box->engine->bm, box->base, box_footprint(box->size));
 #ifdef HAVE_PKU
     if (box->pkey != 0)
         pkey_free(box->pkey);

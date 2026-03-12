@@ -60,7 +60,7 @@ boxmap_size(struct BoxMap *map)
 {
     size_t total = 0;
     for (size_t i = 0; i < map->nregions; i++) {
-        total += map->regions[i].size - 2 * map->opts.guardsize;
+        total += map->regions[i].size;
     }
     return total;
 }
@@ -100,13 +100,14 @@ addregion(struct BoxMap *map, void *base, size_t size)
         return false;
     }
 
-    // Since mmap gives us something page-aligned, we need to find a region
-    // within it that is properly chunk-aligned.
-    uintptr_t alignbase = ceilp((uintptr_t) base, map->opts.chunksize);
-    size_t alignsize = truncp(alignbase +
-                               (size - (alignbase - (uintptr_t) base)),
-                           map->opts.chunksize) -
-        alignbase;
+    // Find a chunk-aligned sub-region that has at least guardsize bytes of
+    // space on each side. The guard regions are the space between the mmap
+    // edges and the chunk-aligned allocatable region.
+    uintptr_t start = (uintptr_t) base + map->opts.guardsize;
+    uintptr_t end = (uintptr_t) base + size - map->opts.guardsize;
+
+    uintptr_t alignbase = ceilp(start, map->opts.chunksize);
+    size_t alignsize = truncp(end, map->opts.chunksize) - alignbase;
 
     struct ExtAlloc *alloc = extalloc_new(alignbase, alignsize,
         map->opts.chunksize);
@@ -119,11 +120,6 @@ addregion(struct BoxMap *map, void *base, size_t size)
         free(alloc);
         return false;
     }
-
-    // Reserve the guard regions on either end of the new region.
-    extalloc_allocat(alloc, alignbase, map->opts.guardsize);
-    extalloc_allocat(alloc, alignbase + alignsize - map->opts.guardsize,
-        map->opts.guardsize);
 
     map->regions[map->nregions++] = (struct AddrRegion) {
         .base = (void *) alignbase,
