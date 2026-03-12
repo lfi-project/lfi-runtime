@@ -20,10 +20,6 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
 #endif
     SYS(brk,
             sys_brk(t, a0))
-    SYS(mmap,
-            sys_mmap(t, a0, a1, a2, a3, a4, a5))
-    SYS(munmap,
-            sys_munmap(t, a0, a1))
     SYS(exit_group,
             sys_exit_group(t, a0))
     SYS(exit,
