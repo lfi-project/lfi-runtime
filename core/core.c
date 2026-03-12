@@ -94,9 +94,7 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
 
     struct BoxMapOptions bm_opts = (struct BoxMapOptions) {
         .chunksize = gb(4),
-        // This is the guard size between the edge of the boxmap region and the
-        // outer world.
-        .guardsize = box_footprint(gb(4), opts),
+        .guardsize = REGION_GUARD,
     };
     struct BoxMap *bm = boxmap_new(bm_opts);
     if (!bm) {
@@ -104,11 +102,11 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
         goto err1;
     }
 
-    // Reserve space for n sandboxes with appropriate footprint, 2 guard pages,
-    // and 2 chunks worth of slack because boxmap has to do internal alignment
-    // when mmap returns non-chunk-aligned region.
-    size_t reserve = nsandboxes * box_footprint(opts.boxsize, opts) +
-        bm_opts.chunksize * 2 + bm_opts.guardsize * 2;
+    // Reserve space for n sandboxes with appropriate footprint, region guards
+    // on each side, and 1 chunk worth of slack because boxmap has to do
+    // internal alignment when mmap returns non-chunk-aligned region.
+    size_t reserve = nsandboxes * box_footprint(opts.boxsize) +
+        bm_opts.chunksize + bm_opts.guardsize * 2;
 
     if (nsandboxes > 0) {
         if (!boxmap_reserve(bm, reserve)) {
@@ -126,7 +124,6 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
     *engine = (struct LFIEngine) {
         .bm = bm,
         .opts = opts,
-        .guardsize = kb(192),
     };
 
     if (!engine->opts.no_init_sigaltstack)

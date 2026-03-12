@@ -69,6 +69,10 @@ lfi_linux_lib_init(struct LFIOptions opts, struct LFILinuxOptions linux_opts);
 struct LFILinuxEngine *
 lfi_linux_lib_engine(void);
 
+// Frees the library engine and its underlying LFIEngine.
+void
+lfi_linux_lib_free(void);
+
 // Frees the resources allocated for the linux engine (but not the underlying
 // LFIEngine).
 void

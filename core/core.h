@@ -21,7 +21,6 @@ struct LFIEngine {
     void (*sys_handler)(struct LFIContext *ctx);
     struct LFIContext *(*clone_cb)(struct LFIBox *box);
 
-    size_t guardsize;
     stack_t altstack;
 };
 
@@ -109,31 +108,52 @@ gb(size_t x)
     return x * 1024 * 1024 * 1024;
 }
 
-// Return the total amount of virtual address space needed for a sandbox of a
-// certain size. This depends on the architecture because it is effectively
-// reserving a guard region beyond the sandbox.
-static inline size_t
-box_footprint(size_t boxsize, struct LFIOptions opts)
-{
-    if (boxsize != gb(4)) {
-        LOG_(
-            "warning: box_footprint does not properly support non-4GiB sandboxes");
-        return boxsize;
-    }
+// Guard sizes for sandbox isolation. These are configurable per-architecture.
+//
+// BOX_INTERNAL_GUARD: space at the end of each sandbox (within the box's
+// allocated size) that is not usable by sandbox code. This reduces the
+// sandbox's usable address range.
+//
+// BOX_EXTERNAL_GUARD: additional space allocated beyond each sandbox's size,
+// increasing the per-sandbox footprint. This provides isolation between
+// adjacent sandboxes when hardware masking alone is insufficient.
+//
+// REGION_GUARD: space reserved on each side of the entire sandbox pool region,
+// protecting against accesses escaping the pool.
+
 #if defined(LFI_ARCH_ARM64)
-    return gb(8);
+
+#define BOX_INTERNAL_GUARD kb(192)
+#define BOX_EXTERNAL_GUARD 0
+#define REGION_GUARD       mb(512)
+
 #elif defined(LFI_ARCH_X64)
 
+#define BOX_INTERNAL_GUARD 0
 #ifdef HAVE_PKU
-    return gb(4);
+#define BOX_EXTERNAL_GUARD 0
+#define REGION_GUARD       0
 #else
-    // TODO: verify that we can safely reduce this to gb(4) if Segue is enabled.
-    return gb(44);
+// TODO: verify that we can safely reduce BOX_EXTERNAL_GUARD if Segue is
+// enabled.
+#define BOX_EXTERNAL_GUARD gb(40)
+#define REGION_GUARD       gb(40)
 #endif
 
 #elif defined(LFI_ARCH_RISCV64)
-    return gb(4);
+
+#define BOX_INTERNAL_GUARD 0
+#define BOX_EXTERNAL_GUARD 0
+#define REGION_GUARD       0
+
 #else
 #error "invalid architecture"
 #endif
+
+// Return the total amount of virtual address space needed for a sandbox of a
+// certain size. This is the sandbox size plus any external guard.
+static inline size_t
+box_footprint(size_t boxsize)
+{
+    return boxsize + BOX_EXTERNAL_GUARD;
 }
