@@ -165,15 +165,15 @@ lfi_lib_malloc(struct LFIBox *box, struct LFIContext **ctxp, size_t size)
 }
 
 EXPORT void *
-lfi_lib_realloc(struct LFIBox *box, struct LFIContext **ctxp, size_t size)
+lfi_lib_realloc(struct LFIBox *box, struct LFIContext **ctxp, void *old, size_t size)
 {
     struct LFILinuxProc *proc = lfi_box_data(box);
     ensure(proc->libsyms.realloc);
 
     lfiptr p = LFI_INVOKE(proc->box, ctxp, proc->libsyms.realloc, lfiptr,
-        (size_t), size);
+        (lfiptr, size_t), lfi_box_p2l(proc->box, (uintptr_t) old), size);
     if (!bufcheck(proc->box, p, size, 16)) {
-        LOG(proc->engine, "sandbox malloc returned invalid pointer: %lx", p);
+        LOG(proc->engine, "sandbox realloc returned invalid pointer: %lx", p);
         return NULL;
     }
     return (void *) lfi_box_l2p(proc->box, p);
