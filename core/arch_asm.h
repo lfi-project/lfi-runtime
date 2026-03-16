@@ -44,7 +44,7 @@
 # if defined(CTXREG)
 // With CTXREG, x25 points to the ctxreg array and ctxreg[0] holds the context pointer.
 .macro get_ctx reg
-    ldr \reg, [x25]
+    ldr \reg, [x25, CTXREG_CTX_OFFSET]
 .endm
 
 // With CTXREG, we never need to write the ctx.
@@ -115,7 +115,7 @@
 #ifdef CTXREG
 // With CTXREG, r15 points to the ctxreg array and ctxreg[0] holds the context pointer.
 .macro get_ctx reg
-    movq (%r15), \reg
+    movq CTXREG_CTX_OFFSET(%r15), \reg
 .endm
 
 .macro write_ctx reg

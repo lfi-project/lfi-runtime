@@ -128,6 +128,8 @@ if get_option('sys_minimal')
 endif
 if get_option('ctxreg')
   defines += '-DCTXREG'
+  defines += '-DCTXREG_CTX_OFFSET=@0@'.format(get_option('ctxreg_ctx_offset'))
+  defines += '-DCTXREG_TP_OFFSET=@0@'.format(get_option('ctxreg_tp_offset'))
 endif
 
 if not meson.is_subproject()

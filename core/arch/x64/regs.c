@@ -12,7 +12,7 @@ lfi_ctx_regs_init(struct LFIContext *ctx)
     ctx->regs.mxcsr = 0x1f80;
 #ifdef CTXREG
     ctx->regs.r15 = (uint64_t) ctx->ctxreg;
-    ctx->ctxreg[0] = (uint64_t) ctx;
+    ctx->ctxreg[CTXREG_CTX_OFFSET / 8] = (uint64_t) ctx;
 #else
     ctx->regs.r15 = 0x00000000ffffffff;
 #endif

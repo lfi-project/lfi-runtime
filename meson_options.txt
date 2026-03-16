@@ -66,3 +66,17 @@ option('ctxreg',
   type: 'boolean',
   value: false,
   description: 'enable context register (x25 on arm64, r15 on x64) for storing runtime context')
+
+option('ctxreg_ctx_offset',
+  type: 'integer',
+  min: 0,
+  max: 56,
+  value: 8,
+  description: 'byte offset of the context pointer within the ctxreg array (must be a multiple of 8)')
+
+option('ctxreg_tp_offset',
+  type: 'integer',
+  min: 8,
+  max: 56,
+  value: 16,
+  description: 'byte offset of the thread pointer within the ctxreg array (must be a multiple of 8)')

@@ -10,7 +10,7 @@ lfi_ctx_regs_init(struct LFIContext *ctx)
     ctx->regs.x30 = ctx->box->base;
     ctx->regs.retaddr = ctx->box->retaddr;
 #ifdef CTXREG
-    ctx->regs.x25 = (uint64_t) &ctx->ctxreg[0];
-    ctx->ctxreg[0] = (uint64_t) ctx;
+    ctx->regs.x25 = (uint64_t) &ctx->ctxreg[CTXREG_CTX_OFFSET / 8];
+    ctx->ctxreg[CTXREG_CTX_OFFSET / 8] = (uint64_t) ctx;
 #endif
 }
