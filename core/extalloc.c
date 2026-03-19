@@ -41,15 +41,14 @@ bit(uint8_t *bitvec, size_t bit)
 }
 
 static ssize_t
-bitvec_find_zeroes(uint8_t *bitvec, size_t bitvec_size, size_t n)
+bitvec_find_zeroes(uint8_t *bitvec, size_t nbits, size_t n)
 {
-    if (n <= 0 || bitvec_size == 0)
+    if (n <= 0 || nbits == 0)
         return -1;
 
-    size_t total_bits = bitvec_size * 8;
     size_t count = 0;
 
-    for (size_t i = 0; i < total_bits; i++) {
+    for (size_t i = 0; i < nbits; i++) {
         if (bit(bitvec, i) == 0) {
             count++;
             if (count == n)
