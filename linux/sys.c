@@ -55,6 +55,22 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
     // LFI syscall for pausing execution.
     LFI(pause,
             sys_lfi_pause(t))
+    LFI(jitcode_mmap,
+            sys_jitcode_mmap(t, a0, a1, a2))
+    LFI(jitcode_munmap,
+            sys_jitcode_munmap(t, a0, a1, a2))
+    LFI(jitcode_create,
+            sys_jitcode_create(t, a0, a1, a2))
+    LFI(jitcode_create2,
+            sys_jitcode_create2(t, a0, a1, a2, a3, a4))
+    LFI(jitcode_modify,
+            sys_jitcode_modify(t, a0, a1, a2, a3))
+    LFI(jitcode_delete,
+            sys_jitcode_delete(t, a0, a1))
+    LFI(jitcode_commit,
+            sys_jitcode_commit(t, a0, a1))
+    LFI(jitcode_decommit,
+            sys_jitcode_decommit(t, a0, a1))
     }
     // clang-format on
 
