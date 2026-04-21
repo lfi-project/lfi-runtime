@@ -1,7 +1,7 @@
 project(
   'lfi-runtime',
-  ['c'],
-  default_options: ['warning_level=1', 'buildtype=release']
+  ['c', 'cpp'],
+  default_options: ['warning_level=1', 'buildtype=release', 'cpp_std=c++17']
 )
 
 c_args = [

@@ -150,9 +150,9 @@ lfi_box_new(struct LFIEngine *engine)
     };
     syssetup(box);
 
-    bool ok = mm_init(&box->mm, box->min, box->max - box->min,
+    box->mm = mmap_create(box->min, box->max - box->min,
         engine->opts.pagesize);
-    if (!ok) {
+    if (!box->mm) {
         lfi_error = LFI_ERR_MMAP;
         goto err2;
     }
@@ -335,7 +335,7 @@ mapverify(struct LFIBox *box, uintptr_t start, size_t size, int prot, int flags,
 }
 
 static void
-cbunmap(uint64_t start, size_t len, struct MMInfo info, void *udata)
+cbunmap(uintptr_t start, size_t len, struct MMapInfo info, void *udata)
 {
     (void) udata, (void) info;
     void *p = mmap((void *) start, len, PROT_NONE,
@@ -347,12 +347,12 @@ static lfiptr
 box_mapany(struct LFIBox *box, size_t size, int prot, int flags, int fd,
     off_t off, bool no_verify)
 {
-    uintptr_t addr = mm_mapany(&box->mm, size, prot, flags, fd, off);
+    uintptr_t addr = mmap_map_any(box->mm, 0, size, prot, flags, fd, off);
     if (addr == (uintptr_t) -1)
         return (lfiptr) -1;
     int r = mapverify(box, addr, size, prot, flags, fd, off, no_verify);
     if (r < 0) {
-        mm_unmap_cb(&box->mm, addr, size, cbunmap, NULL);
+        mmap_unmap(box->mm, addr, size, cbunmap, NULL);
         return (lfiptr) -1;
     }
     return p2l(box, addr);
@@ -379,13 +379,13 @@ lfi_box_mapat(struct LFIBox *box, lfiptr addr, size_t size, int prot, int flags,
     if (!lfi_box_bufvalid(box, addr, size))
         return (lfiptr) -1;
 
-    uintptr_t m_addr = mm_mapat_cb(&box->mm, l2p(box, addr), size, prot, flags,
+    uintptr_t m_addr = mmap_map_at(box->mm, l2p(box, addr), size, prot, flags,
         fd, off, cbunmap, NULL);
     if (m_addr == (uintptr_t) -1)
         return (lfiptr) -1;
     int r = mapverify(box, m_addr, size, prot, flags, fd, off, false);
     if (r < 0) {
-        mm_unmap_cb(&box->mm, m_addr, size, cbunmap, NULL);
+        mmap_unmap(box->mm, m_addr, size, cbunmap, NULL);
         return (lfiptr) -1;
     }
     return p2l(box, m_addr);
@@ -398,13 +398,13 @@ lfi_box_mapat_register(struct LFIBox *box, lfiptr addr, size_t size, int prot,
     if (!lfi_box_bufvalid(box, addr, size))
         return (lfiptr) -1;
 
-    uintptr_t m_addr = mm_mapat_cb(&box->mm, l2p(box, addr), size, prot, flags,
+    uintptr_t m_addr = mmap_map_at(box->mm, l2p(box, addr), size, prot, flags,
         fd, off, cbunmap, NULL);
     if (m_addr == (uintptr_t) -1)
         return (lfiptr) -1;
     bool r = verify(box, m_addr, size, prot);
     if (!r) {
-        mm_unmap(&box->mm, m_addr, size);
+        mmap_unmap(box->mm, m_addr, size, NULL, NULL);
         return (lfiptr) -1;
     }
     return p2l(box, m_addr);
@@ -419,7 +419,7 @@ lfi_box_mprotect(struct LFIBox *box, lfiptr addr, size_t size, int prot)
     int r = protectverify(box, l2p(box, addr), size, prot, false);
     if (r < 0)
         return r;
-    return mm_protect(&box->mm, l2p(box, addr), size, prot);
+    return mmap_protect(box->mm, l2p(box, addr), size, prot, NULL, NULL);
 }
 
 EXPORT int
@@ -432,14 +432,14 @@ lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size,
     int r = protectverify(box, l2p(box, addr), size, prot, true);
     if (r < 0)
         return r;
-    return mm_protect(&box->mm, l2p(box, addr), size, prot);
+    return mmap_protect(box->mm, l2p(box, addr), size, prot, NULL, NULL);
 }
 
 EXPORT bool
 lfi_box_mquery(struct LFIBox *box, lfiptr addr, struct LFIMapInfo *info)
 {
-    struct MMInfo mminfo;
-    if (!mm_querypage(&box->mm, l2p(box, addr), &mminfo))
+    struct MMapInfo mminfo;
+    if (!mmap_query_page(box->mm, l2p(box, addr), &mminfo))
         return false;
     *info = (struct LFIMapInfo) {
         .prot = mminfo.prot,
@@ -454,7 +454,7 @@ EXPORT int
 lfi_box_munmap(struct LFIBox *box, lfiptr addr, size_t size)
 {
     if (lfi_box_bufvalid(box, addr, size))
-        return mm_unmap_cb(&box->mm, l2p(box, addr), size, cbunmap, NULL);
+        return mmap_unmap(box->mm, l2p(box, addr), size, cbunmap, NULL);
     return -1;
 }
 
@@ -471,7 +471,7 @@ lfi_box_free(struct LFIBox *box)
     if (box->pkey != 0)
         pkey_free(box->pkey);
 #endif
-    mm_free(&box->mm);
+    mmap_destroy(box->mm);
     free(box);
 }
 
@@ -584,11 +584,11 @@ lfi_box_cbinit(struct LFIBox *box)
 EXPORT void
 lfi_box_mark_original(struct LFIBox *box)
 {
-    mm_mark_original(&box->mm);
+    mmap_mark_original(box->mm);
 }
 
 EXPORT void
 lfi_box_unmap_non_original(struct LFIBox *box)
 {
-    mm_unmap_non_original(&box->mm, cbunmap, NULL);
+    mmap_unmap_non_original(box->mm, cbunmap, NULL);
 }

@@ -6,7 +6,7 @@
 #include "lfi_core.h"
 #include "lfiv.h"
 #include "log.h"
-#include "mmap.h"
+#include "mmap/mmap_c.h"
 
 #include <signal.h>
 #include <threads.h>
@@ -36,7 +36,7 @@ struct LFIBox {
     lfiptr max_exec; // Largest valid executable address
 
     // Memory mapper object from libmmap.
-    struct MMAddrSpace mm;
+    struct MMapAddrSpace *mm;
 
     // Pointer to the page at the start of the sandbox holding runtime call
     // entrypoints.
