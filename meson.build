@@ -162,4 +162,12 @@ if get_option('enable_linux')
       description: 'LFI runtime',
       libraries: [liblfi_so, liblfi_a],
   )
+
+  if get_option('enable_sbox')
+    subdir('sbox')
+
+    if get_option('enable_examples')
+      subdir('examples')
+    endif
+  endif
 endif
