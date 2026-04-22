@@ -103,11 +103,11 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
 
         // Signals (also needed, at least as stubs, for threads).
         SYS(rt_sigaction,
-                sys_ignore(t, "rt_sigaction"))
+                sys_rt_sigaction(t, a0, a1, a2, a3))
         SYS(rt_sigprocmask,
                 sys_ignore(t, "rt_sigprocmask"))
         SYS(rt_sigreturn,
-                sys_ignore(t, "rt_sigreturn"))
+                sys_rt_sigreturn(t))
         SYS(sigaltstack,
                 sys_ignore(t, "sigaltstack"))
 
