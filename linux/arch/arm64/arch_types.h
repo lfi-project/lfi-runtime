@@ -36,3 +36,13 @@ struct Stat {
     struct TimeSpec st_ctim;
     uint32_t _unused[2];
 };
+
+struct SigAction {
+    uintptr_t handler;
+    unsigned long flags;
+    uintptr_t restorer;
+    uint64_t mask;
+};
+
+#define SA_RESTORER 0x04000000
+
