@@ -3,6 +3,16 @@ option('enable_linux',
   value: true,
   description: 'enable the Linux emulator (requires Linux)')
 
+option('enable_sbox',
+  type: 'boolean',
+  value: true,
+  description: 'build the sbox library (LFI + passthrough backends)')
+
+option('enable_examples',
+  type: 'boolean',
+  value: true,
+  description: 'build the sbox examples')
+
 option('max_futexes',
   type: 'integer',
   min: 1,
