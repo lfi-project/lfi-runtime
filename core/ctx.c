@@ -73,9 +73,9 @@ lfi_ctx_set_tp(struct LFIContext *ctx, uint64_t tp)
 #ifdef CTXREG
     ctx->ctxreg[CTXREG_TP_OFFSET / 8] = tp;
 # if defined(LFI_ARCH_ARM64)
-    ctx->regs.x25 = (uint64_t) &ctx->ctxreg[CTXREG_CTX_OFFSET / 8];
+    ctx->regs.x25 = (uint64_t) &ctx->ctxreg[0];
 # elif defined(LFI_ARCH_X64)
-    ctx->regs.r15 = (uint64_t) &ctx->ctxreg[CTXREG_CTX_OFFSET / 8];
+    ctx->regs.r15 = (uint64_t) &ctx->ctxreg[0];
 # else
 # error "CTXREG: architecture not supported"
 # endif
