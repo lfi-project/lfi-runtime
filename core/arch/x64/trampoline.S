@@ -1,5 +1,7 @@
 #include "arch_asm.h"
 
+lfi_cet_note
+
 .macro zero_regs
     xorq %rax, %rax
     xorq %rbx, %rbx
@@ -174,6 +176,7 @@ lfi_trampoline:
 .global lfi_trampoline_direct
 .p2align 4
 lfi_trampoline_direct:
+    endbr64
     // ctxp
     popq %r11
     // box
@@ -262,6 +265,7 @@ lfi_trampoline_direct:
 .p2align 4
 .global lfi_ret
 lfi_ret:
+    endbr64
 #ifdef HAVE_PKU
     movq %rax, %rdi
     pku_all_access
@@ -270,6 +274,7 @@ lfi_ret:
     get_ctx %rdi
 .global lfi_ret_end
 lfi_ret_end:
+    endbr64
     // restore host sp
     movq REGS_HOST_SP(%rdi), %rsp
     // restore host tp

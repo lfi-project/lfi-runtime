@@ -28,7 +28,7 @@ liblfi_core = static_library(
   'lfi-core',
   srcs,
   c_args: c_args_warnings + defines,
-  cpp_args: defines,
+  cpp_args: cpp_args + defines,
   dependencies: [lfiv],
   install: true,
   include_directories: include_directories('include', 'arch/' + archmap[cpu]),

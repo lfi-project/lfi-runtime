@@ -1,11 +1,14 @@
 #include "arch_asm.h"
 
+lfi_cet_note
+
 .text
 
 // lfi_ctx_entry(struct LFIContext *ctx, uintptr_t *host_sp_ptr, uintptr_t entry)
 .global lfi_ctx_entry
 .p2align 4
 lfi_ctx_entry:
+    endbr64
     // save callee-saved registers to stack
     pushq %r15
     pushq %r14
@@ -13,6 +16,15 @@ lfi_ctx_entry:
     pushq %r12
     pushq %rbx
     pushq %rbp
+#ifdef ENABLE_CET
+    // Save the shadow stack position for the eventual non-local return in
+    // lfi_ctx_end. The extra padding slot preserves the host stack alignment
+    // expected by lfi_syscall_entry when it calls back into C.
+    xorl %eax, %eax
+    rdsspq %rax
+    pushq %rax
+    pushq $0
+#endif
     // save stack to host_sp_ptr
     movq %rsp, (%rsi)
     // put entrypoint in %r11
@@ -83,6 +95,7 @@ lfi_ctx_entry:
 .global lfi_ctx_end
 .p2align 4
 lfi_ctx_end:
+    endbr64
     // restore host_sp
     movq REGS_HOST_SP(%rdi), %rsp
 #ifndef CTXREG
@@ -92,6 +105,38 @@ lfi_ctx_end:
 #endif
     // put val in the return register
     movq %rsi, %rax
+#ifdef ENABLE_CET
+    // lfi_ctx_end abandons the host call chain between the syscall handler and
+    // this function. Move SSP back to the entry saved by lfi_ctx_entry so the
+    // final ret compares against the same return address as the normal stack.
+    movq 8(%rsp), %r10
+    addq $16, %rsp
+    xorl %r11d, %r11d
+    rdsspq %r11
+    cmpq %r11, %r10
+    je .Lctx_end_shstk_done
+    jb .Lctx_end_shstk_bad
+    subq %r11, %r10
+    testq $7, %r10
+    jne .Lctx_end_shstk_bad
+    shrq $3, %r10
+.Lctx_end_shstk_loop:
+    cmpq $255, %r10
+    jbe .Lctx_end_shstk_tail
+    movl $255, %ecx
+    incsspq %rcx
+    subq $255, %r10
+    jmp .Lctx_end_shstk_loop
+.Lctx_end_shstk_tail:
+    testq %r10, %r10
+    je .Lctx_end_shstk_done
+    movq %r10, %rcx
+    incsspq %rcx
+    jmp .Lctx_end_shstk_done
+.Lctx_end_shstk_bad:
+    ud2
+.Lctx_end_shstk_done:
+#endif
     cld
     // restore callee-saved registers saved in lfi_ctx_entry
     popq %rbp
@@ -105,6 +150,7 @@ lfi_ctx_end:
 .global lfi_syscall_entry
 .p2align 4
 lfi_syscall_entry:
+    endbr64
 #ifdef HAVE_PKU
     pushq %rax
     pushq %rdx
@@ -215,6 +261,7 @@ lfi_syscall_entry:
 .global lfi_get_tp
 .p2align 4
 lfi_get_tp:
+    endbr64
 #if defined(HAVE_PKU) && !defined(STORES_ONLY)
     pushq %rdx
     pushq %rcx
@@ -237,6 +284,7 @@ lfi_get_tp:
 .global lfi_set_tp
 .p2align 4
 lfi_set_tp:
+    endbr64
 #ifdef HAVE_PKU
     pushq %rdx
     pushq %rcx

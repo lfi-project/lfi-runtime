@@ -112,6 +112,31 @@
 
 // clang-format off
 #ifdef __ASSEMBLER__
+#ifdef ENABLE_CET
+.macro lfi_cet_note
+.pushsection .note.gnu.property, "a", @note
+.p2align 3
+.long 1f - 0f
+.long 4f - 1f
+.long 5
+0:
+.asciz "GNU"
+1:
+.p2align 3
+.long 0xc0000002
+.long 3f - 2f
+2:
+.long 0x3
+3:
+.p2align 3
+4:
+.popsection
+.endm
+#else
+.macro lfi_cet_note
+.endm
+#endif
+
 #ifdef CTXREG
 // With CTXREG, r15 points to the ctxreg array and ctxreg[0] holds the context pointer.
 .macro get_ctx reg

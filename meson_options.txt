@@ -52,6 +52,11 @@ option('enable_pku',
   value: false,
   description: 'use memory protection keys')
 
+option('enable_cet',
+  type: 'boolean',
+  value: false,
+  description: 'enable Intel CET SHSTK/IBT support on x86-64')
+
 option('static_lfi_run',
   type: 'boolean',
   value: false,
