@@ -40,6 +40,10 @@ lfi_set_tp(void) __asm__("lfi_set_tp");
 #endif
 extern void
 lfi_ret(void) __asm__("lfi_ret");
+#ifdef ENABLE_SW_SHSTK
+extern void
+lfi_scs_unwind(void) __asm__("lfi_scs_unwind");
+#endif
 
 static int
 protectmem(void *start, size_t size, int prot, int pkey)
@@ -95,6 +99,11 @@ syssetup(struct LFIBox *box)
         null_rtcall->rtcalls[2] = (uintptr_t) &lfi_set_tp;
 #endif
         null_rtcall->rtcalls[3] = (uintptr_t) &lfi_ret;
+#ifdef ENABLE_SW_SHSTK
+        // SCS unwind handler at offset 48: matches the LLVM rewriter's
+        // jmpq *48(%r14) for incsspq.
+        null_rtcall->rtcalls[6] = (uintptr_t) &lfi_scs_unwind;
+#endif
 
         int r2 = protectmem((void *) box->base, pagesize, PROT_READ,
             box->pkey);

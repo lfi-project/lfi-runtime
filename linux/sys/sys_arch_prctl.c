@@ -11,7 +11,9 @@
 static int
 host_shstk_enabled(void)
 {
-#if defined(__linux__) && defined(SYS_arch_prctl)
+#if defined(ENABLE_SW_SHSTK)
+    return 0;
+#elif defined(__linux__) && defined(SYS_arch_prctl)
     unsigned long features = 0;
     int r = syscall(SYS_arch_prctl, LINUX_ARCH_SHSTK_STATUS, &features);
     if (r < 0)

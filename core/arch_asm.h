@@ -110,6 +110,19 @@
 #define CTX_ABORT_CALLBACK 448
 #define CTX_ABORT_STATUS   456
 
+#ifdef ENABLE_SW_SHSTK
+// ctxreg slots used by the software shadow call stack on x86-64. The LLVM
+// rewriter and the runtime stub at lfi_scs_unwind must agree on these.
+//   24: temporary save slot used by the SCS prologue
+//   32: shadow call stack pointer
+//   40: argument/return slot for LFI runtime calls
+//   48: upper bound of the SCS region (initial empty value of the SCS pointer)
+#define CTXREG_SCS_TEMP_OFFSET  24
+#define CTXREG_SCS_OFFSET       32
+#define CTXREG_RT_SLOT_OFFSET   40
+#define CTXREG_SCS_BOUND_OFFSET 48
+#endif
+
 // clang-format off
 #ifdef __ASSEMBLER__
 #ifdef ENABLE_CET

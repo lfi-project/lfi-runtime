@@ -1,3 +1,4 @@
+#include "arch_asm.h"
 #include "core.h"
 #include "lfi_core.h"
 
@@ -81,6 +82,20 @@ lfi_ctx_set_tp(struct LFIContext *ctx, uint64_t tp)
 # endif
 #else
     ctx->regs._tp = tp;
+#endif
+}
+
+EXPORT void
+lfi_ctx_set_scs(struct LFIContext *ctx, uint64_t scs_top)
+{
+#ifdef ENABLE_SW_SHSTK
+    // Empty SCS: pointer sits at the top; first push will decrement it. The
+    // bound is the same value — incssp/SCS unwind never moves above it.
+    ctx->ctxreg[CTXREG_SCS_OFFSET / 8] = scs_top;
+    ctx->ctxreg[CTXREG_SCS_BOUND_OFFSET / 8] = scs_top;
+#else
+    (void) ctx;
+    (void) scs_top;
 #endif
 }
 

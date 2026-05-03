@@ -144,6 +144,18 @@ if get_option('ctxreg')
   defines += '-DCTXREG_CTX_OFFSET=@0@'.format(get_option('ctxreg_ctx_offset'))
   defines += '-DCTXREG_TP_OFFSET=@0@'.format(get_option('ctxreg_tp_offset'))
 endif
+if get_option('enable_sw_shstk')
+  if cpu != 'x86_64'
+    error('enable_sw_shstk is only supported on x86-64')
+  endif
+  if not get_option('ctxreg')
+    error('enable_sw_shstk requires ctxreg')
+  endif
+  if get_option('enable_cet')
+    error('enable_sw_shstk and enable_cet are mutually exclusive')
+  endif
+  defines += '-DENABLE_SW_SHSTK'
+endif
 
 if not meson.is_subproject()
   add_global_arguments(c_args, language: 'c')

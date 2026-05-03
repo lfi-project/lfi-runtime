@@ -307,6 +307,32 @@ lfi_set_tp:
 #endif
     jmpq *%r11
 
+#ifdef ENABLE_SW_SHSTK
+// Software shadow call stack unwind. Counterpart to incsspq: pop N entries off
+// the SCS by adding N*8 to the SCS pointer at CTXREG_SCS_OFFSET(%r15).
+//
+// Inputs (LFI runtime call ABI):
+//   CTXREG_RT_SLOT_OFFSET(%r15) — entry count N (low 32 bits used)
+//   %r11                        — return address back into sandbox
+//
+// Bounds-checked against CTXREG_SCS_BOUND_OFFSET(%r15) so a sandbox-supplied
+// count cannot move the SCS pointer past the SCS region; an out-of-range
+// count traps via ud2.
+.global lfi_scs_unwind
+.p2align 4
+lfi_scs_unwind:
+    endbr64
+    movq CTXREG_RT_SLOT_OFFSET(%r15), %rax
+    shlq $3, %rax
+    addq CTXREG_SCS_OFFSET(%r15), %rax
+    cmpq %rax, CTXREG_SCS_BOUND_OFFSET(%r15)
+    jb .Lscs_unwind_bad
+    movq %rax, CTXREG_SCS_OFFSET(%r15)
+    jmpq *%r11
+.Lscs_unwind_bad:
+    ud2
+#endif
+
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits
 #endif

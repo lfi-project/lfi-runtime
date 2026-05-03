@@ -202,6 +202,29 @@ sp_init(struct LFILinuxThread *t, lfiptr sp)
 #endif
 }
 
+#ifdef ENABLE_SW_SHSTK
+#define SCS_DEFAULT_SIZE (64 * 1024)
+
+// Allocate a shadow call stack region for the thread inside the sandbox,
+// just below the main stack, and prime the context's SCS pointer.
+static int
+scs_init(struct LFILinuxThread *t)
+{
+    size_t scssize = t->proc->engine->opts.scsstacksize;
+    if (scssize == 0)
+        scssize = SCS_DEFAULT_SIZE;
+
+    t->scs = lfi_box_mapat(t->proc->box, t->stack - scssize, scssize,
+        LFI_PROT_READ | LFI_PROT_WRITE,
+        LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+    if (t->scs == (lfiptr) -1)
+        return -1;
+    t->scs_size = scssize;
+    lfi_ctx_set_scs(t->ctx, t->scs + scssize);
+    return 0;
+}
+#endif
+
 EXPORT void
 lfi_thread_reload(struct LFILinuxThread *t, int argc, const char **argv,
     const char **envp)
@@ -211,6 +234,14 @@ lfi_thread_reload(struct LFILinuxThread *t, int argc, const char **argv,
     *lfi_ctx_regs(t->ctx) = (struct LFIRegs) { 0 };
     lfi_ctx_regs_init(t->ctx);
     sp_init(t, sp);
+#ifdef ENABLE_SW_SHSTK
+    // Wipe and reset the SCS so the reloaded thread starts with an empty
+    // shadow stack (matching the fresh-thread state).
+    if (t->scs) {
+        memset((void *) lfi_box_l2p(t->proc->box, t->scs), 0, t->scs_size);
+        lfi_ctx_set_scs(t->ctx, t->scs + t->scs_size);
+    }
+#endif
 }
 
 EXPORT struct LFILinuxThread *
@@ -239,12 +270,23 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
     }
     t->stack_size = stacksize;
 
+#ifdef ENABLE_SW_SHSTK
+    if (scs_init(t) < 0) {
+        LOG(proc->engine, "failed to map shadow call stack");
+        goto err4;
+    }
+#endif
+
     lfiptr sp = stack_init(t, argc, argv, envp);
     sp_init(t, sp);
 
     lfi_box_mark_original(t->proc->box);
 
     return t;
+#ifdef ENABLE_SW_SHSTK
+err4:
+    lfi_box_munmap(proc->box, t->stack, t->stack_size);
+#endif
 err3:
     lfi_ctx_free(t->ctx);
 err2:
@@ -298,6 +340,11 @@ lfi_thread_free(struct LFILinuxThread *t)
         size_t stacksize = t->proc->engine->opts.stacksize;
         lfi_box_munmap(t->proc->box, t->stack, stacksize);
     }
+#ifdef ENABLE_SW_SHSTK
+    if (t->scs) {
+        lfi_box_munmap(t->proc->box, t->scs, t->scs_size);
+    }
+#endif
     // Free pthread object (if created).
     if (t->pthread)
         free(t->pthread);

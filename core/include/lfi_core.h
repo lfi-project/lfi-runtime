@@ -293,6 +293,13 @@ lfi_ctx_get_tp(struct LFIContext *ctx);
 void
 lfi_ctx_set_tp(struct LFIContext *ctx, uint64_t tp);
 
+// Initializes the software shadow call stack pointer for the context.
+// scs_top must point to the byte just past the high end of the SCS region;
+// pushes decrement it, incssp/unwind increases it but never above scs_top.
+// No-op when software shadow stack support is not enabled at build time.
+void
+lfi_ctx_set_scs(struct LFIContext *ctx, uint64_t scs_top);
+
 // Initializes registers to values that maintain sandbox invariants
 // (essentially, this sets all sandbox-reserved registers to the sandbox base
 // address).

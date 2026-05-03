@@ -135,6 +135,11 @@ struct LFILinuxThread {
     lfiptr stack;
     size_t stack_size;
 
+    // Pointer to base of the shadow call stack (zero when software shadow
+    // stack is disabled, or for threads spawned by the sandbox).
+    lfiptr scs;
+    size_t scs_size;
+
     // Child tid pointer location.
     lfiptr ctidp;
 
