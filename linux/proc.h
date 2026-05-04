@@ -135,10 +135,12 @@ struct LFILinuxThread {
     lfiptr stack;
     size_t stack_size;
 
-    // Pointer to base of the shadow call stack (zero when software shadow
-    // stack is disabled, or for threads spawned by the sandbox).
-    lfiptr scs;
-    size_t scs_size;
+    // Pointer to base of the control flow stack used in the dual-stack
+    // scheme (zero when software shadow stack is disabled, or for threads
+    // spawned by the sandbox). %rsp is initialized to the top of this
+    // region; only `call`/`ret` modify it.
+    lfiptr cfs;
+    size_t cfs_size;
 
     // Child tid pointer location.
     lfiptr ctidp;

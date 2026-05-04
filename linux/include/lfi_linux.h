@@ -10,10 +10,11 @@ struct LFILinuxOptions {
     // Stack size to use for processes (2mb recommended).
     size_t stacksize;
 
-    // Shadow call stack size (used when the runtime is built with
-    // enable_sw_shstk). Each entry is 8 bytes; 64KB allows ~8K return
-    // addresses. Defaults to 64KB if zero.
-    size_t scsstacksize;
+    // Control flow stack size (used when the runtime is built with
+    // enable_sw_shstk). %rsp inside the sandbox points into this region and
+    // is populated only by `call`/`ret`, so each entry is 8 bytes; 64KB
+    // allows ~8K nested return addresses. Defaults to 64KB if zero.
+    size_t cfsstacksize;
 
     // Enable verbose debug information.
     bool verbose;

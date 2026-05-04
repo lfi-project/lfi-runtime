@@ -308,28 +308,29 @@ lfi_set_tp:
     jmpq *%r11
 
 #ifdef ENABLE_SW_SHSTK
-// Software shadow call stack unwind. Counterpart to incsspq: pop N entries off
-// the SCS by adding N*8 to the SCS pointer at CTXREG_SCS_OFFSET(%r15).
+// CET-style incsspq for the dual-stack scheme. In this scheme %rsp is the
+// control flow stack pointer; the sandbox cannot adjust it directly, so it
+// passes the count through CTXREG_RT_SLOT_OFFSET(%r15) and jumps here.
 //
-// Inputs (LFI runtime call ABI):
+// Inputs:
 //   CTXREG_RT_SLOT_OFFSET(%r15) — entry count N (low 32 bits used)
-//   %r11                        — return address back into sandbox
+//   %r11                         — return address back into the sandbox
 //
-// Bounds-checked against CTXREG_SCS_BOUND_OFFSET(%r15) so a sandbox-supplied
-// count cannot move the SCS pointer past the SCS region; an out-of-range
+// Computes new_rsp = %rsp + N*8 and validates new_rsp <= CFS top
+// (CTXREG_CFS_BOUND_OFFSET(%r15)) before installing it. An out-of-range
 // count traps via ud2.
-.global lfi_scs_unwind
+.global lfi_inc_ssp
 .p2align 4
-lfi_scs_unwind:
+lfi_inc_ssp:
     endbr64
     movq CTXREG_RT_SLOT_OFFSET(%r15), %rax
     shlq $3, %rax
-    addq CTXREG_SCS_OFFSET(%r15), %rax
-    cmpq %rax, CTXREG_SCS_BOUND_OFFSET(%r15)
-    jb .Lscs_unwind_bad
-    movq %rax, CTXREG_SCS_OFFSET(%r15)
+    addq %rsp, %rax
+    cmpq CTXREG_CFS_BOUND_OFFSET(%r15), %rax
+    ja .Linc_ssp_bad
+    movq %rax, %rsp
     jmpq *%r11
-.Lscs_unwind_bad:
+.Linc_ssp_bad:
     ud2
 #endif
 

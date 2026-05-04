@@ -194,7 +194,14 @@ sp_init(struct LFILinuxThread *t, lfiptr sp)
 #if defined(LFI_ARCH_ARM64)
     lfi_ctx_regs(t->ctx)->sp = sp;
 #elif defined(LFI_ARCH_X64)
+#ifdef ENABLE_SW_SHSTK
+    // Dual-stack scheme: %r13 is the data stack pointer the sandbox sees as
+    // its conventional stack pointer (where argc/argv/envp/auxv live), and
+    // %rsp is the control flow stack (set up separately by cfs_init).
+    lfi_ctx_regs(t->ctx)->r13 = sp;
+#else
     lfi_ctx_regs(t->ctx)->rsp = sp;
+#endif
 #elif defined(LFI_ARCH_RISCV64)
     lfi_ctx_regs(t->ctx)->sp = sp;
 #else
@@ -203,24 +210,30 @@ sp_init(struct LFILinuxThread *t, lfiptr sp)
 }
 
 #ifdef ENABLE_SW_SHSTK
-#define SCS_DEFAULT_SIZE (64 * 1024)
+#define CFS_DEFAULT_SIZE (64 * 1024)
 
-// Allocate a shadow call stack region for the thread inside the sandbox,
-// just below the main stack, and prime the context's SCS pointer.
+// Allocate a control flow stack region for the thread inside the sandbox,
+// just below the data stack, and point %rsp at its top. Only `call` and
+// `ret` write to this region (the LLVM rewriter retargets every other
+// %rsp use to %r13).
 static int
-scs_init(struct LFILinuxThread *t)
+cfs_init(struct LFILinuxThread *t)
 {
-    size_t scssize = t->proc->engine->opts.scsstacksize;
-    if (scssize == 0)
-        scssize = SCS_DEFAULT_SIZE;
+    size_t cfssize = t->proc->engine->opts.cfsstacksize;
+    if (cfssize == 0)
+        cfssize = CFS_DEFAULT_SIZE;
 
-    t->scs = lfi_box_mapat(t->proc->box, t->stack - scssize, scssize,
+    t->cfs = lfi_box_mapat(t->proc->box, t->stack - cfssize, cfssize,
         LFI_PROT_READ | LFI_PROT_WRITE,
         LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
-    if (t->scs == (lfiptr) -1)
+    if (t->cfs == (lfiptr) -1)
         return -1;
-    t->scs_size = scssize;
-    lfi_ctx_set_scs(t->ctx, t->scs + scssize);
+    t->cfs_size = cfssize;
+    // Empty CFS: %rsp sits at the top; the first `call` will decrement it.
+    // lfi_ctx_set_cfs_bound also primes the runtime's incsspq guard so the
+    // sandbox cannot move %rsp above this value.
+    lfi_ctx_regs(t->ctx)->rsp = t->cfs + cfssize;
+    lfi_ctx_set_cfs_bound(t->ctx, t->cfs + cfssize);
     return 0;
 }
 #endif
@@ -235,11 +248,12 @@ lfi_thread_reload(struct LFILinuxThread *t, int argc, const char **argv,
     lfi_ctx_regs_init(t->ctx);
     sp_init(t, sp);
 #ifdef ENABLE_SW_SHSTK
-    // Wipe and reset the SCS so the reloaded thread starts with an empty
-    // shadow stack (matching the fresh-thread state).
-    if (t->scs) {
-        memset((void *) lfi_box_l2p(t->proc->box, t->scs), 0, t->scs_size);
-        lfi_ctx_set_scs(t->ctx, t->scs + t->scs_size);
+    // Wipe and reset the CFS so the reloaded thread starts with an empty
+    // control flow stack (matching the fresh-thread state).
+    if (t->cfs) {
+        memset((void *) lfi_box_l2p(t->proc->box, t->cfs), 0, t->cfs_size);
+        lfi_ctx_regs(t->ctx)->rsp = t->cfs + t->cfs_size;
+        lfi_ctx_set_cfs_bound(t->ctx, t->cfs + t->cfs_size);
     }
 #endif
 }
@@ -271,8 +285,8 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
     t->stack_size = stacksize;
 
 #ifdef ENABLE_SW_SHSTK
-    if (scs_init(t) < 0) {
-        LOG(proc->engine, "failed to map shadow call stack");
+    if (cfs_init(t) < 0) {
+        LOG(proc->engine, "failed to map control flow stack");
         goto err4;
     }
 #endif
@@ -341,8 +355,8 @@ lfi_thread_free(struct LFILinuxThread *t)
         lfi_box_munmap(t->proc->box, t->stack, stacksize);
     }
 #ifdef ENABLE_SW_SHSTK
-    if (t->scs) {
-        lfi_box_munmap(t->proc->box, t->scs, t->scs_size);
+    if (t->cfs) {
+        lfi_box_munmap(t->proc->box, t->cfs, t->cfs_size);
     }
 #endif
     // Free pthread object (if created).

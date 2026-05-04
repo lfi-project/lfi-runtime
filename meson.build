@@ -148,11 +148,14 @@ if get_option('enable_sw_shstk')
   if cpu != 'x86_64'
     error('enable_sw_shstk is only supported on x86-64')
   endif
-  if not get_option('ctxreg')
-    error('enable_sw_shstk requires ctxreg')
-  endif
   if get_option('enable_cet')
     error('enable_sw_shstk and enable_cet are mutually exclusive')
+  endif
+  if not get_option('ctxreg')
+    # The lfi_inc_ssp stub reads its count from CTXREG_RT_SLOT_OFFSET(%r15)
+    # and the CFS bound from CTXREG_CFS_BOUND_OFFSET(%r15); both require %r15
+    # to point at the ctxreg array.
+    error('enable_sw_shstk requires ctxreg')
   endif
   defines += '-DENABLE_SW_SHSTK'
 endif

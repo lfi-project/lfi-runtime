@@ -86,16 +86,15 @@ lfi_ctx_set_tp(struct LFIContext *ctx, uint64_t tp)
 }
 
 EXPORT void
-lfi_ctx_set_scs(struct LFIContext *ctx, uint64_t scs_top)
+lfi_ctx_set_cfs_bound(struct LFIContext *ctx, uint64_t cfs_top)
 {
 #ifdef ENABLE_SW_SHSTK
-    // Empty SCS: pointer sits at the top; first push will decrement it. The
-    // bound is the same value — incssp/SCS unwind never moves above it.
-    ctx->ctxreg[CTXREG_SCS_OFFSET / 8] = scs_top;
-    ctx->ctxreg[CTXREG_SCS_BOUND_OFFSET / 8] = scs_top;
+    // Used by lfi_inc_ssp to validate that an incsspq cannot push %rsp
+    // above the high end of the CFS region.
+    ctx->ctxreg[CTXREG_CFS_BOUND_OFFSET / 8] = cfs_top;
 #else
     (void) ctx;
-    (void) scs_top;
+    (void) cfs_top;
 #endif
 }
 

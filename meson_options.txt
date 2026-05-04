@@ -60,7 +60,7 @@ option('enable_cet',
 option('enable_sw_shstk',
   type: 'boolean',
   value: false,
-  description: 'enable software shadow call stack on x86-64 (requires ctxreg)')
+  description: 'enable the dual-stack scheme on x86-64: %rsp is the control flow stack (return addresses only), %r13 holds the data stack pointer; mutually exclusive with enable_cet')
 
 option('static_lfi_run',
   type: 'boolean',

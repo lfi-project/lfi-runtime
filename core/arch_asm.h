@@ -110,17 +110,20 @@
 #define CTX_ABORT_CALLBACK 448
 #define CTX_ABORT_STATUS   456
 
+// In the dual-stack scheme enabled by ENABLE_SW_SHSTK on x86-64, %rsp holds
+// the control flow stack (return addresses only, populated by `call` and
+// consumed by `ret`) and %r13 is the reserved data stack pointer. All
+// compiler-emitted push/pop and explicit %rsp manipulations are rewritten to
+// %r13 by the LFI assembler.
+//
+// Two ctxreg slots are used for the INCSSPQ runtime stub (lfi_inc_ssp):
+//   24: (used by the rewriter as a scratch slot during high-byte+%rsp
+//       fixups; the runtime never touches it)
+//   32: upper bound of the CFS region — initial empty value of %rsp
+//   40: argument slot for runtime calls (count register for incsspq)
 #ifdef ENABLE_SW_SHSTK
-// ctxreg slots used by the software shadow call stack on x86-64. The LLVM
-// rewriter and the runtime stub at lfi_scs_unwind must agree on these.
-//   24: temporary save slot used by the SCS prologue
-//   32: shadow call stack pointer
-//   40: argument/return slot for LFI runtime calls
-//   48: upper bound of the SCS region (initial empty value of the SCS pointer)
-#define CTXREG_SCS_TEMP_OFFSET  24
-#define CTXREG_SCS_OFFSET       32
+#define CTXREG_CFS_BOUND_OFFSET 32
 #define CTXREG_RT_SLOT_OFFSET   40
-#define CTXREG_SCS_BOUND_OFFSET 48
 #endif
 
 // clang-format off
