@@ -10,6 +10,7 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 
 #ifdef HAVE_GETAUXVAL
 #include <sys/auxv.h>
@@ -35,6 +36,10 @@ host_getauxval(unsigned long type)
 
 // First TID, to avoid using low TID numbers.
 #define BASE_TID 10000
+// Cap on the host-allocated SafeStack safe stack size. Holds return
+// addresses + provably-safe locals — small per frame, so 1MB is plenty.
+// The unsafe stack still gets sized by LFILinuxOptions.stacksize.
+#define SAFE_STACK_SIZE (1024 * 1024)
 // Maximum number of argv arguments.
 #define ARGV_MAX 1024
 // Maxmimum number of envp arguments.
@@ -79,11 +84,15 @@ struct AuxvList {
     struct Auxv at_null;
 };
 
-// Initializes the thread's stack with argv, envp, and auxv.
+// Lays out argv, envp, and auxv at the top of the thread's in-sandbox stack
+// (which under SafeStack is the unsafe stack).
 //
 // The layout will look something like this:
 // | argc | argv[0] .. 0 | envp[0] .. 0 | auxv | rand | argv/envp strings |
-// ^ sp
+// ^ returned lfiptr
+//
+// Returns the sandbox-relative pointer to argc; that is the value musl's
+// _start expects in %rdi (it walks argv/envp/auxv from there).
 static lfiptr
 stack_init(struct LFILinuxThread *t, int argc, const char **argv,
     const char **envp)
@@ -172,9 +181,15 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
 
     uint64_t box_argc = argc;
     // Calculate where the sp should go (enough space from rand_start to store
-    // argc/argv/envp/auxv).
-    lfiptr stack_start = rand_start - sizeof(box_argc) - sizeof(box_argv) -
-        sizeof(box_envp) - sizeof(auxv);
+    // argc/argv/envp/auxv). Align down to 16 bytes: the SysV ABI requires the
+    // stack pointer to be 16-byte aligned at process entry, and (more
+    // critically here) the SafeStack pass computes per-frame unsafe SPs as
+    // base - FrameSize, where FrameSize is rounded up to the frame's max
+    // alignment — so a misaligned base propagates into every alloca and breaks
+    // any movaps-style 16-byte access. Up to 8 bytes between auxv and the
+    // random area become unused padding.
+    lfiptr stack_start = (rand_start - sizeof(box_argc) - sizeof(box_argv) -
+        sizeof(box_envp) - sizeof(auxv)) & ~(lfiptr) 15;
     // Copy each item onto the stack.
     lfiptr next = lfi_box_copyto(box, stack_start, &box_argc,
                       sizeof(box_argc)) +
@@ -207,10 +222,28 @@ lfi_thread_reload(struct LFILinuxThread *t, int argc, const char **argv,
     const char **envp)
 {
     memset((void *) lfi_box_l2p(t->proc->box, t->stack), 0, t->stack_size);
-    lfiptr sp = stack_init(t, argc, argv, envp);
+    if (t->safe_stack)
+        memset(t->safe_stack, 0, t->safe_stack_size);
+
+    lfiptr argv_area = stack_init(t, argc, argv, envp);
     *lfi_ctx_regs(t->ctx) = (struct LFIRegs) { 0 };
     lfi_ctx_regs_init(t->ctx);
-    sp_init(t, sp);
+
+#ifdef CTXREG
+    if (t->safe_stack) {
+        // Place the argv-area pointer at the top of the safe stack; musl's
+        // _start loads it via `mov (%rsp), %rdi` under __LFI__.
+        uint64_t *safe_top = (uint64_t *) ((uintptr_t) t->safe_stack +
+            t->safe_stack_size - sizeof(uint64_t));
+        *safe_top = (uint64_t) argv_area;
+        lfi_ctx_set_ustack(t->ctx, (uint64_t) argv_area);
+        sp_init(t, (lfiptr) (uintptr_t) safe_top);
+    } else {
+        sp_init(t, argv_area);
+    }
+#else
+    sp_init(t, argv_area);
+#endif
 }
 
 EXPORT struct LFILinuxThread *
@@ -230,6 +263,8 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
     list_init(&t->threads_elem);
 
     size_t stacksize = proc->engine->opts.stacksize;
+    // In-sandbox stack. Holds argc/argv/envp/auxv at the top and (under
+    // SafeStack) is the unsafe stack the SafeStack pass allocates from.
     t->stack = lfi_box_mapat(proc->box, proc->box_info.max - stacksize,
         stacksize, LFI_PROT_READ | LFI_PROT_WRITE,
         LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
@@ -239,12 +274,53 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
     }
     t->stack_size = stacksize;
 
-    lfiptr sp = stack_init(t, argc, argv, envp);
-    sp_init(t, sp);
+    lfiptr argv_area = stack_init(t, argc, argv, envp);
+
+#ifdef CTXREG
+    // Host-allocated safe stack outside the sandbox, used by SafeStack as the
+    // backward-edge CFI stack. Sandbox code cannot reach this region through
+    // any sandbox-bounded memory access; it is only addressable via %rsp.
+    //
+    // The safe stack only holds return addresses and locals the SafeStack
+    // pass proves are address-safe — typically a few dozen bytes per frame.
+    // Cap it independently of `stacksize` (which sizes the unsafe stack and
+    // therefore needs to match what an OS would give a normal process).
+    size_t safe_stacksize = stacksize < SAFE_STACK_SIZE
+                                ? stacksize
+                                : SAFE_STACK_SIZE;
+    void *ss = mmap(NULL, safe_stacksize, PROT_READ | PROT_WRITE,
+        MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (ss == MAP_FAILED) {
+        LOG(proc->engine, "failed to map safe stack");
+        goto err4;
+    }
+    t->safe_stack = ss;
+    t->safe_stack_size = safe_stacksize;
+
+    // The top of the safe stack holds a single 8-byte slot: the sandbox
+    // pointer to argc. musl's _start reads it with `mov (%rsp), %rdi` (under
+    // __LFI__), then walks argv/envp/auxv normally.
+    uint64_t *safe_top = (uint64_t *) ((uintptr_t) ss + safe_stacksize -
+        sizeof(uint64_t));
+    *safe_top = (uint64_t) argv_area;
+
+    // Publish the unsafe stack pointer so SafeStack-instrumented code can
+    // load/store it via 24(%r15). Initial value is the start of the argv
+    // area; SafeStack-allocated frames grow downward from there.
+    lfi_ctx_set_ustack(t->ctx, (uint64_t) argv_area);
+
+    sp_init(t, (lfiptr) (uintptr_t) safe_top);
+#else
+    sp_init(t, argv_area);
+#endif
 
     lfi_box_mark_original(t->proc->box);
 
     return t;
+#ifdef CTXREG
+err4:
+    lfi_box_munmap(t->proc->box, t->stack, stacksize);
+#endif
 err3:
     lfi_ctx_free(t->ctx);
 err2:
@@ -298,6 +374,10 @@ lfi_thread_free(struct LFILinuxThread *t)
         size_t stacksize = t->proc->engine->opts.stacksize;
         lfi_box_munmap(t->proc->box, t->stack, stacksize);
     }
+    // Unmap the host-allocated safe stack (only present on the main thread
+    // when SafeStack support is enabled).
+    if (t->safe_stack)
+        munmap(t->safe_stack, t->safe_stack_size);
     // Free pthread object (if created).
     if (t->pthread)
         free(t->pthread);

@@ -85,6 +85,17 @@ lfi_ctx_set_tp(struct LFIContext *ctx, uint64_t tp)
 }
 
 EXPORT void
+lfi_ctx_set_ustack(struct LFIContext *ctx, uint64_t ustack)
+{
+#ifdef CTXREG
+    ctx->ctxreg[CTXREG_USTACK_OFFSET / 8] = ustack;
+#else
+    (void) ctx;
+    (void) ustack;
+#endif
+}
+
+EXPORT void
 lfi_ctx_exit(struct LFIContext *ctx, int code)
 {
     // Exit the sandbox, restoring the stack pointer to the value in host_sp.

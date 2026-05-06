@@ -293,6 +293,13 @@ lfi_ctx_get_tp(struct LFIContext *ctx);
 void
 lfi_ctx_set_tp(struct LFIContext *ctx, uint64_t tp);
 
+// Sets the per-context unsafe stack pointer slot used by SafeStack-
+// instrumented code. On x86-64 with CTXREG enabled, this is the value
+// SafeStack code reads/writes via 24(%r15) (or whatever offset
+// CTXREG_USTACK_OFFSET resolves to). No-op when CTXREG is disabled.
+void
+lfi_ctx_set_ustack(struct LFIContext *ctx, uint64_t ustack);
+
 // Initializes registers to values that maintain sandbox invariants
 // (essentially, this sets all sandbox-reserved registers to the sandbox base
 // address).

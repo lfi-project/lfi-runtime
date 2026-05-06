@@ -130,10 +130,17 @@ struct LFILinuxThread {
     // Underlying sandbox context.
     struct LFIContext *ctx;
 
-    // Pointer to base of sandbox stack (this will be NULL for threads that
-    // were spawned by the sandbox).
+    // Pointer to base of in-sandbox stack (this will be NULL for threads that
+    // were spawned by the sandbox). Under SafeStack this is the unsafe stack;
+    // otherwise it is the only stack.
     lfiptr stack;
     size_t stack_size;
+
+    // Host-allocated safe stack, used under SafeStack as the backward-edge CFI
+    // stack pointed to by %rsp on x86-64. NULL when SafeStack is not enabled
+    // or for threads spawned by the sandbox.
+    void *safe_stack;
+    size_t safe_stack_size;
 
     // Child tid pointer location.
     lfiptr ctidp;
