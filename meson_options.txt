@@ -64,7 +64,7 @@ option('sys_minimal',
 
 option('ctxreg',
   type: 'boolean',
-  value: false,
+  value: true,
   description: 'enable context register (x25 on arm64, r15 on x64) for storing runtime context')
 
 option('ctxreg_ctx_offset',
