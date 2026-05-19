@@ -80,16 +80,16 @@
 #elif defined(__APPLE__)
     mov x11, x0
     mov x12, x30
-Lloh0:
+Lloh0_\@:
     adrp x0, lfi_invoke_info@TLVPPAGE
-Lloh1:
+Lloh1_\@:
     ldr x0, [x0, lfi_invoke_info@TLVPPAGEOFF]
     ldr \reg, [x0]
     blr \reg
     mov \reg, x0
     mov x30, x12
     mov x0, x11
-.loh AdrpLdr Lloh0, Lloh1
+.loh AdrpLdr Lloh0_\@, Lloh1_\@
 #else
 #error "unsupported OS"
 #endif

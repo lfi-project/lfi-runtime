@@ -204,7 +204,7 @@ host_prot(int prot)
     int p = ((prot & LFI_PROT_READ) ? PROT_READ : 0) |
         ((prot & LFI_PROT_WRITE) ? PROT_WRITE : 0) |
         ((prot & LFI_PROT_EXEC) ? PROT_EXEC : 0);
-#if defined(LFI_ARCH_ARM64)
+#if defined(LFI_ARCH_ARM64) && defined(__linux__)
     if (prot & LFI_PROT_BTI)
         p |= PROT_BTI;
 #endif

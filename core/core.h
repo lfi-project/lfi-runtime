@@ -9,7 +9,13 @@
 #include "mmap/mmap_c.h"
 
 #include <signal.h>
+#if defined(__APPLE__)
+#ifndef thread_local
+#define thread_local _Thread_local
+#endif
+#else
 #include <threads.h>
+#endif
 
 #define EXPORT __attribute__((visibility("default")))
 
