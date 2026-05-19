@@ -93,13 +93,15 @@ threadspawn(void *arg)
     lfi_ctx_run(t->ctx, entry);
 
 end:
-    lock(&t->proc->lk_threads);
-    t->proc->active_threads--;
-    pthread_cond_signal(&t->proc->cond_threads);
-    LOG(t->proc->engine, "thread %d exited", t->tid);
-    unlock(&t->proc->lk_threads);
+    struct LFILinuxProc *proc = t->proc;
+    int tid = t->tid;
     lfi_thread_free(t);
     free(ss.ss_sp);
+    lock(&proc->lk_threads);
+    proc->active_threads--;
+    pthread_cond_signal(&proc->cond_threads);
+    LOG(proc->engine, "thread %d exited", tid);
+    unlock(&proc->lk_threads);
     return NULL;
 }
 

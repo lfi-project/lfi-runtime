@@ -153,6 +153,18 @@ lfi_thread_ctxp(struct LFILinuxThread *t);
 void
 lfi_linux_init_clone(struct LFILinuxThread *main_thread);
 
+// Detach the current host thread from the given proc, if it has been lazily
+// attached via lfi_linux_init_clone's clone callback. Runs the in-sandbox
+// teardown that would otherwise run when the host thread exits, and clears
+// this thread's TLS entry for proc so the destructor will not fire later.
+//
+// Safe to call multiple times: if the current thread is not attached to proc,
+// this is a no-op. Should be called before the host thread exits when the
+// proc is about to be freed, to avoid use-after-free in the pthread
+// destructor.
+void
+lfi_linux_detach_thread(struct LFILinuxProc *proc);
+
 // Memory management functions for sandboxed libraries.
 void *
 lfi_lib_malloc(struct LFIBox *box, struct LFIContext **ctxp, size_t size);

@@ -3,9 +3,12 @@
 #include "lfi_arch.h"
 #include "lfi_core.h"
 #include "lock.h"
+#include "log.h"
 #include "proc.h"
 
 #include <assert.h>
+#include <pthread.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 
 #define ensure(expr)                                                   \
@@ -64,8 +67,72 @@ lfi_linux_clone_cb_minimal(struct LFIBox *box)
 // This is where sys_clone places new contexts that are created via clone.
 thread_local struct LFIContext *new_ctx;
 
-// Pthread key used for destroying sandbox threads.
+// One AttachedCtx per (host thread, proc) attachment. A host thread's TLS
+// slot for thread_key holds the head of a singly-linked list of these,
+// containing all of that thread's lazy attachments across all procs. Using a
+// single process-wide pthread_key (rather than one per proc) avoids running
+// into PTHREAD_KEYS_MAX when a process has many sandboxes.
+struct AttachedCtx {
+    struct LFILinuxProc *proc;
+    struct LFIContext *ctx;
+    struct AttachedCtx *next;
+};
+
+// Process-wide pthread_key. Its TLS value is a (struct AttachedCtx *) list
+// head.
 static pthread_key_t thread_key;
+static pthread_once_t thread_key_once = PTHREAD_ONCE_INIT;
+static atomic_bool thread_key_ready;
+
+static void thread_destructor(void *p);
+
+static void
+init_thread_key(void)
+{
+    int r = pthread_key_create(&thread_key, thread_destructor);
+    assert(r == 0);
+    atomic_store_explicit(&thread_key_ready, true, memory_order_release);
+}
+
+// Tear down a single (proc, ctx) attachment. Used by both the pthread
+// destructor (on host thread exit) and by lfi_linux_detach_thread.
+//
+// If this detach takes attached_threads to zero and lfi_proc_free has
+// already been called (pending_free), finish the deferred free here. While
+// attached_threads is non-zero, lfi_proc_free is required to defer the
+// actual free, so the proc memory we touch above is guaranteed live.
+static void
+detach_ctx(struct LFILinuxProc *proc, struct LFIContext *ctx)
+{
+    struct LFILinuxThread *thread = lfi_ctx_data(ctx);
+
+    ensure(proc->libsyms.thread_destroy);
+
+    LFI_INVOKE(proc->box, &ctx, proc->libsyms.thread_destroy, void, (lfiptr),
+        thread->box_pthread);
+
+    {
+        LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
+        LFI_INVOKE(proc->box, &proc->clone_ctx, proc->libsyms.free, void,
+            (lfiptr), thread->box_pthread);
+    }
+
+    lfi_thread_free(thread);
+
+    lock(&proc->lk_proc);
+    int remaining = atomic_fetch_sub_explicit(&proc->attached_threads, 1,
+        memory_order_relaxed) - 1;
+    bool do_destroy = (remaining == 0 && proc->pending_free);
+    unlock(&proc->lk_proc);
+
+    if (do_destroy) {
+        lock(&proc->lk_threads);
+        while (proc->active_threads != 0)
+            pthread_cond_wait(&proc->cond_threads, &proc->lk_threads);
+        unlock(&proc->lk_threads);
+        proc_destroy(proc);
+    }
+}
 
 static struct LFIContext *
 lfi_linux_clone_cb(struct LFIBox *box)
@@ -73,39 +140,43 @@ lfi_linux_clone_cb(struct LFIBox *box)
     struct LFILinuxProc *proc = lfi_box_data(box);
     ensure(proc->libsyms.thread_create);
 
+    atomic_fetch_add_explicit(&proc->attached_threads, 1,
+        memory_order_relaxed);
+
     // Invoke thread_create in clone_ctx and return the resulting new_ctx.
-    LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
-    lfiptr pt = LFI_INVOKE(box, &proc->clone_ctx, proc->libsyms.thread_create,
-        lfiptr, (void) );
+    lfiptr pt;
+    {
+        LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
+        pt = LFI_INVOKE(box, &proc->clone_ctx, proc->libsyms.thread_create,
+            lfiptr, (void) );
+    }
 
     struct LFILinuxThread *thread = lfi_ctx_data(new_ctx);
     thread->box_pthread = pt;
-    pthread_setspecific(thread_key, new_ctx);
+
+    struct AttachedCtx *node = malloc(sizeof(*node));
+    if (!node)
+        ERROR("%s:%d: failed to allocate AttachedCtx", __FILE__, __LINE__);
+    node->proc = proc;
+    node->ctx = new_ctx;
+    node->next = pthread_getspecific(thread_key);
+    pthread_setspecific(thread_key, node);
 
     return new_ctx;
 }
 
-// Called when a host thread that has an associated sandbox thread exits.
+// Called when a host thread that has at least one lazy attachment exits.
+// Walks the attached list and detaches each (proc, ctx) pair.
 static void
 thread_destructor(void *p)
 {
-    (void) p;
-
-    struct LFIContext *ctx = p;
-    struct LFILinuxThread *thread = lfi_ctx_data(ctx);
-
-    struct LFILinuxProc *proc = thread->proc;
-
-    ensure(proc->libsyms.thread_destroy);
-
-    LFI_INVOKE(proc->box, &ctx, proc->libsyms.thread_destroy, void, (lfiptr),
-        thread->box_pthread);
-
-    LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
-    LFI_INVOKE(proc->box, &proc->clone_ctx, proc->libsyms.free, void, (lfiptr),
-        thread->box_pthread);
-
-    lfi_thread_free(thread);
+    struct AttachedCtx *node = p;
+    while (node) {
+        struct AttachedCtx *next = node->next;
+        detach_ctx(node->proc, node->ctx);
+        free(node);
+        node = next;
+    }
 }
 #endif
 
@@ -131,9 +202,34 @@ lfi_linux_init_clone(struct LFILinuxThread *main)
     // Register lfi_linux_clone_cb as the clone_cb.
     lfi_set_clone_cb(lfi_box_engine(main->proc->box), lfi_linux_clone_cb);
 
-    // Initialize our pthread key so that we get a callback when host threads
-    // that have associated sandbox threads exit.
-    pthread_key_create(&thread_key, thread_destructor);
+    // Initialize the process-wide pthread key the first time any proc reaches
+    // this point.
+    pthread_once(&thread_key_once, init_thread_key);
+#endif
+}
+
+EXPORT void
+lfi_linux_detach_thread(struct LFILinuxProc *proc)
+{
+#ifndef SYS_MINIMAL
+    if (!atomic_load_explicit(&thread_key_ready, memory_order_acquire))
+        return;
+    struct AttachedCtx *head = pthread_getspecific(thread_key);
+    struct AttachedCtx **link = &head;
+    while (*link) {
+        if ((*link)->proc == proc) {
+            struct AttachedCtx *node = *link;
+            *link = node->next;
+            pthread_setspecific(thread_key, head);
+            struct LFIContext *ctx = node->ctx;
+            free(node);
+            detach_ctx(proc, ctx);
+            return;
+        }
+        link = &(*link)->next;
+    }
+#else
+    (void) proc;
 #endif
 }
 

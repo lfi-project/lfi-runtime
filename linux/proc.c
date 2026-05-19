@@ -230,6 +230,26 @@ lfi_proc_reload(struct LFILinuxProc *proc, const uint8_t *prog,
     return proc_load(proc, -1, prog, prog_size, NULL, ELF_MAP, true);
 }
 
+void
+proc_destroy(struct LFILinuxProc *proc)
+{
+    free(proc->dynsym.data);
+    free(proc->dynstr.data);
+    lfi_box_free(proc->box);
+    free(proc->interp_path);
+    free(proc->prog_path);
+    fdfree(&proc->fdtable);
+    pthread_mutex_destroy(&proc->fdtable.lk);
+    pthread_mutex_destroy(&proc->cwd.lk);
+    pthread_mutex_destroy(&proc->lk_brk);
+    pthread_mutex_destroy(&proc->lk_box);
+    pthread_mutex_destroy(&proc->lk_clone);
+    pthread_mutex_destroy(&proc->lk_threads);
+    pthread_cond_destroy(&proc->cond_threads);
+    pthread_mutex_destroy(&proc->lk_proc);
+    free(proc);
+}
+
 EXPORT void
 lfi_proc_free(struct LFILinuxProc *proc)
 {
@@ -240,14 +260,19 @@ lfi_proc_free(struct LFILinuxProc *proc)
     }
     assert(proc->active_threads == 0);
     unlock(&proc->lk_threads);
-    free(proc->dynsym.data);
-    free(proc->dynstr.data);
-    lfi_box_free(proc->box);
-    free(proc->interp_path);
-    free(proc->prog_path);
-    fdfree(&proc->fdtable);
+
+    // If any host threads are still lazily attached, defer the actual free
+    // until the last detach happens. The detach path observes pending_free
+    // under lk_proc and calls proc_destroy itself.
+    if (atomic_load_explicit(&proc->attached_threads,
+            memory_order_relaxed) > 0) {
+        proc->pending_free = true;
+        unlock(&proc->lk_proc);
+        return;
+    }
     unlock(&proc->lk_proc);
-    free(proc);
+
+    proc_destroy(proc);
 }
 
 int

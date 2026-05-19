@@ -119,6 +119,16 @@ struct LFILinuxProc {
     struct LFIContext *clone_ctx;
     pthread_mutex_t lk_clone;
 
+    // Number of host threads currently lazily attached to this proc via the
+    // process-wide pthread_key in trampoline.c. Incremented when a host
+    // thread first enters the sandbox via the clone callback, decremented when
+    // it exits or is explicitly detached.
+    _Atomic(int) attached_threads;
+    // Set by lfi_proc_free if it returns without actually freeing the proc
+    // because attached_threads is still non-zero. The last detach observes
+    // this flag (under lk_proc) and finishes the free.
+    bool pending_free;
+
     // Generic lock that guards everything not covered by a more fine-grained
     // lock.
     pthread_mutex_t lk_proc;
@@ -163,6 +173,10 @@ struct LFILinuxThread {
     bool exited;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int
 proc_mapany(struct LFILinuxProc *p, size_t size, int prot, int flags, int fd,
     off_t offset, lfiptr *o_mapstart);
@@ -179,3 +193,13 @@ thread_clone(struct LFILinuxThread *t);
 
 int
 proc_chdir(struct LFILinuxProc *p, const char *path);
+
+// Actually free the proc storage. Used by lfi_proc_free and by the last
+// detach when pending_free is set. Callers must ensure no thread is using the
+// proc anymore (active_threads == 0, attached_threads == 0).
+void
+proc_destroy(struct LFILinuxProc *proc);
+
+#ifdef __cplusplus
+}
+#endif

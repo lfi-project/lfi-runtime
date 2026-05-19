@@ -79,6 +79,13 @@ test_lib = executable(
   c_args: c_args_warnings,
 )
 
+test_detach = executable(
+  'test_detach.elf',
+  'test_detach.c',
+  dependencies: [lfi_linux],
+  c_args: c_args_warnings,
+)
+
 lib = custom_target( 'lib.lfi',
   output: 'lib.lfi',
   input: [
@@ -92,5 +99,10 @@ lib = custom_target( 'lib.lfi',
 
 test('lib.lfi',
   test_lib, args: [lib],
+  suite: ['linux'],
+)
+
+test('detach.lfi',
+  test_detach, args: [lib],
   suite: ['linux'],
 )
