@@ -93,7 +93,7 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
     }
 
     struct BoxMapOptions bm_opts = (struct BoxMapOptions) {
-        .chunksize = gb(4),
+        .chunksize = opts.boxsize,
         .guardsize = REGION_GUARD,
     };
     struct BoxMap *bm = boxmap_new(bm_opts);

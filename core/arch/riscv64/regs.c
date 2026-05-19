@@ -10,3 +10,8 @@ lfi_ctx_regs_init(struct LFIContext *ctx)
     ctx->regs.ra = ctx->box->base;
     ctx->regs.retaddr = ctx->box->retaddr;
 }
+
+EXPORT void
+lfi_ctx_thread_regs_init(struct LFIContext* ctx)
+{
+}

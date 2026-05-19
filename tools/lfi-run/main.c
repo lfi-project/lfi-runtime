@@ -25,6 +25,20 @@ struct Buf {
     void *data;
     size_t size;
 };
+  static size_t
+  parse_size(const char *s)
+  {
+      char *end;
+      size_t n = strtoull(s, &end, 0);
+      switch (*end) {
+      case 'T': case 't': return n * 1024 * 1024 * 1024 * 1024ULL;
+      case 'G': case 'g': return n * 1024 * 1024 * 1024ULL;
+      case 'M': case 'm': return n * 1024 * 1024ULL;
+      case 'K': case 'k': return n * 1024ULL;
+      }
+      return n;
+  }
+
 
 static struct Buf
 readfile(const char *path)
@@ -60,6 +74,7 @@ usage(const char *prog_name)
     printf("  --env=<var=val>        set environment variable\n");
     printf("  --dir=<box=host>       map sandbox path to host directory\n");
     printf("  --wd=<dir>             working directory within sandbox\n");
+    printf("  --boxsize=<size>       large sandbox size (e.g. 4G, 1T); default=4G\n");
     printf("  -r, --restricted       apply --dir and --wd flags (default is --dir /=/ --wd $PWD for testing)\n");
     printf("  <input>                input command\n");
 }
@@ -79,6 +94,7 @@ main(int argc, char **argv)
     const char **dirs = NULL;
     int dirs_count = 0;
     const char *wd = NULL;
+    size_t boxsize = gb(4);
     bool restricted = false;
 
     static struct option long_options[] = {
@@ -92,6 +108,7 @@ main(int argc, char **argv)
         { "env", required_argument, 0, 4 },
         { "dir", required_argument, 0, 5 },
         { "wd", required_argument, 0, 6 },
+        { "boxsize", required_argument, 0, 7 },
         { "restricted", no_argument, 0, 'r' },
         { 0, 0, 0, 0 }
     };
@@ -135,6 +152,9 @@ main(int argc, char **argv)
         case 6:
             wd = optarg;
             break;
+        case 7:
+            boxsize = parse_size(optarg);
+            break;
         case 'r':
             restricted = true;
             break;
@@ -152,7 +172,7 @@ main(int argc, char **argv)
 
     struct LFIEngine *engine = lfi_new(
         (struct LFIOptions) {
-            .boxsize = gb(4),
+            .boxsize = boxsize,
             .pagesize = pagesize > 0 ? pagesize : getpagesize(),
             .no_verify = !verify,
             .verbose = verbose,

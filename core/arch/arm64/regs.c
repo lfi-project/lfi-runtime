@@ -14,3 +14,8 @@ lfi_ctx_regs_init(struct LFIContext *ctx)
     ctx->ctxreg[CTXREG_CTX_OFFSET / 8] = (uint64_t) ctx;
 #endif
 }
+
+EXPORT void
+lfi_ctx_thread_regs_init(struct LFIContext* ctx)
+{
+}

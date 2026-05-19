@@ -104,8 +104,12 @@
 #define REGS_XMM(n) (REGS_XMM0 + 16 * n)
 
 #define REGS_BASE   REGS_R14
-
 #define REG_BASE    r14
+
+#ifdef LARGE_SANDBOX
+#define REGS_MASK   REGS_R15
+#define REG_MASK    r15
+#endif
 
 #define CTX_ABORT_CALLBACK 448
 #define CTX_ABORT_STATUS   456
