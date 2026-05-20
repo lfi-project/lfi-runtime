@@ -233,6 +233,11 @@ lfi_proc_reload(struct LFILinuxProc *proc, const uint8_t *prog,
 void
 proc_destroy(struct LFILinuxProc *proc)
 {
+    if (proc->clone_ctx) {
+        struct LFILinuxThread *clone_thread = lfi_ctx_data(proc->clone_ctx);
+        if (clone_thread)
+            lfi_thread_free(clone_thread);
+    }
     free(proc->dynsym.data);
     free(proc->dynstr.data);
     lfi_box_free(proc->box);
