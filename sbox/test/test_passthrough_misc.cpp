@@ -1,6 +1,3 @@
-#include <csetjmp>
-#include <csignal>
-
 #include "sbox/passthrough.h"
 #include "test_helpers.h"
 
