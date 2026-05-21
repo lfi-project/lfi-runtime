@@ -39,4 +39,41 @@
     assert(strcmp(result_buf, "test string") == 0);
     sandbox.free(str);
     PASS();
+
+    TEST("read_string returns content for terminated string");
+    {
+        auto rs = sandbox.copy_string("read me");
+        std::string host = sandbox.read_string(rs, 64);
+        assert(host == "read me");
+        sandbox.free(rs);
+    }
+    PASS();
+
+    TEST("read_string returns empty for unterminated buffer");
+    {
+        auto rs = sandbox.template alloc<char>(8);
+        char raw[8] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
+        sandbox.copy_to(rs, raw, 8);
+        std::string host = sandbox.read_string(rs, 8);
+        assert(host.empty());
+        sandbox.free(rs);
+    }
+    PASS();
+
+    TEST("read_string returns empty for null pointer");
+    {
+        std::string host = sandbox.read_string(sbox::sbox<char*>(), 16);
+        assert(host.empty());
+    }
+    PASS();
+
+    TEST("read_string respects scan limit");
+    {
+        auto rs = sandbox.copy_string("longer than the limit");
+        // Terminator is at index 21 but we only scan 5 bytes.
+        std::string host = sandbox.read_string(rs, 5);
+        assert(host.empty());
+        sandbox.free(rs);
+    }
+    PASS();
 }

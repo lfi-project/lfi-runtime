@@ -210,6 +210,15 @@ lfi_box_ptrvalid(struct LFIBox *box, lfiptr addr);
 bool
 lfi_box_bufvalid(struct LFIBox *box, lfiptr addr, size_t size);
 
+// Returns the length (not including the terminator) of the null-terminated
+// string at `addr`, scanning at most `max` characters. The scan is also
+// bounded by the end of the sandbox, so it cannot read past the box even
+// if `max` is larger than the remaining sandbox space. Returns SIZE_MAX
+// if `addr` is not a valid sandbox pointer or if no null terminator is
+// found within the scan limit.
+size_t
+lfi_box_strnlen(struct LFIBox *box, lfiptr addr, size_t max);
+
 // Copies data out from the given sandbox location.
 void *
 lfi_box_copyfm(struct LFIBox *box, void *dst, lfiptr src, size_t size);

@@ -489,6 +489,20 @@ lfi_box_bufvalid(struct LFIBox *box, lfiptr addr, size_t size)
     return lp >= box->min && lp <= box->max && size <= box->max - lp;
 }
 
+EXPORT size_t
+lfi_box_strnlen(struct LFIBox *box, lfiptr addr, size_t max)
+{
+    if (!lfi_box_ptrvalid(box, addr))
+        return SIZE_MAX;
+    uintptr_t lp = l2p(box, addr);
+    size_t room = box->max - lp;
+    size_t limit = max < room ? max : room;
+    size_t n = strnlen((const char *) lp, limit);
+    if (n == limit)
+        return SIZE_MAX;
+    return n;
+}
+
 EXPORT void *
 lfi_box_copyfm(struct LFIBox *box, void *dst, lfiptr src, size_t size)
 {

@@ -7,7 +7,9 @@
 #include <unistd.h>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 #include <type_traits>
+#include <vector>
 
 namespace sbox {
 
@@ -55,14 +57,10 @@ inline PassthroughArena& get_thread_arena() {
 
 } // namespace detail
 
-// Passthrough CallContext - just returns pointers to host variables (zero
-// overhead) Defined before Sandbox since it doesn't need Sandbox to be complete
 template<>
 class CallContext<Passthrough> {
-    Sandbox<Passthrough>* sandbox_;
-
 public:
-    explicit CallContext(Sandbox<Passthrough>& sb) : sandbox_(&sb) {
+    explicit CallContext(Sandbox<Passthrough>&) {
     }
 
     // No-op for passthrough
@@ -339,6 +337,35 @@ public:
             return {};
         copy_to(buf, s, len);
         return buf;
+    }
+
+    // Copy a null-terminated string into a host std::string, scanning at
+    // most `n` characters. Returns an empty string if the pointer is
+    // null or no terminator is found within `n` characters. The returned
+    // string is always null-terminated.
+    std::string read_string(sbox<char*> ptr, size_t n) {
+        char* raw = ptr.unsafe_unverified();
+        if (!raw)
+            return {};
+        size_t len = strnlen(raw, n);
+        if (len == n)
+            return {};
+        return std::string(raw, len);
+    }
+
+    // Copy `count` elements into a host vector. Passthrough has no
+    // bounds-checking; returns an empty vector only if the pointer is
+    // null.
+    template<typename T>
+    std::vector<T> read_buffer(sbox<T*> ptr, size_t count) {
+        static_assert(std::is_trivially_copyable_v<T>,
+                      "read_buffer requires a trivially-copyable element");
+        T* raw = ptr.unsafe_unverified();
+        if (!raw)
+            return {};
+        std::vector<T> out(count);
+        std::memcpy(out.data(), raw, sizeof(T) * count);
+        return out;
     }
 
     // Register a callback with thunk (for callbacks with sbox<T*> args).

@@ -28,6 +28,7 @@ foreach cat : test_categories
     workdir: meson.current_build_dir(),
     depends: [testlib_so],
     protocol: 'tap',
+    suite: ['sbox'],
   )
 endforeach
 
@@ -43,6 +44,7 @@ foreach t : ['multi', 'reentrant']
     workdir: meson.current_build_dir(),
     depends: [testlib_so],
     protocol: 'tap',
+    suite: ['sbox'],
   )
 endforeach
 
@@ -57,6 +59,7 @@ test('passthrough_multi_sandbox', test_passthrough_multi_sandbox,
   workdir: meson.current_build_dir(),
   depends: [testlib_so, testlib2_so],
   protocol: 'tap',
+  suite: ['sbox'],
 )
 
 test_passthrough_callback_cross_sandbox = executable(
@@ -70,6 +73,7 @@ test('passthrough_callback_cross_sandbox', test_passthrough_callback_cross_sandb
   workdir: meson.current_build_dir(),
   depends: [testlib_so, testlib2_so],
   protocol: 'tap',
+  suite: ['sbox'],
 )
 
 # Threads test (passthrough)
@@ -82,6 +86,7 @@ test_threads = executable('test_threads',
 test('threads', test_threads,
   workdir: meson.current_build_dir(),
   depends: [testlib_so],
+  suite: ['sbox'],
 )
 
 # LFI tests - only if the LFI cross-compiler is available.
@@ -120,6 +125,7 @@ if lficc.found()
       workdir: meson.current_build_dir(),
       depends: [testlib_lfi],
       protocol: 'tap',
+      suite: ['sbox'],
     )
   endforeach
 
@@ -133,6 +139,7 @@ if lficc.found()
     workdir: meson.current_build_dir(),
     depends: [testlib_lfi, testlib2_lfi],
     protocol: 'tap',
+    suite: ['sbox'],
   )
 
   test_lfi_detach = executable('test_lfi_detach',
@@ -145,6 +152,7 @@ if lficc.found()
     workdir: meson.current_build_dir(),
     depends: [testlib_lfi],
     protocol: 'tap',
+    suite: ['sbox'],
   )
 endif
 
@@ -168,5 +176,6 @@ foreach t : compile_fail_tests
       meson.current_source_dir() / 'compile_fail' / (t + '.cpp'),
       '-o', '/dev/null',
     ],
+    suite: ['sbox'],
   )
 endforeach

@@ -59,4 +59,25 @@
         sandbox.free(tmp);
     }
     PASS();
+
+    TEST("read_buffer copies sandbox array into host vector");
+    {
+        auto rb = sandbox.template alloc<int>(8);
+        sandbox.call<void(int*, int, int)>("fill_ints", rb, 8, 100);
+        std::vector<int> host = sandbox.template read_buffer<int>(rb, 8);
+        assert(host.size() == 8);
+        for (int i = 0; i < 8; i++) {
+            assert(host[i] == 100 + i);
+        }
+        sandbox.free(rb);
+    }
+    PASS();
+
+    TEST("read_buffer returns empty for null pointer");
+    {
+        std::vector<int> host =
+            sandbox.template read_buffer<int>(sbox::sbox<int*>(), 4);
+        assert(host.empty());
+    }
+    PASS();
 }

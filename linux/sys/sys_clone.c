@@ -92,7 +92,7 @@ threadspawn(void *arg)
 
     lfi_ctx_run(t->ctx, entry);
 
-end:
+end:;
     struct LFILinuxProc *proc = t->proc;
     int tid = t->tid;
     lfi_thread_free(t);

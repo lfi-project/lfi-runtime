@@ -400,6 +400,39 @@ public:
 
     sbox_safe<char*> copy_string(const char* s);
 
+    // Copy a null-terminated string out of the sandbox into a host
+    // std::string, scanning at most `n` characters. Returns an empty
+    // string if the pointer is null or the string is not terminated
+    // within `n` characters. The returned string is always
+    // null-terminated regardless of the sandbox's contents.
+    std::string read_string(sbox<char*> ptr, size_t n) {
+        char* raw = ptr.unsafe_unverified();
+        if (!raw)
+            return {};
+        size_t len = lfi_box_strnlen(
+            box_, reinterpret_cast<lfiptr>(raw), n);
+        if (len == SIZE_MAX)
+            return {};
+        return std::string(raw, len);
+    }
+
+    // Copy `count` elements from a sandbox buffer into a host vector.
+    // Returns an empty vector if the buffer is not entirely within the
+    // sandbox.
+    template<typename T>
+    std::vector<T> read_buffer(sbox<T*> ptr, size_t count) {
+        static_assert(std::is_trivially_copyable_v<T>,
+                      "read_buffer requires a trivially-copyable element");
+        T* raw = ptr.unsafe_unverified();
+        if (!raw || !lfi_box_bufvalid(box_, reinterpret_cast<lfiptr>(raw),
+                                       sizeof(T) * count)) {
+            return {};
+        }
+        std::vector<T> out(count);
+        std::memcpy(out.data(), raw, sizeof(T) * count);
+        return out;
+    }
+
     // Memory mapping.
 
     void* mmap(void* addr, size_t length, int prot, int flags, int fd,

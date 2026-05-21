@@ -229,9 +229,7 @@ lfi_linux_detach_thread(struct LFILinuxProc *proc)
 static inline bool
 bufcheck(struct LFIBox *box, lfiptr p, size_t size, size_t align)
 {
-    if (!lfi_box_ptrvalid(box, p))
-        return false;
-    if (!lfi_box_ptrvalid(box, p + size - 1))
+    if (!lfi_box_bufvalid(box, p, size))
         return false;
     if (p % align != 0)
         return false;
