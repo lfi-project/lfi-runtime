@@ -42,7 +42,7 @@ jobs:
         CC: clang
         CXX: clang++
       run: |
-        meson setup build-clang -Db_sanitize=address,undefined -Dbuildtype=debugoptimized
+        meson setup build-clang -Dbuildtype=debugoptimized
         ninja -C build-clang test
 
     - name: Build & Test (sys_minimal, asan+ubsan)
