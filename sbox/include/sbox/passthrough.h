@@ -63,11 +63,9 @@ public:
     explicit CallContext(Sandbox<Passthrough>&) {
     }
 
-    // No-op for passthrough
     void finalize() {
     }
 
-    // Just return pointer to host variable
     template<typename T>
     T* out(T& host_ref) {
         return &host_ref;

@@ -1,6 +1,5 @@
-#include <signal.h>
-#include <sys/wait.h>
-#include <unistd.h>
+#include <csetjmp>
+#include <csignal>
 
 #include "sbox/lfi.h"
 #include "test_helpers.h"

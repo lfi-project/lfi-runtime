@@ -1,6 +1,6 @@
 // Shared misc tests (void functions, error handling).
 // Assumes: sandbox, TEST/PASS macros, test counters in scope.
-// Requires: <sys/wait.h>, <unistd.h>
+// Requires: <csetjmp>, <csignal>
 
 {
 
@@ -17,15 +17,27 @@
 
 
     TEST("invalid symbol aborts");
-    pid_t pid = fork();
-    assert(pid >= 0);
-    if (pid == 0) {
-        // Child: calling invalid symbol should abort
-        sandbox.call<int()>("nonexistent_function_xyz");
-        _exit(0);  // should not reach here
+    {
+        // Catch SIGABRT in-process via siglongjmp so the test does not
+        // need to fork (which interleaves child output with the parent's
+        // TAP stream, particularly under sanitizers).
+        static sigjmp_buf abort_jmp;
+        static volatile sig_atomic_t caught_abort;
+        caught_abort = 0;
+        struct sigaction old;
+        struct sigaction sa = {};
+        sa.sa_handler = [](int) {
+            caught_abort = 1;
+            siglongjmp(abort_jmp, 1);
+        };
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_NODEFER;
+        sigaction(SIGABRT, &sa, &old);
+        if (sigsetjmp(abort_jmp, 1) == 0) {
+            sandbox.call<int()>("nonexistent_function_xyz");
+        }
+        sigaction(SIGABRT, &old, nullptr);
+        assert(caught_abort);
     }
-    int status;
-    waitpid(pid, &status, 0);
-    assert(WIFSIGNALED(status) && WTERMSIG(status) == SIGABRT);
     PASS();
 }
