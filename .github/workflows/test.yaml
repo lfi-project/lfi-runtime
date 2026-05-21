@@ -18,23 +18,23 @@ jobs:
 
     - name: Install LFI x86-64 Compiler
       if: matrix.os == 'ubuntu-22.04'
-      run: wget -q https://github.com/lfi-project/lfi/releases/download/v0.11/x86_64-lfi-clang.tar.gz && echo "$PWD/x86_64-lfi-clang/lfi-bin" >> $GITHUB_PATH
+      run: wget -q https://github.com/lfi-project/lfi/releases/download/v0.12/x86_64-lfi-clang.tar.gz && echo "$PWD/x86_64-lfi-clang/lfi-bin" >> $GITHUB_PATH
 
     - name: Install LFI AArch64 Compiler
       if: matrix.os == 'ubuntu-24.04-arm'
-      run: wget -q https://github.com/lfi-project/lfi/releases/download/v0.11/aarch64-lfi-clang.tar.gz && tar -xf aarch64-lfi-clang.tar.gz && echo "$PWD/aarch64-lfi-clang/lfi-bin" >> $GITHUB_PATH
+      run: wget -q https://github.com/lfi-project/lfi/releases/download/v0.12/aarch64-lfi-clang.tar.gz && tar -xf aarch64-lfi-clang.tar.gz && echo "$PWD/aarch64-lfi-clang/lfi-bin" >> $GITHUB_PATH
 
     - name: Set env
       run: echo "ASAN_OPTIONS=use_sigaltstack=0" >> $GITHUB_ENV
 
     - name: Build & Test (gcc, asan+ubsan)
       run: |
-        meson setup build-san -Dctxreg=false -Db_sanitize=address,undefined -Dbuildtype=debugoptimized
+        meson setup build-san -Db_sanitize=address,undefined -Dbuildtype=debugoptimized
         ninja -C build-san test
 
     - name: Build & Test (gcc, tsan)
       run: |
-        meson setup build-tsan -Dctxreg=false -Db_sanitize=thread -Dbuildtype=debugoptimized
+        meson setup build-tsan -Db_sanitize=thread -Dbuildtype=debugoptimized
         ninja -C build-tsan test
 
     - name: Build & Test (clang, asan+ubsan)
@@ -42,10 +42,10 @@ jobs:
         CC: clang
         CXX: clang++
       run: |
-        meson setup build-clang -Dctxreg=false -Db_sanitize=address,undefined -Dbuildtype=debugoptimized
+        meson setup build-clang -Db_sanitize=address,undefined -Dbuildtype=debugoptimized
         ninja -C build-clang test
 
     - name: Build & Test (sys_minimal, asan+ubsan)
       run: |
-        meson setup build-min -Dctxreg=false -Db_sanitize=address,undefined -Dsys_minimal=true
+        meson setup build-min -Db_sanitize=address,undefined -Dsys_minimal=true
         ninja -C build-min test
