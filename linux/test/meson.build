@@ -11,7 +11,10 @@ foreach t : tests
   ), suite: ['linux'])
 endforeach
 
-# Remaining tests work by running actual programs and checking outputs.
+if get_option('sys_minimal')
+  subdir_done()
+endif
+
 if not lficc.found()
   warning('lficc not found: cannot test liblfi')
   subdir_done()

@@ -4,11 +4,9 @@ subprojects/fadec.wrap
 subprojects/fadec
 subprojects/disarm.wrap
 subprojects/disarm
-subprojects/libargp
 subprojects/lfi-verifier
-subprojects/cwalk
-subprojects/argtable3
 subprojects/libelf
+subprojects/minialloc
 
 install
 

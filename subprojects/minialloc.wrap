@@ -1,0 +1,5 @@
+[wrap-git]
+url = https://github.com/zyedidia/minialloc.git
+revision = 8368119b82737ab90d7af101d980f700d420eb77
+directory = minialloc
+patch_directory = minialloc

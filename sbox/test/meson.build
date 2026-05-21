@@ -89,14 +89,21 @@ lficc_name = cpu + '_lfi-linux-musl-clang'
 lficc = find_program(lficc_name, required: false)
 
 if lficc.found()
+  # Use minialloc for allocator in sys_minimal mode
+  testlib_extra_srcs = []
+  if get_option('sys_minimal')
+    minialloc = subproject('minialloc')
+    testlib_extra_srcs = minialloc.get_variable('minialloc_srcs')
+  endif
+
   testlib_lfi = custom_target('testlib.lfi',
-    input: 'testlib.c',
+    input: ['testlib.c'] + testlib_extra_srcs,
     output: 'testlib.lfi',
     command: [lficc, '-static-pie', '-o', '@OUTPUT@', '@INPUT@',
               '-lboxrt', '-Wl,--export-dynamic', '-O2'],
   )
   testlib2_lfi = custom_target('testlib2.lfi',
-    input: 'testlib2.c',
+    input: ['testlib2.c'] + testlib_extra_srcs,
     output: 'testlib2.lfi',
     command: [lficc, '-static-pie', '-o', '@OUTPUT@', '@INPUT@',
               '-lboxrt', '-Wl,--export-dynamic', '-O2'],
