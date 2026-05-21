@@ -27,11 +27,25 @@ jobs:
     - name: Set env
       run: echo "ASAN_OPTIONS=use_sigaltstack=0" >> $GITHUB_ENV
 
-    - name: Build and Test with sanitizers
+    - name: Build & Test (gcc, asan+ubsan)
       run: |
-        meson setup build-san -Dctxreg=false -Db_sanitize=address,undefined -Dbuildtype=debugoptimized && ninja -C build-san test
-        meson setup build-tsan -Dctxreg=false -Db_sanitize=thread -Dbuildtype=debugoptimized && ninja -C build-tsan test
+        meson setup build-san -Dctxreg=false -Db_sanitize=address,undefined -Dbuildtype=debugoptimized
+        ninja -C build-san test
 
-    - name: Build SYS_MINIMAL
+    - name: Build & Test (gcc, tsan)
       run: |
-        meson setup build-min -Dctxreg=false -Dsys_minimal=true && ninja -C build-min
+        meson setup build-tsan -Dctxreg=false -Db_sanitize=thread -Dbuildtype=debugoptimized
+        ninja -C build-tsan test
+
+    - name: Build & Test (clang, asan+ubsan)
+      env:
+        CC: clang
+        CXX: clang++
+      run: |
+        meson setup build-clang -Dctxreg=false -Db_sanitize=address,undefined -Dbuildtype=debugoptimized
+        ninja -C build-clang test
+
+    - name: Build & Test (sys_minimal, asan+ubsan)
+      run: |
+        meson setup build-min -Dctxreg=false -Db_sanitize=address,undefined -Dsys_minimal=true
+        ninja -C build-min test
