@@ -35,7 +35,7 @@ namespace detail {
 // Maximum number of arguments supported for LFI calls.
 constexpr size_t max_args = 10;
 
-// Classify whether an argument is float/double
+// Classify whether an argument is float/double.
 template<typename T>
 constexpr bool is_float_arg =
     std::is_floating_point_v<std::remove_cv_t<std::remove_reference_t<T>>>;
@@ -168,7 +168,7 @@ inline thread_local LFIContext** last_ctxp = nullptr;
 // Monotonic counter for assigning Sandbox<LFI> ids.
 inline std::atomic<uint64_t> sandbox_id_counter{1};
 
-}  // namespace detail
+} // namespace detail
 
 // Process-global LFI engine manager. Optionally call init() before creating
 // sandboxes to set the capacity. If not called, the first Sandbox<LFI>::create
@@ -190,7 +190,6 @@ private:
     static struct LFILinuxEngine* get();
 };
 
-// LFI backend - sandboxes library using LFI memory isolation
 template<>
 class Sandbox<LFI> {
     LFILinuxProc* proc_ = nullptr;
@@ -203,10 +202,8 @@ class Sandbox<LFI> {
     std::thread::id main_thread_tid_;
 
     // Per-thread sandbox contexts. The main thread's context is owned by
-    // main_thread_; worker entries hold contexts created by lfi_clone and
-    // are freed in the destructor. Keying by thread id (not LFIBox*) ties
-    // the cache lifetime to this Sandbox so destruction can't leave stale
-    // entries for some other thread to find via pointer-address ABA.
+    // main_thread_. Worker entries hold contexts created by lfi_clone and are
+    // freed in the destructor.
     std::mutex thread_ctx_mutex_;
     std::unordered_map<std::thread::id, LFIContext*> thread_ctxs_;
 
@@ -226,7 +223,7 @@ public:
     Sandbox(Sandbox&&) = delete;
     Sandbox& operator=(Sandbox&&) = delete;
 
-    // Call a function by name
+    // Call a function by name.
     template<typename Sig, typename... Args>
     auto call(const char* name, Args... args) {
         void* fn = reinterpret_cast<void*>(lookup(name));
@@ -238,7 +235,7 @@ public:
         }
     }
 
-    // Call with TypedName (signature deduced from declaration)
+    // Call with TypedName (signature deduced from declaration).
     template<typename Ret, typename... Params, typename... Args>
     auto call(TypedName<Ret (*)(Params...)> tn, Args... args) {
         static_assert(sizeof...(Params) == sizeof...(Args),
@@ -250,20 +247,20 @@ public:
         return call<Ret(Params...)>(tn.name, args...);
     }
 
-    // Get a function handle for repeated calls
+    // Get a function handle for repeated calls.
     template<typename Sig>
     FnHandle<LFI, Sig> fn(const char* name) {
         return FnHandle<LFI, Sig>(*this, reinterpret_cast<void*>(lookup(name)));
     }
 
-    // Get a function handle with TypedName
+    // Get a function handle with TypedName.
     template<typename Ret, typename... Params>
     FnHandle<LFI, Ret(Params...)> fn(TypedName<Ret (*)(Params...)> tn) {
         return FnHandle<LFI, Ret(Params...)>(
             *this, reinterpret_cast<void*>(lookup(tn.name)));
     }
 
-    // Call via function pointer (used by FnHandle)
+    // Call via function pointer (used by FnHandle).
     template<typename Ret, typename... Args>
     Ret call_ptr(void* fn_ptr, Args... args) {
         detail::ScopedSandboxTLS _tls_guard(this);
@@ -371,7 +368,7 @@ public:
         return sbox_safe<T*>(raw);
     }
 
-    // Data transfer (trivial; shared address space).
+    // Data transfer.
 
     void copy_to(void* sandbox_dest, const void* host_src, size_t n) {
         std::memcpy(sandbox_dest, host_src, n);
@@ -441,7 +438,7 @@ public:
     uint64_t stack_save();
     void stack_restore(uint64_t sp);
 
-    // Context-aware calls (defined after CallContext)
+    // Context-aware calls (defined after CallContext).
     template<typename Sig, typename... Args>
     auto call(CallContext<LFI>& ctx, const char* name, Args... args);
 
@@ -479,7 +476,6 @@ private:
     LFIContext** get_thread_ctx();
 };
 
-// LFI CallContext - uses sandbox stack for in/out/inout parameters
 template<>
 class CallContext<LFI> {
     Sandbox<LFI>* sandbox_;
@@ -535,8 +531,6 @@ public:
     }
 };
 
-// Deferred method definitions (need CallContext to be complete)
-
 template<typename Sig, typename... Args>
 auto Sandbox<LFI>::call(CallContext<LFI>& ctx, const char* name,
                         Args... args) {
@@ -563,4 +557,4 @@ auto Sandbox<LFI>::call(CallContext<LFI>& ctx,
     return call<Ret(Params...)>(ctx, tn.name, args...);
 }
 
-}  // namespace sbox
+} // namespace sbox

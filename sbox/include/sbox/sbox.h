@@ -8,7 +8,6 @@
 
 namespace sbox {
 
-// Forward declarations for sandbox pointer types
 template<typename T>
 class sbox;
 
@@ -16,8 +15,9 @@ template<typename T>
 class sbox_safe;
 
 // sbox<T*> - unchecked sandbox pointer.
-// Returned by sandbox function calls and passed to callbacks.
-// Cannot be dereferenced directly; must be verified or explicitly unwrapped.
+//
+// Returned by sandbox function calls and passed to callbacks. Cannot be
+// dereferenced directly and must be verified or explicitly unwrapped.
 template<typename T>
 class sbox<T*> {
     T* ptr_;
@@ -48,7 +48,7 @@ public:
     T& operator[](size_t i) const { return ptr_[i]; }
     T* data() const { return ptr_; }
 
-    // Implicit promotion to unchecked sbox<T*> (always safe; drops trust).
+    // Implicit promotion to unchecked sbox<T*>.
     operator sbox<T*>() const { return sbox<T*>(ptr_); }
 
     explicit operator bool() const { return ptr_ != nullptr; }
@@ -58,7 +58,7 @@ public:
 
 namespace detail {
 
-// Type traits for sbox pointer types
+// Type traits for sbox pointer types.
 template<typename T>
 struct is_sbox_ptr : std::false_type {};
 template<typename T>
@@ -75,7 +75,7 @@ template<typename T>
 inline constexpr bool is_sbox_safe_ptr_v =
     is_sbox_safe_ptr<std::remove_cv_t<std::remove_reference_t<T>>>::value;
 
-// Extract the inner pointer type from sbox<T*> or sbox_safe<T*>
+// Extract the inner pointer type from sbox<T*> or sbox_safe<T*>.
 template<typename T>
 struct sbox_inner_type { using type = T; };
 template<typename T>
@@ -96,10 +96,10 @@ constexpr bool check_sbox_ptr_arg() {
     } else {
         using Inner = sbox_inner_type_t<Arg>;
         if constexpr (std::is_function_v<std::remove_pointer_t<Param>>) {
-            // Function pointer: exact type match required
+            // Function pointer: exact type match required.
             return std::is_same_v<Inner, Param>;
         } else {
-            // Data pointer: cv-lenient match
+            // Data pointer: cv-lenient match.
             using P = std::remove_cv_t<std::remove_pointer_t<Param>>;
             using A = std::remove_cv_t<std::remove_pointer_t<Inner>>;
             return std::is_same_v<P, A>;
@@ -110,7 +110,7 @@ constexpr bool check_sbox_ptr_arg() {
 template<typename Param, typename Arg>
 inline constexpr bool check_sbox_ptr_arg_v = check_sbox_ptr_arg<Param, Arg>();
 
-// Unwrap sbox types to raw pointers (for passing to sandbox)
+// Unwrap sbox types to raw pointers (for passing to sandbox).
 template<typename T>
 auto unwrap_sbox_arg(T val) {
     if constexpr (is_sbox_ptr_v<T>) {
@@ -137,7 +137,7 @@ To convert_call_arg(From arg) {
     }
 }
 
-// Wrap raw pointer returns in sbox<T*>
+// Wrap raw pointer returns in sbox<T*>.
 template<typename T>
 auto wrap_sbox_return(T val) {
     if constexpr (std::is_pointer_v<T>) {
@@ -147,7 +147,7 @@ auto wrap_sbox_return(T val) {
     }
 }
 
-// Unwrap sbox<T*> to T* at the type level (for callback thunks)
+// Unwrap sbox<T*> to T* at the type level (for callback thunks).
 template<typename T>
 struct unwrap_sbox_type {
     using type = T;
@@ -159,7 +159,7 @@ struct unwrap_sbox_type<sbox<T*>> {
 template<typename T>
 using unwrap_sbox_type_t = typename unwrap_sbox_type<T>::type;
 
-// Extract return type from function signature
+// Extract return type from function signature.
 template<typename Sig>
 struct sig_return;
 template<typename Ret, typename... Args>
@@ -206,11 +206,11 @@ struct ScopedSandboxTLS {
     ScopedSandboxTLS& operator=(const ScopedSandboxTLS&) = delete;
 };
 
-}  // namespace detail
+} // namespace detail
 
-// TypedName - carries a function's name string along with its declared type.
-// Created by the SBOX_FN macro in dynamic mode so that call-site type
-// checking can be performed against the library header declaration.
+// TypedName carries a function's name string along with its declared type.
+// Created by the SBOX_FN macro in dynamic mode so that call-site type checking
+// can be performed against the library header declaration.
 template<typename FnPtr>
 struct TypedName {
     const char* name;
@@ -221,9 +221,9 @@ struct TypedName {
 
 }  // namespace sbox
 
-// Macro to reference a function - expands differently based on backend.
-// In static mode: expands to function pointer (direct call, type-safe).
-// In dynamic mode: expands to TypedName carrying name + type from declaration.
+// Macro to reference a function. Expands differently based on backend.
+// static mode: expands to function pointer.
+// dynamic mode: expands to TypedName carrying name + type from declaration.
 #ifdef SBOX_STATIC
 #define SBOX_FN(name) (name)
 #else
@@ -232,12 +232,10 @@ struct TypedName {
 
 namespace sbox {
 
-// Backend tag types
 struct Passthrough {};
 struct Process {};
 struct LFI {};
 
-// Forward declarations
 template<typename Backend>
 class Sandbox;
 
@@ -262,9 +260,9 @@ struct callback_thunk_impl<Ret (*)(Sandbox<Backend>&, Args...), fn> {
         }
     }
 };
-}  // namespace detail
+} // namespace detail
 
-// Function handle - captures sandbox reference for direct calls
+// Function handle: captures sandbox reference for direct calls
 template<typename Backend, typename Sig>
 class FnHandle;
 
@@ -291,4 +289,4 @@ private:
     void* fn_ptr_;
 };
 
-}  // namespace sbox
+} // namespace sbox

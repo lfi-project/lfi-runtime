@@ -120,11 +120,6 @@ std::unique_ptr<Sandbox<LFI>> Sandbox<LFI>::create(const char* library_path) {
 }
 
 Sandbox<LFI>::~Sandbox() {
-    // Worker-thread contexts allocated via lfi_clone are owned by LFI's
-    // pthread attachment list and freed by detach (explicit
-    // lfi_linux_detach_thread or pthread destructor on host-thread exit);
-    // do not free them here. lfi_proc_free defers the actual destruction
-    // until the last detach if any host threads remain attached.
     if (main_thread_)
         lfi_thread_free(main_thread_);
     if (proc_)

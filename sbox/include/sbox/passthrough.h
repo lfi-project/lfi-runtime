@@ -13,9 +13,9 @@ namespace sbox {
 
 namespace detail {
 
-// Simple arena for passthrough identity memory
+// Simple arena for passthrough identity memory.
 class PassthroughArena {
-    static constexpr size_t DEFAULT_SIZE = 64 * 1024;  // 64KB default
+    static constexpr size_t DEFAULT_SIZE = 64 * 1024;
 
     char* base_ = nullptr;
     size_t offset_ = 0;
@@ -47,13 +47,13 @@ public:
     }
 };
 
-// Thread-local arena storage
+// Thread-local arena storage.
 inline PassthroughArena& get_thread_arena() {
     thread_local PassthroughArena arena;
     return arena;
 }
 
-}  // namespace detail
+} // namespace detail
 
 // Passthrough CallContext - just returns pointers to host variables (zero
 // overhead) Defined before Sandbox since it doesn't need Sandbox to be complete
@@ -86,16 +86,16 @@ public:
     }
 };
 
-// Passthrough backend - loads library normally via dlopen, or static mode
+// Passthrough backend: loads library via dlopen or static mode.
 template<>
 class Sandbox<Passthrough> {
 public:
-    // Dynamic mode - loads library via dlopen
+    // Dynamic mode: loads library via dlopen.
     explicit Sandbox(const char* library_path) {
         handle_ = dlopen(library_path, RTLD_NOW);
     }
 
-    // Static mode - no library loading, use direct function pointers
+    // Static mode: no library loading, use direct function pointers.
     Sandbox() = default;
 
     ~Sandbox() {
@@ -104,16 +104,16 @@ public:
         }
     }
 
-    // Non-copyable
+    // Non-copyable.
     Sandbox(const Sandbox&) = delete;
     Sandbox& operator=(const Sandbox&) = delete;
 
-    // Non-movable
+    // Non-movable.
     Sandbox(Sandbox&&) = delete;
     Sandbox& operator=(Sandbox&&) = delete;
 
-    // Call a function by name (dynamic mode).
-    // 'name' must be a string literal (pointer is cached directly).
+    // Call a function by name (dynamic mode). 'name' must be a string literal
+    // (pointer is cached directly).
     template<typename Sig, typename... Args>
     auto call(const char* name, Args... args) {
         void* fn = lookup(name);
@@ -129,7 +129,7 @@ public:
         }
     }
 
-    // Call with TypedName (dynamic mode, signature deduced from declaration)
+    // Call with TypedName (dynamic mode, signature deduced from declaration).
     template<typename Ret, typename... Params, typename... Args>
     auto call(TypedName<Ret (*)(Params...)> tn, Args... args) {
         static_assert(sizeof...(Params) == sizeof...(Args),
@@ -141,7 +141,7 @@ public:
         return call<Ret(Params...)>(tn.name, args...);
     }
 
-    // Call a function by pointer (static mode)
+    // Call a function by pointer (static mode).
     template<typename Sig, typename... Args>
     auto call(Sig* fn, Args... args) {
         detail::ScopedSandboxTLS _tls_guard(this);
@@ -154,7 +154,7 @@ public:
         }
     }
 
-    // Context-aware call by name
+    // Context-aware call by name.
     template<typename Sig, typename... Args>
     auto call(CallContext<Passthrough>& ctx, const char* name, Args... args) {
         using Ret = detail::sig_return_t<Sig>;
@@ -168,7 +168,7 @@ public:
         }
     }
 
-    // Context-aware call with TypedName
+    // Context-aware call with TypedName.
     template<typename Ret, typename... Params, typename... Args>
     auto call(CallContext<Passthrough>& ctx, TypedName<Ret (*)(Params...)> tn,
               Args... args) {
@@ -181,7 +181,7 @@ public:
         return call<Ret(Params...)>(ctx, tn.name, args...);
     }
 
-    // Context-aware call by pointer (static mode)
+    // Context-aware call by pointer (static mode).
     template<typename Sig, typename... Args>
     auto call(CallContext<Passthrough>& ctx, Sig* fn, Args... args) {
         if constexpr (std::is_void_v<
@@ -196,31 +196,31 @@ public:
         }
     }
 
-    // Create a call context for in/out/inout parameters
+    // Create a call context for in/out/inout parameters.
     CallContext<Passthrough> context() {
         return CallContext<Passthrough>(*this);
     }
 
-    // Get a function handle for repeated calls (dynamic mode).
-    // 'name' must be a string literal (pointer is cached directly).
+    // Get a function handle for repeated calls (dynamic mode). 'name' must be
+    // a string literal (pointer is cached directly).
     template<typename Sig>
     FnHandle<Passthrough, Sig> fn(const char* name) {
         return FnHandle<Passthrough, Sig>(*this, lookup(name));
     }
 
-    // Get a function handle with TypedName (signature deduced from declaration)
+    // Get a function handle with TypedName (signature deduced from declaration).
     template<typename Ret, typename... Params>
     FnHandle<Passthrough, Ret(Params...)> fn(TypedName<Ret (*)(Params...)> tn) {
         return FnHandle<Passthrough, Ret(Params...)>(*this, lookup(tn.name));
     }
 
-    // Get a function handle by pointer (static mode) - just returns the pointer
+    // Get a function handle by pointer (static mode).
     template<typename Sig>
     Sig* fn(Sig* f) {
         return f;
     }
 
-    // Call via function pointer (used by FnHandle)
+    // Call via function pointer (used by FnHandle).
     template<typename Ret, typename... Args>
     Ret call_ptr(void* fn, Args... args) {
         detail::ScopedSandboxTLS _tls_guard(this);
@@ -260,15 +260,15 @@ public:
         free(sbox<T*>(p));
     }
 
-    // Verify an unchecked sandbox pointer (promote to sbox_safe).
-    // For passthrough, no bounds to check.
+    // Verify an unchecked sandbox pointer (promote to sbox_safe). For
+    // passthrough, no bounds to check.
     template<typename T>
     sbox_safe<T*> verify(sbox<T*> ptr, size_t count) {
         (void) count;
         return sbox_safe<T*>(ptr.unsafe_unverified());
     }
 
-    // Memory mapping
+    // Memory mapping.
     void* mmap(void* addr, size_t length, int prot, int flags, int fd,
                off_t offset) {
         return ::mmap(addr, length, prot, flags, fd, offset);
@@ -278,7 +278,7 @@ public:
         return ::munmap(addr, length);
     }
 
-    // Identity-mapped memory (trivial for passthrough - all memory is shared)
+    // Identity-mapped memory.
     void* mmap_identity(size_t length, int prot) {
         return ::mmap(nullptr, length, prot, MAP_PRIVATE | MAP_ANONYMOUS, -1,
                       0);
@@ -288,7 +288,6 @@ public:
         return ::munmap(addr, length);
     }
 
-    // Arena allocator for identity-mapped memory (per-thread)
     template<typename T>
     T* idmem_alloc(size_t count = 1) {
         return static_cast<T*>(
@@ -299,17 +298,14 @@ public:
         detail::get_thread_arena().reset();
     }
 
-    // File descriptor registration (no-op for passthrough)
     int register_fd(int fd) {
         return fd;
     }
 
-    // Close a file descriptor
     int close_fd(int fd) {
         return ::close(fd);
     }
 
-    // Data transfer (trivial memcpy for passthrough)
     void copy_to(void* sandbox_dest, const void* host_src, size_t n) {
         std::memcpy(sandbox_dest, host_src, n);
     }
@@ -336,7 +332,6 @@ public:
         copy_from(d, sbox<T*>(s), n);
     }
 
-    // String helper
     sbox_safe<char*> copy_string(const char* s) {
         size_t len = std::strlen(s) + 1;
         auto buf = alloc<char>(len);
@@ -346,7 +341,7 @@ public:
         return buf;
     }
 
-    // Register a callback with thunk (for callbacks with sbox<T*> args)
+    // Register a callback with thunk (for callbacks with sbox<T*> args).
     template<auto fn>
     auto register_callback() {
         using Thunk = detail::callback_thunk_impl<decltype(fn), fn>;
@@ -354,13 +349,13 @@ public:
         return sbox<CType>(reinterpret_cast<CType>(&Thunk::call));
     }
 
-    // Register a callback (passthrough just returns the function pointer)
+    // Register a callback (passthrough just returns the function pointer).
     template<typename Ret, typename... Args>
     sbox<Ret (*)(Args...)> register_callback(Ret (*fn)(Args...)) {
         return sbox<Ret (*)(Args...)>(fn);
     }
 
-    // Escape hatch for advanced usage (returns dlopen handle)
+    // Returns dlopen handle.
     void* native_handle() const {
         return handle_;
     }
@@ -398,4 +393,4 @@ private:
     std::mutex cache_mutex_;
 };
 
-}  // namespace sbox
+} // namespace sbox
