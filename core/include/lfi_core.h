@@ -389,6 +389,13 @@ struct LFIInvokeInfo {
 extern lfi_thread_local struct LFIInvokeInfo lfi_invoke_info __asm__(
     "lfi_invoke_info");
 
+// Sets the thread-local lfi_invoke_info. Provided as a function so that
+// callers do not have to access the thread-local directly; in C++ this
+// avoids a compiler-generated thread_local wrapper at the call site.
+void
+lfi_set_invoke_info(struct LFIContext **ctx, lfiptr targetfn,
+    struct LFIBox *box);
+
 // Direct trampoline that loads arguments/return values from the struct
 // LFIContext that is used in the invocation.
 void
