@@ -144,7 +144,7 @@ public:
     // Call a function by pointer (static mode)
     template<typename Sig, typename... Args>
     auto call(Sig* fn, Args... args) {
-        detail::tls_current_sandbox = this;
+        detail::ScopedSandboxTLS _tls_guard(this);
         if constexpr (std::is_void_v<
                           decltype(fn(detail::unwrap_sbox_arg(args)...))>) {
             fn(detail::unwrap_sbox_arg(args)...);
@@ -223,7 +223,7 @@ public:
     // Call via function pointer (used by FnHandle)
     template<typename Ret, typename... Args>
     Ret call_ptr(void* fn, Args... args) {
-        detail::tls_current_sandbox = this;
+        detail::ScopedSandboxTLS _tls_guard(this);
         using FnPtr = Ret (*)(Args...);
         return reinterpret_cast<FnPtr>(fn)(args...);
     }
@@ -366,26 +366,11 @@ public:
     }
 
 private:
-    // Convert argument, unwrapping sbox types and using reinterpret_cast for
-    // pointer conversions
-    template<typename To, typename From>
-    static To convert_arg(From arg) {
-        if constexpr (detail::is_sbox_ptr_v<From>) {
-            return reinterpret_cast<To>(arg.unsafe_unverified());
-        } else if constexpr (detail::is_sbox_safe_ptr_v<From>) {
-            return reinterpret_cast<To>(arg.data());
-        } else if constexpr (std::is_pointer_v<To> && std::is_pointer_v<From>) {
-            return reinterpret_cast<To>(arg);
-        } else {
-            return static_cast<To>(arg);
-        }
-    }
-
     template<typename Ret, typename... Params, typename... Args>
     Ret call_ptr_sig(void* fn, Ret (*)(Params...), Args... args) {
-        detail::tls_current_sandbox = this;
+        detail::ScopedSandboxTLS _tls_guard(this);
         return reinterpret_cast<Ret (*)(Params...)>(fn)(
-            convert_arg<Params>(args)...);
+            detail::convert_call_arg<Params>(args)...);
     }
 
     template<typename Sig, typename... Args>

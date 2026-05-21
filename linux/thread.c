@@ -273,6 +273,7 @@ thread_clone(struct LFILinuxThread *t)
         goto err2;
     // Copy all registers.
     *lfi_ctx_regs(new_t->ctx) = *lfi_ctx_regs(t->ctx);
+    lfi_ctx_regs_relink_ctxreg(new_t->ctx);
 
     return new_t;
 

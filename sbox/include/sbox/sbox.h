@@ -48,7 +48,7 @@ public:
     T& operator[](size_t i) const { return ptr_[i]; }
     T* data() const { return ptr_; }
 
-    // Implicit promotion to unchecked sbox<T*> (always safe — dropping trust)
+    // Implicit promotion to unchecked sbox<T*> (always safe; drops trust).
     operator sbox<T*>() const { return sbox<T*>(ptr_); }
 
     explicit operator bool() const { return ptr_ != nullptr; }
@@ -191,6 +191,20 @@ struct callback_thunk_impl<Ret (*)(Args...), fn> {
 // Thread-local sandbox pointer, set during sandbox calls so that callback
 // thunks can inject the sandbox reference into user callbacks.
 inline thread_local void* tls_current_sandbox = nullptr;
+
+// RAII guard that scopes a tls_current_sandbox assignment to the lifetime
+// of the enclosing call. Restores the previous value on destruction so
+// nested cross-sandbox calls don't leave stale TLS for outer callbacks.
+struct ScopedSandboxTLS {
+    void* prev;
+    explicit ScopedSandboxTLS(void* sb) noexcept
+        : prev(tls_current_sandbox) {
+        tls_current_sandbox = sb;
+    }
+    ~ScopedSandboxTLS() noexcept { tls_current_sandbox = prev; }
+    ScopedSandboxTLS(const ScopedSandboxTLS&) = delete;
+    ScopedSandboxTLS& operator=(const ScopedSandboxTLS&) = delete;
+};
 
 }  // namespace detail
 

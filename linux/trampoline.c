@@ -108,14 +108,9 @@ detach_ctx(struct LFILinuxProc *proc, struct LFIContext *ctx)
 
     ensure(proc->libsyms.thread_destroy);
 
+    // The thread_destroy arg is currently unused.
     LFI_INVOKE(proc->box, &ctx, proc->libsyms.thread_destroy, void, (lfiptr),
-        thread->box_pthread);
-
-    {
-        LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
-        LFI_INVOKE(proc->box, &proc->clone_ctx, proc->libsyms.free, void,
-            (lfiptr), thread->box_pthread);
-    }
+        (lfiptr) 0);
 
     lfi_thread_free(thread);
 
@@ -143,16 +138,14 @@ lfi_linux_clone_cb(struct LFIBox *box)
     atomic_fetch_add_explicit(&proc->attached_threads, 1,
         memory_order_relaxed);
 
-    // Invoke thread_create in clone_ctx and return the resulting new_ctx.
-    lfiptr pt;
     {
         LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
-        pt = LFI_INVOKE(box, &proc->clone_ctx, proc->libsyms.thread_create,
+        (void) LFI_INVOKE(box, &proc->clone_ctx, proc->libsyms.thread_create,
             lfiptr, (void) );
     }
 
     struct LFILinuxThread *thread = lfi_ctx_data(new_ctx);
-    thread->box_pthread = pt;
+    thread->lazy_cloned = true;
 
     struct AttachedCtx *node = malloc(sizeof(*node));
     if (!node)

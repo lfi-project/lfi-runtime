@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <cstring>
 
-// -- Struct definitions (must match testlib.c) --
+// Struct definitions; must match testlib.c.
 
 struct Point {
     int x;
@@ -24,7 +24,7 @@ struct NamedArray {
     int count;
 };
 
-// -- Test runner macros (TAP output) --
+// Test runner macros (TAP output).
 
 static int tests_run = 0;
 static const char* current_test_name = nullptr;

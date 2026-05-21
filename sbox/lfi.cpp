@@ -2,8 +2,6 @@
 
 namespace sbox {
 
-// -- LFIManager --
-
 bool LFIManager::init(size_t n) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (engine_) {
@@ -79,8 +77,6 @@ LFILinuxEngine* LFIManager::get() {
     return linux_engine_;
 }
 
-// -- Sandbox<LFI> --
-
 std::unique_ptr<Sandbox<LFI>> Sandbox<LFI>::create(const char* library_path) {
     LFILinuxEngine* linux_engine = LFIManager::get();
     if (!linux_engine) {
@@ -88,6 +84,7 @@ std::unique_ptr<Sandbox<LFI>> Sandbox<LFI>::create(const char* library_path) {
     }
 
     std::unique_ptr<Sandbox<LFI>> sb(new Sandbox<LFI>());
+    sb->id_ = detail::sandbox_id_counter.fetch_add(1, std::memory_order_relaxed);
 
     sb->proc_ = lfi_proc_new(linux_engine);
     if (!sb->proc_) {
@@ -123,6 +120,11 @@ std::unique_ptr<Sandbox<LFI>> Sandbox<LFI>::create(const char* library_path) {
 }
 
 Sandbox<LFI>::~Sandbox() {
+    // Worker-thread contexts allocated via lfi_clone are owned by LFI's
+    // pthread attachment list and freed by detach (explicit
+    // lfi_linux_detach_thread or pthread destructor on host-thread exit);
+    // do not free them here. lfi_proc_free defers the actual destruction
+    // until the last detach if any host threads remain attached.
     if (main_thread_)
         lfi_thread_free(main_thread_);
     if (proc_)
@@ -147,17 +149,20 @@ lfiptr Sandbox<LFI>::lookup(const char* name) {
 }
 
 LFIContext** Sandbox<LFI>::get_thread_ctx() {
-    static thread_local std::deque<ThreadCtxEntry> entries;
+    // Fast path: same Sandbox as last call on this thread.
+    if (detail::last_sandbox_id == id_)
+        return detail::last_ctxp;
 
-    for (auto& e : entries) {
-        if (e.box == box_) return &e.ctx;
-    }
-    entries.push_back({box_, nullptr});
-    auto& e = entries.back();
-    if (main_thread_tid_ == std::this_thread::get_id()) {
-        e.ctx = *lfi_thread_ctxp(main_thread_);
-    }
-    return &e.ctx;
+    // Slow path: look up (and lazily create) this thread's entry.
+    std::lock_guard<std::mutex> lock(thread_ctx_mutex_);
+    auto id = std::this_thread::get_id();
+    auto [it, inserted] = thread_ctxs_.try_emplace(id, nullptr);
+    if (inserted && main_thread_tid_ == id)
+        it->second = *lfi_thread_ctxp(main_thread_);
+
+    detail::last_sandbox_id = id_;
+    detail::last_ctxp = &it->second;
+    return &it->second;
 }
 
 void* Sandbox<LFI>::stack_push(size_t size, size_t align) {
@@ -225,6 +230,18 @@ sbox_safe<char*> Sandbox<LFI>::copy_string(const char* s) {
 
 CallContext<LFI> Sandbox<LFI>::context() {
     return CallContext<LFI>(*this);
+}
+
+void Sandbox<LFI>::detach_thread() {
+    lfi_linux_detach_thread(proc_);
+    {
+        std::lock_guard<std::mutex> lock(thread_ctx_mutex_);
+        thread_ctxs_.erase(std::this_thread::get_id());
+    }
+    if (detail::last_sandbox_id == id_) {
+        detail::last_sandbox_id = 0;
+        detail::last_ctxp = nullptr;
+    }
 }
 
 }  // namespace sbox

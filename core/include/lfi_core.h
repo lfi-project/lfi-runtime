@@ -299,6 +299,12 @@ lfi_ctx_set_tp(struct LFIContext *ctx, uint64_t tp);
 void
 lfi_ctx_regs_init(struct LFIContext *ctx);
 
+// Sets the CTXREG register and ctxreg-array's ctx slot at this ctx. Used after
+// copying registers from another ctx (e.g., in clone) to undo the inherited
+// CTXREG pointing at the source ctx.
+void
+lfi_ctx_regs_relink_ctxreg(struct LFIContext *ctx);
+
 // Causes the sandbox context to exit with a given exit code.
 void
 lfi_ctx_exit(struct LFIContext *ctx, int code);

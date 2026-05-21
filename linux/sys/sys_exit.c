@@ -29,7 +29,7 @@ sys_exit(struct LFILinuxThread *t, int code)
     // then it is exiting due to a destructor invocation of
     // _lfi_thread_destroy. We should service that by simulating the return of
     // that function via lfi_ret.
-    if (t->box_pthread) {
+    if (t->lazy_cloned) {
         clearctid(t);
         lfi_ret_end(t->ctx);
         __builtin_unreachable();

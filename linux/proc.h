@@ -154,9 +154,11 @@ struct LFILinuxThread {
     // Pthread object if this thread was spawned by the LFI runtime using a
     // pthread.
     pthread_t *pthread;
-    // Sandbox pthread object if this thread was lazily spawned by the runtime
-    // to match a host thread.
-    lfiptr box_pthread;
+    // True if this thread was lazily spawned via the lfi_clone trampoline
+    // callback (i.e., one host thread per attachment). Routes thread exit
+    // through lfi_ret_end so the trampoline frame on the host stack is
+    // properly unwound.
+    bool lazy_cloned;
 
     // Element in the parent proc's threads list.
     struct List threads_elem;

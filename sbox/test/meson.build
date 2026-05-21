@@ -59,6 +59,19 @@ test('passthrough_multi_sandbox', test_passthrough_multi_sandbox,
   protocol: 'tap',
 )
 
+test_passthrough_callback_cross_sandbox = executable(
+  'test_passthrough_callback_cross_sandbox',
+  'test_passthrough_callback_cross_sandbox.cpp',
+  include_directories: [test_inc],
+  dependencies: [sbox_passthrough_dep],
+  install: false,
+)
+test('passthrough_callback_cross_sandbox', test_passthrough_callback_cross_sandbox,
+  workdir: meson.current_build_dir(),
+  depends: [testlib_so, testlib2_so],
+  protocol: 'tap',
+)
+
 # Threads test (passthrough)
 test_threads = executable('test_threads',
   'test_threads.cpp',
@@ -112,6 +125,18 @@ if lficc.found()
   test('lfi_multi_sandbox', test_lfi_multi_sandbox,
     workdir: meson.current_build_dir(),
     depends: [testlib_lfi, testlib2_lfi],
+    protocol: 'tap',
+  )
+
+  test_lfi_detach = executable('test_lfi_detach',
+    'test_lfi_detach.cpp',
+    include_directories: [test_inc],
+    dependencies: [sbox_lfi_dep, thread_dep],
+    install: false,
+  )
+  test('lfi_detach', test_lfi_detach,
+    workdir: meson.current_build_dir(),
+    depends: [testlib_lfi],
     protocol: 'tap',
   )
 endif

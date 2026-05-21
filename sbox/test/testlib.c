@@ -3,8 +3,6 @@
 #include <ctype.h>
 #include <string.h>
 
-// -- Basic arithmetic (int) --
-
 int add(int a, int b) {
     return a + b;
 }
@@ -12,8 +10,6 @@ int add(int a, int b) {
 int multiply(int a, int b) {
     return a * b;
 }
-
-// -- Type variety --
 
 double add_double(double a, double b) {
     return a + b;
@@ -35,8 +31,6 @@ int negate(int x) {
     return -x;
 }
 
-// -- Many parameters --
-
 int sum6(int a, int b, int c, int d, int e, int f) {
     return a + b + c + d + e + f;
 }
@@ -45,8 +39,6 @@ double weighted_sum(double a, double b, double c, double wa, double wb,
                     double wc) {
     return a * wa + b * wb + c * wc;
 }
-
-// -- Structs by pointer --
 
 typedef struct {
     int x;
@@ -76,8 +68,6 @@ double complex_magnitude_sq(Complex* c) {
     return c->real * c->real + c->imag * c->imag;
 }
 
-// -- Strings --
-
 char* process_string(char* s) {
     // Just return the string as-is for now
     return s;
@@ -93,8 +83,6 @@ void string_to_upper(char* s) {
     }
 }
 
-// -- Void function --
-
 static int void_fn_called = 0;
 
 void noop(void) {
@@ -106,8 +94,6 @@ int was_noop_called(void) {
     void_fn_called = 0;
     return r;
 }
-
-// -- Callbacks --
 
 typedef void (*callback_t)(int);
 static callback_t stored_callback = 0;
@@ -122,6 +108,13 @@ void trigger_callback(int value) {
     }
 }
 
+typedef void (*void_callback_t)(void);
+
+void invoke_two_void_callbacks(void_callback_t cb1, void_callback_t cb2) {
+    cb1();
+    cb2();
+}
+
 typedef int (*binary_callback_t)(int, int);
 
 int apply_binary_callback(binary_callback_t cb, int a, int b) {
@@ -134,7 +127,7 @@ double apply_double_callback(double_callback_t cb, double val) {
     return cb(val);
 }
 
-// -- Many parameters (up to 10 = PBOX_MAX_ARGS) --
+// Up to 10 args matches sbox::detail::max_args.
 
 int sum8(int a, int b, int c, int d, int e, int f, int g, int h) {
     return a + b + c + d + e + f + g + h;
@@ -165,8 +158,6 @@ double mixed10(int a, double b, int c, double d, int e, double f, int g,
     return a + b + c + d + e + f + g + h + i + j;
 }
 
-// -- Pointer write + read-back --
-
 void write_int(int* p, int value) {
     *p = value;
 }
@@ -180,8 +171,6 @@ void swap_ints(int* a, int* b) {
     *a = *b;
     *b = tmp;
 }
-
-// -- Struct with pointer fields --
 
 typedef struct {
     char* name;
@@ -207,8 +196,6 @@ int named_array_name_len(NamedArray* na) {
     return (int) strlen(na->name);
 }
 
-// -- Re-entrant callback --
-
 typedef int (*reentrant_callback_t)(int);
 static reentrant_callback_t stored_reentrant_cb = 0;
 
@@ -226,15 +213,13 @@ int call_reentrant(int value) {
     return value;
 }
 
-// -- Callback with 4 params --
-
 typedef int (*quad_callback_t)(int, int, int, int);
 
 int apply_quad_callback(quad_callback_t cb, int a, int b, int c, int d) {
     return cb(a, b, c, d);
 }
 
-// -- Callbacks with many params (test stack arg passing) --
+// Callbacks with many params; exercises stack arg passing.
 
 typedef int (*callback9_t)(int, int, int, int, int, int, int, int, int);
 
@@ -250,15 +235,11 @@ int apply_callback8(callback8_t cb, int a, int b, int c, int d, int e, int f,
     return cb(a, b, c, d, e, f, g, h);
 }
 
-// -- Callback with pointer argument --
-
 typedef int (*ptr_callback_t)(int*, int);
 
 int apply_ptr_callback(ptr_callback_t cb, int* data, int count) {
     return cb(data, count);
 }
-
-// -- Callback with double* argument --
 
 typedef double (*double_ptr_callback_t)(double*, int);
 
@@ -267,15 +248,11 @@ double apply_double_ptr_callback(double_ptr_callback_t cb, double* data,
     return cb(data, count);
 }
 
-// -- Callback that mutates data through pointer --
-
 typedef void (*mutate_callback_t)(int*, int);
 
 void apply_mutate_callback(mutate_callback_t cb, int* data, int count) {
     cb(data, count);
 }
-
-// -- Memory pattern --
 
 void fill_ints(int* arr, int count, int value) {
     for (int i = 0; i < count; i++) {
@@ -290,8 +267,6 @@ int sum_ints(int* arr, int count) {
     }
     return total;
 }
-
-// -- Thread-local storage (for threading test) --
 
 static __thread int tls_value = 0;
 

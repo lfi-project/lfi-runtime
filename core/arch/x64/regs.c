@@ -17,3 +17,14 @@ lfi_ctx_regs_init(struct LFIContext *ctx)
     ctx->regs.r15 = 0x00000000ffffffff;
 #endif
 }
+
+EXPORT void
+lfi_ctx_regs_relink_ctxreg(struct LFIContext *ctx)
+{
+#ifdef CTXREG
+    ctx->regs.r15 = (uint64_t) ctx->ctxreg;
+    ctx->ctxreg[CTXREG_CTX_OFFSET / 8] = (uint64_t) ctx;
+#else
+    (void) ctx;
+#endif
+}

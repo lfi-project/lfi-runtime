@@ -6,10 +6,11 @@
 #error "SBOX_STATIC cannot be used with the LFI backend"
 #endif
 
+#include <atomic>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <deque>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -25,8 +26,6 @@ extern "C" {
 #include "lfi_arch.h"
 #include "lfi_core.h"
 #include "lfi_linux.h"
-
-void lfi_clone(struct LFIBox* box, struct LFIContext** ctxp);
 }
 
 namespace sbox {
@@ -139,11 +138,11 @@ MarshalResult marshal_args_lfi([[maybe_unused]] LFIRegs* regs, Args... args) {
     return result;
 }
 
-// Write overflow stack args directly onto the sandbox stack and adjust RSP.
-// This works because LFI sandbox memory is in the host address space.
-// The trampoline will load this adjusted RSP, align it (no-op since we
-// pre-align to 16), push the return address, and jump to the target.
-// The callee sees stack args at RSP+8, RSP+16, etc. -- standard ABI layout.
+// Write overflow stack args directly onto the sandbox stack and adjust SP.
+// Works because LFI sandbox memory is in the host address space. The
+// trampoline loads the adjusted SP and jumps to the target; the callee then
+// sees stack args at the platform's standard ABI offsets (RSP+8.. on x86-64,
+// SP+0.. on aarch64, accounting for the trampoline's own SP usage).
 inline void stage_stack_args(LFIRegs* regs, const uint64_t* stack_args,
                              size_t n_stack) {
     if (n_stack == 0)
@@ -158,6 +157,16 @@ inline void stage_stack_args(LFIRegs* regs, const uint64_t* stack_args,
 
     set_sp(regs, aligned);
 }
+
+// Per-thread fast-path for resolving the active LFI sandbox context.
+// last_sandbox_id 0 means "no cache." Comparison is against the Sandbox's
+// monotonically-issued id; a freed Sandbox's id is never reissued, so a
+// cache hit guarantees last_ctxp still points into a live Sandbox's map.
+inline thread_local uint64_t last_sandbox_id = 0;
+inline thread_local LFIContext** last_ctxp = nullptr;
+
+// Monotonic counter for assigning Sandbox<LFI> ids.
+inline std::atomic<uint64_t> sandbox_id_counter{1};
 
 }  // namespace detail
 
@@ -191,7 +200,18 @@ class Sandbox<LFI> {
     std::mutex symbol_cache_mutex_;
     std::unordered_map<std::string, lfiptr> symbol_cache_;
 
-    mutable std::thread::id main_thread_tid_;
+    std::thread::id main_thread_tid_;
+
+    // Per-thread sandbox contexts. The main thread's context is owned by
+    // main_thread_; worker entries hold contexts created by lfi_clone and
+    // are freed in the destructor. Keying by thread id (not LFIBox*) ties
+    // the cache lifetime to this Sandbox so destruction can't leave stale
+    // entries for some other thread to find via pointer-address ABA.
+    std::mutex thread_ctx_mutex_;
+    std::unordered_map<std::thread::id, LFIContext*> thread_ctxs_;
+
+    // Unique, never-reused id used by the TLS fast path in get_thread_ctx.
+    uint64_t id_ = 0;
 
     explicit Sandbox() = default;
 
@@ -246,7 +266,7 @@ public:
     // Call via function pointer (used by FnHandle)
     template<typename Ret, typename... Args>
     Ret call_ptr(void* fn_ptr, Args... args) {
-        detail::tls_current_sandbox = this;
+        detail::ScopedSandboxTLS _tls_guard(this);
 
         auto ctxp = get_thread_ctx();
         if (*ctxp == nullptr) {
@@ -292,7 +312,7 @@ public:
         }
     }
 
-    // -- Memory allocation --
+    // Memory allocation.
 
     template<typename T>
     sbox_safe<T*> alloc(size_t count = 1) {
@@ -336,7 +356,7 @@ public:
 
     void idmem_reset();
 
-    // -- Pointer verification --
+    // Pointer verification.
 
     template<typename T>
     sbox_safe<T*> verify(sbox<T*> ptr, size_t count) {
@@ -351,7 +371,7 @@ public:
         return sbox_safe<T*>(raw);
     }
 
-    // -- Data transfer (trivial - shared address space) --
+    // Data transfer (trivial; shared address space).
 
     void copy_to(void* sandbox_dest, const void* host_src, size_t n) {
         std::memcpy(sandbox_dest, host_src, n);
@@ -383,13 +403,13 @@ public:
 
     sbox_safe<char*> copy_string(const char* s);
 
-    // -- Memory mapping --
+    // Memory mapping.
 
     void* mmap(void* addr, size_t length, int prot, int flags, int fd,
                off_t offset);
     int munmap(void* addr, size_t length);
 
-    // -- Callbacks --
+    // Callbacks.
 
     template<typename Ret, typename... Args>
     sbox<Ret (*)(Args...)> register_callback(Ret (*fn)(Args...)) {
@@ -408,7 +428,14 @@ public:
             &detail::callback_thunk_impl<decltype(fn), fn>::call);
     }
 
-    // -- Stack allocation (used by CallContext) --
+    // Detach the current host thread from this sandbox. Required when a
+    // non-main host thread has called into the sandbox and the sandbox is
+    // about to be destroyed (or the thread is about to exit while the
+    // sandbox is destroyed concurrently). No-op if the thread is not
+    // attached.
+    void detach_thread();
+
+    // Stack allocation (used by CallContext).
 
     void* stack_push(size_t size, size_t align = 16);
     uint64_t stack_save();
@@ -431,23 +458,10 @@ private:
     std::vector<void*> idmem_allocations_;
     std::mutex idmem_mutex_;
 
-    template<typename To, typename From>
-    static To convert_arg(From arg) {
-        if constexpr (detail::is_sbox_ptr_v<From>) {
-            return reinterpret_cast<To>(arg.unsafe_unverified());
-        } else if constexpr (detail::is_sbox_safe_ptr_v<From>) {
-            return reinterpret_cast<To>(arg.data());
-        } else if constexpr (std::is_pointer_v<To> &&
-                             std::is_pointer_v<From>) {
-            return reinterpret_cast<To>(arg);
-        } else {
-            return static_cast<To>(arg);
-        }
-    }
-
     template<typename Ret, typename... Params, typename... Args>
     Ret call_with_sig_impl(void* fn, Ret (*)(Params...), Args... args) {
-        return call_ptr<Ret, Params...>(fn, convert_arg<Params>(args)...);
+        return call_ptr<Ret, Params...>(
+            fn, detail::convert_call_arg<Params>(args)...);
     }
 
     template<typename Sig, typename... Args>
