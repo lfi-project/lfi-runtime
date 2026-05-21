@@ -59,6 +59,14 @@ lfi_linux_clone_cb_minimal(struct LFIBox *box)
     // Set tp to 0 (no TLS support in sys_minimal mode).
     lfi_ctx_set_tp(t->ctx, 0);
 
+    // Register the thread so proc_destroy can free it. sys_minimal has no
+    // pthread-key-based attachment mechanism, so the proc itself owns
+    // lazily-cloned threads until it is destroyed.
+    list_init(&t->threads_elem);
+    lock(&proc->lk_threads);
+    list_make_first(&proc->threads, &t->threads_elem);
+    unlock(&proc->lk_threads);
+
     return t->ctx;
 }
 #endif

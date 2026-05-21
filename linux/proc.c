@@ -233,6 +233,15 @@ lfi_proc_reload(struct LFILinuxProc *proc, const uint8_t *prog,
 void
 proc_destroy(struct LFILinuxProc *proc)
 {
+    // Free any remaining threads on the proc's threads list.
+    struct List *e = list_first(proc->threads);
+    while (e) {
+        struct List *next = list_next(proc->threads, e);
+        struct LFILinuxThread *t =
+            LIST_CONTAINER(struct LFILinuxThread, threads_elem, e);
+        lfi_thread_free(t);
+        e = next;
+    }
     if (proc->clone_ctx) {
         struct LFILinuxThread *clone_thread = lfi_ctx_data(proc->clone_ctx);
         if (clone_thread)
