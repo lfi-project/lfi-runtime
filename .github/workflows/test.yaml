@@ -29,23 +29,23 @@ jobs:
 
     - name: Build & Test (gcc, asan+ubsan)
       run: |
-        meson setup build-san -Db_sanitize=address,undefined -Dbuildtype=debugoptimized
+        meson setup build-san -Db_sanitize=address,undefined
         ninja -C build-san test
 
     - name: Build & Test (gcc, tsan)
       run: |
-        meson setup build-tsan -Db_sanitize=thread -Dbuildtype=debugoptimized
+        meson setup build-tsan -Db_sanitize=thread
         ninja -C build-tsan test
 
-    - name: Build & Test (clang, asan+ubsan)
+    - name: Build & Test (clang)
       env:
         CC: clang
         CXX: clang++
       run: |
-        meson setup build-clang -Dbuildtype=debugoptimized
+        meson setup build-clang
         ninja -C build-clang test
 
     - name: Build & Test (sys_minimal, asan+ubsan)
       run: |
-        meson setup build-min -Db_sanitize=address,undefined -Dsys_minimal=true -Dbuildtype=debugoptimized
+        meson setup build-min -Db_sanitize=address,undefined -Dsys_minimal=true
         ninja -C build-min test

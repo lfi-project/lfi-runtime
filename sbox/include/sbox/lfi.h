@@ -274,11 +274,7 @@ public:
             }
         }
 
-        lfi_invoke_info = {
-            .ctx = ctxp,
-            .targetfn = reinterpret_cast<lfiptr>(fn_ptr),
-            .box = box_,
-        };
+        lfi_set_invoke_info(ctxp, reinterpret_cast<lfiptr>(fn_ptr), box_);
 
         LFIRegs* regs = lfi_ctx_regs(*ctxp);
         auto result = detail::marshal_args_lfi(regs, args...);

@@ -6,6 +6,15 @@ EXPORT thread_local struct LFIInvokeInfo lfi_invoke_info __asm__(
     "lfi_invoke_info");
 
 EXPORT void
+lfi_set_invoke_info(struct LFIContext **ctx, lfiptr targetfn,
+    struct LFIBox *box)
+{
+    lfi_invoke_info.ctx = ctx;
+    lfi_invoke_info.targetfn = targetfn;
+    lfi_invoke_info.box = box;
+}
+
+EXPORT void
 lfi_set_clone_cb(struct LFIEngine *engine,
     struct LFIContext *(*clone_cb_arg)(struct LFIBox *) )
 {
