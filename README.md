@@ -6,6 +6,8 @@ The LFI runtime is responsible for loading sandboxes and handling host calls. It
   sandbox memory, transferring control to/from the sandbox. It does not impose
   any runtime API on the sandbox beyond the minimum necessary.
 * `linux`: provides a Linux emulation layer on top of the core library.
+* `sbox`: a C++ library for calling sandboxed functions with a lightweight
+  tainting API. See [sbox/README.md](sbox/README.md) for details.
 
 # Installation
 
