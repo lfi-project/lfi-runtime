@@ -49,3 +49,22 @@ jobs:
       run: |
         meson setup build-min -Db_sanitize=address,undefined -Dsys_minimal=true
         ninja -C build-min test
+
+  test-macos:
+    strategy:
+      matrix:
+        os: [macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Dependencies
+      run: brew install meson ninja
+
+    - name: Install LFI AArch64 Compiler
+      run: wget -q https://github.com/lfi-project/lfi/releases/download/v0.12/aarch64-lfi-clang-macos.tar.gz && tar -xf aarch64-lfi-clang-macos.tar.gz && echo "$PWD/aarch64-lfi-clang/lfi-bin" >> $GITHUB_PATH
+
+    - name: Build & Test (sys_minimal)
+      run: |
+        meson setup build-min -Dsys_minimal=true
+        ninja -C build-min test
