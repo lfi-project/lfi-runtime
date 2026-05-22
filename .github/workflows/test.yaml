@@ -62,7 +62,7 @@ jobs:
       run: brew install meson ninja
 
     - name: Install LFI AArch64 Compiler
-      run: wget -q https://github.com/lfi-project/lfi/releases/download/v0.12/aarch64-lfi-clang-macos.tar.gz && tar -xf aarch64-lfi-clang-macos.tar.gz && echo "$PWD/aarch64-lfi-clang/lfi-bin" >> $GITHUB_PATH
+      run: wget -q https://github.com/lfi-project/lfi/releases/download/v0.12/aarch64-lfi-clang-macos.tar.gz && tar -xf aarch64-lfi-clang-macos.tar.gz && echo "$PWD/aarch64-lfi-clang/lfi-clang" >> $GITHUB_PATH
 
     - name: Build & Test (sys_minimal)
       run: |
