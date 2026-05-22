@@ -6,7 +6,7 @@ using SboxType = sbox::Passthrough;
 #include "test_helpers.h"
 
 int main() {
-    sbox::Sandbox<SboxType> sandbox("./libtestlib.so");
+    sbox::Sandbox<SboxType> sandbox(TESTLIB);
 #include "test_callbacks.inc.cpp"
     TEST_SUMMARY();
 }

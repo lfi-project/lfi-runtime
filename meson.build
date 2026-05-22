@@ -76,6 +76,10 @@ if compiler.has_function('memfd_create', prefix : '''#define _GNU_SOURCE
 #include <sys/mman.h>''')
   defines += '-DHAVE_MEMFD_CREATE'
 endif
+if not compiler.has_function('mremap', prefix : '''#define _GNU_SOURCE
+#include <sys/mman.h>''')
+  defines += '-DNO_MREMAP'
+endif
 if get_option('enable_pku') and compiler.has_function('pkey_alloc', prefix : '''#define _GNU_SOURCE
 #include <sys/mman.h>''')
   defines += '-DHAVE_PKU'

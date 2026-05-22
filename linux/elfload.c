@@ -13,7 +13,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#ifdef HAVE_GETAUXVAL
 #include <sys/auxv.h>
+#endif
 
 #define HWCAP2_BTI (1 << 17)
 
@@ -24,7 +26,7 @@
 // We do not allow executable segments above 1GiB.
 #define CODE_MAX (1UL * 1024 * 1024 * 1024)
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) && defined(HAVE_GETAUXVAL)
 // Check if the ELF has BTI enabled via PT_GNU_PROPERTY.
 static bool
 elf_has_bti(struct Buf elf, Elf64_Ehdr *ehdr, Elf64_Phdr *phdrs)
@@ -203,6 +205,11 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
             }
         }
     } else if (map_op == ELF_REMAP) {
+#ifdef NO_MREMAP
+        (void) p_align;
+        (void) p_offset;
+        return false;
+#else
         size_t pagesize = getpagesize();
         assert((uintptr_t) buf.data % pagesize == 0);
         void *old = (void *) (buf.data + truncp(p_offset, p_align));
@@ -215,6 +222,7 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
         if (old == (void *) -1)
             return false;
         memcpy(old, rm, end - start);
+#endif
     } else if (map_op == ELF_MAP) {
         p = lfi_box_mapat(box, p2l(box, start), end - start,
             LFI_PROT_READ | LFI_PROT_WRITE, LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS,
@@ -306,7 +314,7 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
         goto err1;
     }
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) && defined(HAVE_GETAUXVAL)
     bool bti = elf_has_bti(elf, ehdr, phdrs) &&
         (getauxval(AT_HWCAP2) & HWCAP2_BTI);
 #else

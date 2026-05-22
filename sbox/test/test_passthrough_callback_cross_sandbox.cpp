@@ -30,8 +30,8 @@ static void cb_second(sbox::Sandbox<SboxType>& sandbox) {
 }
 
 int main() {
-    sbox::Sandbox<SboxType> A("./libtestlib.so");
-    sbox::Sandbox<SboxType> B("./libtestlib2.so");
+    sbox::Sandbox<SboxType> A(TESTLIB);
+    sbox::Sandbox<SboxType> B(TESTLIB2);
     g_a = &A;
     g_b = &B;
 

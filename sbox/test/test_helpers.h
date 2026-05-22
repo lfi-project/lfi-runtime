@@ -6,6 +6,14 @@
 #include <cstdio>
 #include <cstring>
 
+#if defined(__APPLE__)
+#define TESTLIB  "./libtestlib.dylib"
+#define TESTLIB2 "./libtestlib2.dylib"
+#else
+#define TESTLIB  "./libtestlib.so"
+#define TESTLIB2 "./libtestlib2.so"
+#endif
+
 // Struct definitions; must match testlib.c.
 
 struct Point {

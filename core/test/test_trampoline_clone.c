@@ -7,9 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <threads.h>
 #include <time.h>
 #include <unistd.h>
+
+#ifndef thread_local
+#define thread_local _Thread_local
+#endif
 
 // Use -b to run the benchmark: ./core/test/test_trampoline.c.elf -b
 

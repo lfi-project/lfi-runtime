@@ -14,7 +14,7 @@ static int stress_add_callback(int a, int b) {
 }
 
 int main() {
-    sbox::Sandbox<sbox::Passthrough> sandbox("./libtestlib.so");
+    sbox::Sandbox<sbox::Passthrough> sandbox(TESTLIB);
     g_sandbox = &sandbox;
 
 

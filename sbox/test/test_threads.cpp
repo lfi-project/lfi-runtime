@@ -1,4 +1,5 @@
 #include "sbox/passthrough.h"
+#include "test_helpers.h"
 
 #include <pthread.h>
 #include <cassert>
@@ -47,7 +48,7 @@ static void* thread_fn(void* arg) {
 }
 
 int main() {
-    sbox::Sandbox<sbox::Passthrough> sb("./libtestlib.so");
+    sbox::Sandbox<sbox::Passthrough> sb(TESTLIB);
     sandbox = &sb;
 
     // Sanity check on main thread

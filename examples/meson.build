@@ -12,6 +12,9 @@ subdir('add')
 subdir('bench')
 subdir('callback')
 subdir('inout')
-subdir('shm')
+# The shm example requires memfd_create, which is Linux-only.
+if host_machine.system() == 'linux'
+  subdir('shm')
+endif
 subdir('static')
 subdir('threads')

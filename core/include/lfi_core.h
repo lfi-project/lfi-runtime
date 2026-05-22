@@ -402,7 +402,7 @@ void
 lfi_trampoline_struct(void) __asm__("lfi_trampoline_struct");
 
 void
-lfi_clone(struct LFIBox *box, struct LFIContext **ctxp);
+lfi_clone(struct LFIBox *box, struct LFIContext **ctxp) __asm__("lfi_clone");
 
 #define LFI_X(x, y)  x##y
 #define LFI_XX(x, y) LFI_X(x, y)
