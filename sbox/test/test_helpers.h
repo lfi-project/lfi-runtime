@@ -34,8 +34,8 @@ struct NamedArray {
 
 // Test runner macros (TAP output).
 
-static int tests_run = 0;
-static const char* current_test_name = nullptr;
+int tests_run = 0;
+const char* current_test_name = nullptr;
 
 #define TEST(name)                \
     do {                          \
