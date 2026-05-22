@@ -1,28 +1,25 @@
 #pragma once
 
-#include "config.h"
-#include "list.h"
-
-#include <pthread.h>
 #include <stdint.h>
 
-// This code is currently unused because we directly use futexes on Linux. In
-// the future if we support macOS or non-Linux OSes, this code will be used to
-// emulate Linux futexes.
+struct LFILinuxThread;
+struct Futexes;
+struct TimeSpec;
 
-#define FUTEX_CONTAINER(ptr) LIST_CONTAINER(struct Futex, elem, ptr)
+struct Futexes *
+futexes_new(void);
 
-struct Futex {
-    struct List elem;
-    pthread_cond_t cond;
-    pthread_mutex_t lock;
-    uintptr_t addr;
-    int waiters;
-};
+void
+futexes_free(struct Futexes *fxs);
 
-struct Futexes {
-    pthread_mutex_t lock;
-    struct List *active;
-    struct List *free;
-    struct Futex futexes[CONFIG_MAX_FUTEXES];
-};
+long
+host_futex_wait(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val,
+    struct TimeSpec *timeout);
+
+long
+host_futex_wake(struct LFILinuxThread *t, uint32_t *uaddr, int op,
+    uint32_t val);
+
+long
+host_futex_requeue(struct LFILinuxThread *t, uint32_t *uaddr, int op,
+    uint32_t val, uint32_t val2, uint32_t *uaddr2);

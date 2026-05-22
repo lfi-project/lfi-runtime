@@ -19,6 +19,17 @@ if get_option('sys_minimal')
   srcs += files('sys_minimal.c')
 else
   srcs += files('sys.c')
+
+  # Pick a futex backend. The Linux backend uses the futex(2) syscall
+  # directly; the macOS backend uses os_sync_wait_on_address (requires macOS
+  # 14.4+); otherwise we fall back to a portable pthread-based pool.
+  if host_machine.system() == 'darwin' and compiler.has_header('os/os_sync_wait_on_address.h')
+    srcs += files('futex_macos.c')
+  elif host_machine.system() == 'linux'
+    srcs += files('futex_linux.c')
+  else
+    srcs += files('futex_pthread.c')
+  endif
 endif
 
 subdir('arch/' + archmap[cpu])
