@@ -6,6 +6,7 @@
 #include "elfload.h"
 #include "elfsym.h"
 #include "fd.h"
+#include "futex.h"
 #include "host.h"
 #include "lfi_core.h"
 #include "linux.h"
@@ -52,6 +53,10 @@ lfi_proc_new(struct LFILinuxEngine *engine)
     lfi_box_setdata(box, proc);
 
     fdinit(engine, &proc->fdtable);
+
+#ifndef SYS_MINIMAL
+    proc->futexes = futexes_new();
+#endif
 
     return proc;
 }
@@ -249,6 +254,9 @@ proc_destroy(struct LFILinuxProc *proc)
     }
     free(proc->dynsym.data);
     free(proc->dynstr.data);
+#ifndef SYS_MINIMAL
+    futexes_free(proc->futexes);
+#endif
     lfi_box_free(proc->box);
     free(proc->interp_path);
     free(proc->prog_path);

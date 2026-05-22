@@ -2,6 +2,7 @@
 
 #include "futex.h"
 #include "linux.h"
+#include "list.h"
 
 #include <pthread.h>
 #include <stddef.h>
@@ -83,8 +84,9 @@ struct LFILinuxProc {
     // Current working directory.
     struct Dir cwd;
 
-    // Futexes for this process.
-    struct Futexes futexes;
+    // Futex backend state for this process. May be null if a native API is
+    // used (Linux/macOS).
+    struct Futexes *futexes;
 
     // Total number of threads this proc has spawned (cumulative).
     _Atomic(int) total_thread_count;

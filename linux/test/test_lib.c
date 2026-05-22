@@ -3,6 +3,7 @@
 #include "test.h"
 
 #include <assert.h>
+#include <inttypes.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -127,7 +128,7 @@ main(int argc, const char **argv)
     int result = lfi_thread_run(t);
     assert(result == 0);
 
-    printf("hello address: %lx\n", lfi_proc_sym(proc, "hello"));
+    printf("hello address: %" PRIx64 "\n", (uint64_t) lfi_proc_sym(proc, "hello"));
 
     LFI_INVOKE(lfi_proc_box(proc), lfi_thread_ctxp(t),
         lfi_proc_sym(proc, "hello"), void, (void) );

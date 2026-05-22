@@ -51,6 +51,7 @@ typedef int64_t linux_time_t;
 #define LINUX_EINVAL               22
 #define LINUX_EMFILE               24
 #define LINUX_ENOSYS               38
+#define LINUX_ETIMEDOUT            110
 
 #define LINUX_MAP_SHARED           1
 #define LINUX_MAP_PRIVATE          2

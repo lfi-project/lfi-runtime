@@ -65,13 +65,6 @@ if compiler.compiles('''#include <sys/syscall.h>
 ''')
   defines += '-DHAVE_SYS_GETDENTS64'
 endif
-if compiler.compiles('''#include <sys/syscall.h>
-#ifndef SYS_futex
-#error "no SYS_futex"
-#endif
-''')
-  defines += '-DHAVE_SYS_FUTEX'
-endif
 if compiler.has_function('memfd_create', prefix : '''#define _GNU_SOURCE
 #include <sys/mman.h>''')
   defines += '-DHAVE_MEMFD_CREATE'
