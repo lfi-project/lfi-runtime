@@ -172,7 +172,7 @@ struct LFILinuxThread {
 
     // Set to true when sys_exit or sys_exit_group is called. If called again
     // while already exited, abort() is called instead of ctx_exit.
-    bool exited;
+    _Atomic(bool) exited;
 };
 
 #ifdef __cplusplus

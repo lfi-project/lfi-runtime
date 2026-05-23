@@ -37,10 +37,9 @@ sys_exit(struct LFILinuxThread *t, int code)
 
     // If already exited (e.g., after a pause in library mode), abort instead
     // of calling ctx_exit again.
-    if (t->exited) {
+    if (atomic_exchange_explicit(&t->exited, true, memory_order_acq_rel)) {
         abort();
     }
-    t->exited = true;
 
     {
         LOCK_WITH_DEFER(&t->proc->lk_threads, lk_threads);

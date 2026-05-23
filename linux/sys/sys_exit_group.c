@@ -2,6 +2,7 @@
 #include "sys/sys.h"
 
 #include <signal.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -10,10 +11,9 @@ sys_exit_group(struct LFILinuxThread *t, int code)
 {
     // If already exited (e.g., after a pause in library mode), abort instead
     // of calling ctx_exit again.
-    if (t->exited) {
+    if (atomic_exchange_explicit(&t->exited, true, memory_order_acq_rel)) {
         abort();
     }
-    t->exited = true;
 
     // TODO: consider only allowing the main thread to perform exit_group.
     {
@@ -30,7 +30,8 @@ sys_exit_group(struct LFILinuxThread *t, int code)
                 pthread_cond_wait(&child->cond_ready, &child->lk_ready);
             unlock(&child->lk_ready);
 
-            child->exited = true;
+            atomic_store_explicit(&child->exited, true,
+                memory_order_release);
             LOG(t->proc->engine, "killing thread %d", child->tid);
             // TODO: check if thread actually exited?
             pthread_kill(*child->pthread, SIGLFI);
