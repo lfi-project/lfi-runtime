@@ -168,6 +168,18 @@ inline thread_local LFIContext** last_ctxp = nullptr;
 // Monotonic counter for assigning Sandbox<LFI> ids.
 inline std::atomic<uint64_t> sandbox_id_counter{1};
 
+struct ThreadAttachment {
+    Sandbox<LFI>* sandbox;
+    std::thread::id id;
+};
+
+struct ThreadCleanup {
+    std::vector<ThreadAttachment> attachments;
+    ~ThreadCleanup();
+};
+
+inline thread_local ThreadCleanup tls_cleanup;
+
 } // namespace detail
 
 // Process-global LFI engine manager. Optionally call init() before creating
@@ -479,6 +491,13 @@ public:
 
     LFIBox* native_handle() const { return box_; }
     LFILinuxProc* proc() const { return proc_; }
+
+    // Erase the per-thread context entry for the given host thread. Called
+    // from detail::ThreadCleanup::~ThreadCleanup when a host thread exits.
+    void cleanup_thread_exited(std::thread::id id) {
+        std::lock_guard<std::mutex> lock(thread_ctx_mutex_);
+        thread_ctxs_.erase(id);
+    }
 
 private:
     std::vector<void*> idmem_allocations_;

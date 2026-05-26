@@ -1,6 +1,14 @@
 #include "sbox/lfi.h"
 
+#include <algorithm>
+
 namespace sbox {
+
+detail::ThreadCleanup::~ThreadCleanup() {
+    for (auto& a : attachments) {
+        a.sandbox->cleanup_thread_exited(a.id);
+    }
+}
 
 bool LFIManager::init(size_t n) {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -152,8 +160,13 @@ LFIContext** Sandbox<LFI>::get_thread_ctx() {
     std::lock_guard<std::mutex> lock(thread_ctx_mutex_);
     auto id = std::this_thread::get_id();
     auto [it, inserted] = thread_ctxs_.try_emplace(id, nullptr);
-    if (inserted && main_thread_tid_ == id)
-        it->second = *lfi_thread_ctxp(main_thread_);
+    if (inserted) {
+        if (main_thread_tid_ == id) {
+            it->second = *lfi_thread_ctxp(main_thread_);
+        } else {
+            detail::tls_cleanup.attachments.push_back({this, id});
+        }
+    }
 
     detail::last_sandbox_id = id_;
     detail::last_ctxp = &it->second;
@@ -233,6 +246,11 @@ void Sandbox<LFI>::detach_thread() {
         std::lock_guard<std::mutex> lock(thread_ctx_mutex_);
         thread_ctxs_.erase(std::this_thread::get_id());
     }
+    auto& a = detail::tls_cleanup.attachments;
+    a.erase(std::remove_if(a.begin(), a.end(),
+                [this](const detail::ThreadAttachment& x) {
+                    return x.sandbox == this;
+                }), a.end());
     if (detail::last_sandbox_id == id_) {
         detail::last_sandbox_id = 0;
         detail::last_ctxp = nullptr;
