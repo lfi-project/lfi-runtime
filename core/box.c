@@ -139,12 +139,15 @@ lfi_box_new(struct LFIEngine *engine)
     assert(r == 0);
 #endif
 
+    size_t min_off = BOX_INTERNAL_GUARD > engine->opts.pagesize
+        ? BOX_INTERNAL_GUARD
+        : engine->opts.pagesize;
     *box = (struct LFIBox) {
         .pkey = pkey,
         .base = base,
         .size = size,
         .engine = engine,
-        .min = base + engine->opts.pagesize,
+        .min = base + min_off,
         .max = base + size - BOX_INTERNAL_GUARD,
         .max_exec = base + size - BOX_INTERNAL_GUARD,
     };
