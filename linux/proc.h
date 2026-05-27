@@ -144,6 +144,7 @@ struct LFILinuxProc {
 
     // Per-signal handler table.
     struct SigActionEntry signals[LINUX_NSIG];
+    pthread_mutex_t lk_signals;
 };
 
 struct LFILinuxThread {

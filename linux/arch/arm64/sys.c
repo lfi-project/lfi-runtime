@@ -2,6 +2,7 @@
 
 #include "arch_sys.h"
 #include "lfi_arch.h"
+#include "lfi_core.h"
 #include "linux.h"
 #include "proc.h"
 
@@ -22,5 +23,8 @@ bool
 arch_forward_signal(struct LFIContext *ctx, int sig, siginfo_t *si,
     void *ucontext)
 {
-    assert(!"unimplemented");
+    struct LFILinuxThread *t = lfi_ctx_data(ctx);
+    assert(t && t->proc);
+    LOG(t->proc->engine, "warning: signal forwarding is not supported in this architecture");
+    return false;
 }

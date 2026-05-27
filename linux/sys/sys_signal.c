@@ -15,6 +15,7 @@ sys_rt_sigaction(struct LFILinuxThread *t, int sig, lfiptr actp, lfiptr oldp,
         return -LINUX_EINVAL;
     }
 
+    LOCK_WITH_DEFER(&t->proc->lk_signals, lk_signals);
     // Write old action if requested.
     if (oldp) {
         void *ob = bufhost(t, oldp, sizeof(struct SigAction),
