@@ -1,5 +1,6 @@
 #pragma once
 
+#include <signal.h>
 #include "arch_types.h"
 #include "lfi_linux.h"
 #include "log.h"
@@ -9,6 +10,12 @@
 struct LFILinuxEngine {
     struct LFIEngine *engine;
     struct LFILinuxOptions opts;
+
+#ifndef SYS_MINIMAL
+    struct sigaction oldact_sigsegv;
+    struct sigaction oldact_sigill;
+    struct sigaction oldact_sigbus;
+#endif
 };
 
 struct Dirent {

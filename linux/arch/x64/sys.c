@@ -6,6 +6,7 @@
 #include "lfi_core.h"
 #include "linux.h"
 #include "proc.h"
+#include "lock.h"
 
 #include <assert.h>
 #include <sys/ucontext.h>
@@ -61,6 +62,8 @@ arch_forward_signal(struct LFIContext *ctx, int sig, siginfo_t *si,
         return false;
     if (sig < 1 || sig >= LINUX_NSIG)
         return false;
+
+    LOCK_WITH_DEFER(&t->proc->lk_signals, lk_signals);
     if (!t->proc->signals[sig].valid)
         return false;
 
@@ -110,10 +113,15 @@ arch_forward_signal(struct LFIContext *ctx, int sig, siginfo_t *si,
     sp -= kRedzoneSize; // skip redzone
     sp = ROUNDDOWN(sp, 16);
     sp -= sizeof(sf);
+    if (!lfi_box_ptrvalid(t->proc->box, sp)) {
+        ERROR("%s: signal handler may access memory outside sandbox region.!\n", __PRETTY_FUNCTION__);
+        return false;
+    }
     assert((sp & 15) == 8);
 
     put64(sf.ret, sighand.restorer);
-    put64(sf.uc.fpstate, sp + offsetof(struct SigFrame, fp));
+    // TODO: zero until we support fpstate.
+    put64(sf.uc.fpstate, 0);
 
     lfi_box_copyto(t->proc->box, sp, &sf, sizeof(sf));
 
@@ -127,7 +135,7 @@ arch_forward_signal(struct LFIContext *ctx, int sig, siginfo_t *si,
     uintptr_t saved_host_sp = regs->host_sp;
 
     // Run the sandbox signal handler. Returns when the handler calls
-    // rt_sigreturn, which invokes lfi_ctx_exit.
+    // rt_sigreturn, which invokes lfi_ctx_exit. siglongjmp is not supported.
     lfi_ctx_run(ctx, sighand.handler);
 
     regs->host_sp = saved_host_sp;
