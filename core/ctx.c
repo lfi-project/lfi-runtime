@@ -75,7 +75,11 @@ lfi_ctx_set_tp(struct LFIContext *ctx, uint64_t tp)
 # if defined(LFI_ARCH_ARM64)
     ctx->regs.x25 = (uint64_t) &ctx->ctxreg[0];
 # elif defined(LFI_ARCH_X64)
+#  ifndef GS_CONTEXT
+    // In gs-context mode the %gs base already points at the ctxreg array, so
+    // updating the thread-pointer slot above is sufficient; r15 is free.
     ctx->regs.r15 = (uint64_t) &ctx->ctxreg[0];
+#  endif
 # else
 # error "CTXREG: architecture not supported"
 # endif

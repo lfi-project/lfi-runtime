@@ -27,6 +27,14 @@ lfi_ctx_entry:
     write_ctx %rdi
 #endif
 
+#ifdef GS_CONTEXT
+    // Point the %gs base at this context's ctxreg array, so sandbox code reads
+    // the thread pointer from %gs and the runtime looks up the context from
+    // %gs. %rdi still holds the context here, and %rax is loaded below.
+    leaq CTX_CTXREG(%rdi), %rax
+    wrgsbase %rax
+#endif
+
     // load all registers
     movq REGS_RSP(%rdi), %rsp
     movq REGS_RAX(%rdi), %rax
@@ -169,6 +177,11 @@ lfi_syscall_entry:
 # ifndef SEGUE_SINGLE_SANDBOX
     wrgsbase %REG_BASE
 # endif
+#elif defined(GS_CONTEXT)
+    // Restore the %gs base in case the syscall handler entered another sandbox.
+    // %rcx still holds the context; %rax is reloaded just below.
+    leaq CTX_CTXREG(%rcx), %rax
+    wrgsbase %rax
 #endif
 
     // restore registers

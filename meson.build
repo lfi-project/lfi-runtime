@@ -123,10 +123,22 @@ endif
 if get_option('sys_minimal')
   defines += '-DSYS_MINIMAL'
 endif
-if get_option('ctxreg')
+# gs-context addresses the context register file through the %gs base instead
+# of r15, but relies on the same ctxreg array layout, so it pulls in the CTXREG
+# machinery and offsets.
+if get_option('ctxreg') or get_option('enable_gs_context')
   defines += '-DCTXREG'
   defines += '-DCTXREG_CTX_OFFSET=@0@'.format(get_option('ctxreg_ctx_offset'))
   defines += '-DCTXREG_TP_OFFSET=@0@'.format(get_option('ctxreg_tp_offset'))
+endif
+if get_option('enable_large_sandbox')
+  defines += '-DLARGE_SANDBOX'
+endif
+if get_option('enable_gs_context')
+  if get_option('enable_segue')
+    error('enable_gs_context is incompatible with enable_segue: the %gs base holds the context register file, so it cannot also hold the sandbox base')
+  endif
+  defines += '-DGS_CONTEXT'
 endif
 
 if not meson.is_subproject()

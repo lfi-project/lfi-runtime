@@ -90,6 +90,11 @@
 # ifndef SEGUE_SINGLE_SANDBOX
     wrgsbase %REG_BASE
 # endif
+#elif defined(GS_CONTEXT)
+    // Restore the %gs base in case the callback entered another sandbox. %r11
+    // holds the context; %r10 is reloaded just below.
+    leaq CTX_CTXREG(%r11), %r10
+    wrgsbase %r10
 #endif
 
     // Set the sandbox thread control block to the context pointer.

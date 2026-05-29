@@ -93,6 +93,10 @@ _Static_assert(offsetof(struct LFIContext, abort_callback) == CTX_ABORT_CALLBACK
     "incorrect abort_callback offset");
 _Static_assert(offsetof(struct LFIContext, abort_status) == CTX_ABORT_STATUS,
     "incorrect abort_callback offset");
+#ifdef CTXREG
+_Static_assert(offsetof(struct LFIContext, ctxreg) == CTX_CTXREG,
+    "incorrect ctxreg offset");
+#endif
 
 #elif defined(LFI_ARCH_RISCV64)
 

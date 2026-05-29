@@ -109,10 +109,22 @@
 
 #define CTX_ABORT_CALLBACK 448
 #define CTX_ABORT_STATUS   456
+// Byte offset of the ctxreg array within struct LFIContext (used in gs-context
+// mode to point the %gs base at the array). Asserted in arch_asm.c.
+#define CTX_CTXREG         464
 
 // clang-format off
 #ifdef __ASSEMBLER__
-#ifdef CTXREG
+#ifdef GS_CONTEXT
+// In gs-context mode the %gs base points to the ctxreg array, so the context
+// pointer is read from %gs:CTXREG_CTX_OFFSET. r15 is a free general register.
+.macro get_ctx reg
+    movq %gs:CTXREG_CTX_OFFSET, \reg
+.endm
+
+.macro write_ctx reg
+.endm
+#elif defined(CTXREG)
 // With CTXREG, r15 points to the ctxreg array and ctxreg[0] holds the context pointer.
 .macro get_ctx reg
     movq CTXREG_CTX_OFFSET(%r15), \reg

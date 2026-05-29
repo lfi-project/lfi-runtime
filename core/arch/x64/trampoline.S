@@ -233,16 +233,22 @@ lfi_trampoline_direct:
     addq %REG_BASE, %r11
 
     movq (%r13), %r13
-#ifndef CTXREG
+#if defined(GS_CONTEXT)
+    // Point the %gs base at the ctxreg array. r15 is a free register in this
+    // mode, so use it as scratch and clear it before entering the sandbox.
+    leaq CTX_CTXREG(%r13), %r15
+    wrgsbase %r15
+    xorl %r15d, %r15d
+#elif defined(CTXREG)
+    // load ctxreg pointer for the sandbox
+    movq REGS_R15(%r13), %r15
+#else
     // set the sandbox thread control block by saving the old value of
     // %fs:TLS_SLOT_LFI into the context and setting it to point to the context
     // itself
     get_ctx %r12
     movq %r12, REGS_HOST_TP(%r13)
     write_ctx %r13
-#else
-    // load ctxreg pointer for the sandbox
-    movq REGS_R15(%r13), %r15
 #endif
 
 #ifndef STORES_ONLY

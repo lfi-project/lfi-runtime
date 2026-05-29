@@ -90,3 +90,13 @@ option('ctxreg_tp_offset',
   max: 56,
   value: 16,
   description: 'byte offset of the thread pointer within the ctxreg array (must be a multiple of 8)')
+
+option('enable_large_sandbox',
+  type: 'boolean',
+  value: false,
+  description: 'enable the large sandbox scheme')
+
+option('enable_gs_context',
+  type: 'boolean',
+  value: false,
+  description: 'use %gs for thread-local context (incompatible with segue)')
