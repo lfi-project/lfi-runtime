@@ -144,6 +144,9 @@ lfi_syscall_entry:
     stp x14, x15, [REG_BASE, REGS_X(14)]
     stp x16, x17, [REG_BASE, REGS_X(16)]
     str x18, [REG_BASE, REGS_X(18)]
+#ifdef LARGE_SANDBOX
+    str REG_OFFSET, [REG_BASE, REGS_OFFSET]
+#endif
     str REG_ADDR, [REG_BASE, REGS_ADDR]
     mov x1, sp
     stp x30, x1,  [REG_BASE, REGS_X(30)]
@@ -193,6 +196,9 @@ lfi_syscall_entry:
     ldp x14, x15, [x0, REGS_X(14)]
     ldp x16, x17, [x0, REGS_X(16)]
     ldr x18, [x0, REGS_X(18)]
+#ifdef LARGE_SANDBOX
+    ldr REG_OFFSET, [x0, REGS_OFFSET]
+#endif
     ldr REG_ADDR, [x0, REGS_ADDR]
     ldr REG_BASE, [x0, REGS_BASE]
     ldp x30, x1,  [x0, REGS_X(30)]

@@ -10,11 +10,16 @@ lfi_ctx_regs_init(struct LFIContext *ctx)
     ctx->regs.pkey = ctx->box->pkey;
     ctx->regs.fcw = 0x37f;
     ctx->regs.mxcsr = 0x1f80;
+#ifdef LARGE_SANDBOX
+    ctx->regs.REG_MASK = ctx->box->size - 1;
+    ctx->regs._tp = 0;
+#else
 #ifdef CTXREG
     ctx->regs.r15 = (uint64_t) ctx->ctxreg;
     ctx->ctxreg[CTXREG_CTX_OFFSET / 8] = (uint64_t) ctx;
 #else
     ctx->regs.r15 = 0x00000000ffffffff;
+#endif
 #endif
 }
 
