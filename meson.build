@@ -122,6 +122,9 @@ if get_option('single_sandbox')
 endif
 if get_option('large_sandbox')
   defines += '-DLARGE_SANDBOX'
+  if cpu == 'aarch64'
+    defines += '-DLARGE_SANDBOX_BITS=@0@'.format(get_option('large_sandbox_bits'))
+  endif
 endif
 if get_option('sys_minimal')
   defines += '-DSYS_MINIMAL'

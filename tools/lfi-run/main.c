@@ -152,12 +152,16 @@ main(int argc, char **argv)
 
     struct LFIEngine *engine = lfi_new(
         (struct LFIOptions) {
+#ifdef LARGE_SANDBOX
+            .boxsize = 1UL << (LARGE_SANDBOX_BITS),
+#else
             .boxsize = gb(4),
+#endif
             .pagesize = pagesize > 0 ? pagesize : getpagesize(),
             .no_verify = !verify,
             .verbose = verbose,
         },
-        4);
+        1);
     if (!engine) {
         fprintf(stderr, "failed to create LFI engine: %s\n", lfi_errmsg());
         exit(1);
