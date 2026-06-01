@@ -76,7 +76,7 @@ boxmap_active(struct BoxMap *map)
 }
 
 enum {
-    RESERVE_FORBID_BIT = 48,
+    RESERVE_FORBID_BIT = 47,
     // Maximum number of hinted retries at a given size before shrinking the
     // request.
     RESERVE_MAX_RETRY = 64,
