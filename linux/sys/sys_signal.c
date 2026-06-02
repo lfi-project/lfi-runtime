@@ -53,15 +53,18 @@ sys_rt_sigaction(struct LFILinuxThread *t, int sig, lfiptr actp, lfiptr oldp,
         LOG(t->proc->engine, "rt_sigaction: handler is invalid!\n");
         return -LINUX_EINVAL;
     }
+#if defined(__x86_64__)
     if ((act->handler & 0x1f) != 0) {
         LOG(t->proc->engine, "rt_sigaction: handler is not bundle aligned!\n");
         return -LINUX_EINVAL;
     }
+#endif
 
     if (!lfi_box_ptrvalid(t->proc->box, act->restorer)) {
         LOG(t->proc->engine, "rt_sigaction: restorer is invalid!\n");
         return -LINUX_EINVAL;
     }
+#if defined(__x86_64__)
     // NOTE: upstream musl restorer is intentionally not aligned.
     if ((act->restorer & 0x1f) != 0) {
         LOG(t->proc->engine,
@@ -69,11 +72,12 @@ sys_rt_sigaction(struct LFILinuxThread *t, int sig, lfiptr actp, lfiptr oldp,
             act->restorer);
         return -LINUX_EINVAL;
     }
+#endif
 
     t->proc->signals[sig].entry = *act;
     t->proc->signals[sig].valid = true;
 
-    LOG(t->proc->engine, "rt_sigaction (%d): handler: %lx", sig, act->handler);
+    LOG(t->proc->engine, "rt_sigaction (%d): handler: %lx, restorer: %lx", sig, act->handler, act->restorer);
     LOG(t->proc->engine, "sa_flags: %lx", act->flags);
 
     return 0;
