@@ -79,28 +79,6 @@ syssetup(struct LFIBox *box)
 #endif
     box->sys->rtcalls[n - 4] = (uintptr_t) &lfi_ret;
 
-    if (!box->engine->opts.no_rtcall_nullpage) {
-        // Also map the rtcall page at the nullpage, for compatibility with old
-        // rewriters.
-        void *null_page = mmap((void *) box->base, pagesize,
-            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1,
-            0);
-        assert(null_page == (void *) box->base);
-
-        struct Sys *null_rtcall = (struct Sys *) null_page;
-
-        null_rtcall->rtcalls[0] = (uintptr_t) &lfi_syscall_entry;
-#ifndef SYS_MINIMAL
-        null_rtcall->rtcalls[1] = (uintptr_t) &lfi_get_tp;
-        null_rtcall->rtcalls[2] = (uintptr_t) &lfi_set_tp;
-#endif
-        null_rtcall->rtcalls[3] = (uintptr_t) &lfi_ret;
-
-        int r2 = protectmem((void *) box->base, pagesize, PROT_READ,
-            box->pkey);
-        assert(r2 == 0);
-    }
-
     // Map read-only.
     int r = protectmem(box->sys_page, box->engine->opts.pagesize, PROT_READ,
         box->pkey);
@@ -537,7 +515,7 @@ lfi_box_p2l(struct LFIBox *box, uintptr_t p)
 #if defined(LFI_ARCH_ARM64)
 
 static uint8_t ret[] = {
-    0x7e, 0x0f, 0x40, 0xf9, // ldr x30, [x27, #24]
+    0x7e, 0x03, 0x5e, 0xf8, // ldr x30, [x27, #-32]
     0xc0, 0x03, 0x3f, 0xd6, // blr x30
 };
 
@@ -545,13 +523,13 @@ static uint8_t ret[] = {
 
 static uint8_t ret[] = {
     0x4c, 0x8d, 0x1d, 0x04, 0x00, 0x00, 0x00, // lea 0x4(%rip), %r11
-    0x41, 0xff, 0x66, 0x18,                   // jmp *0x18(%r14)
+    0x41, 0xff, 0x66, 0xe0,                   // jmp *-0x20(%r14)
 };
 
 #elif defined(LFI_ARCH_RISCV64)
 
 static uint8_t ret[] = {
-    0x83, 0xb0, 0x8a, 0x01, // la ra, 24(x21)
+    0x83, 0xb0, 0x0a, 0xfe, // la ra, -32(x21)
     0xe7, 0x80, 0x00, 0x00, // jalr ra
 };
 

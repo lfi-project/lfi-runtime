@@ -50,7 +50,6 @@ bool LFIManager::create(size_t n) {
             .no_verify = false,
             .allow_wx = false,
             .no_init_sigaltstack = false,
-            .no_rtcall_nullpage = false,
         },
         n);
     if (!engine_) {
