@@ -147,6 +147,10 @@ lfi_box_data(struct LFIBox *box);
 struct LFIBoxInfo
 lfi_box_info(struct LFIBox *box);
 
+// Verify a jitcode compilation unit
+bool
+lfi_jitcode_verify(struct LFIBox *box, uintptr_t base, size_t size);
+
 // Creates a new memory mapping in the sandbox at 'addr'. Returns -1 on
 // failure. May run the verifier for executable pages. Disallows shared
 // mappings to prevent double mapping pages as W and X.
