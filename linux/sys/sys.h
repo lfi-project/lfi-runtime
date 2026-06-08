@@ -330,7 +330,7 @@ sys_jitcode_create2(struct LFILinuxThread *t, lfiptr addrp, lfiptr headerp,
 
 int
 sys_jitcode_modify(struct LFILinuxThread *t, lfiptr addrp, size_t valp,
-    size_t length, size_t halt_pad_offset);
+    size_t length);
 
 int
 sys_jitcode_delete(struct LFILinuxThread *t, lfiptr addrp, size_t length);

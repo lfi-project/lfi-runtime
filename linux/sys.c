@@ -64,7 +64,7 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
     LFI(jitcode_create2,
             sys_jitcode_create2(t, a0, a1, a2, a3, a4))
     LFI(jitcode_modify,
-            sys_jitcode_modify(t, a0, a1, a2, a3))
+            sys_jitcode_modify(t, a0, a1, a2))
     LFI(jitcode_delete,
             sys_jitcode_delete(t, a0, a1))
     LFI(jitcode_commit,

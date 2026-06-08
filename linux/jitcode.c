@@ -192,45 +192,35 @@ proc_jit_create2(struct LFILinuxProc *p, lfiptr dst, uint8_t *header,
 
 int
 proc_jit_modify(struct LFILinuxProc *p, lfiptr src, size_t value,
-    size_t patch_len, size_t halt_pad_offset)
+    size_t patch_len)
 {
     LOCK_WITH_DEFER(&p->lk_box, lk_box);
     if (p->jit_base == 0)
         return -LINUX_EINVAL;
 
-    size_t bundle_mask = 0xffffffffffffffe0UL;
-    size_t patch_offset = src & ~bundle_mask;
-    lfiptr dst = src & bundle_mask;
-
-    // Patch must not span two bundles.
-    if (dst != ((src + patch_len - 1) & bundle_mask))
+    // Patch must be instruction aligned
+    if (src % 4 != 0 || patch_len % 4 != 0)
         return -LINUX_EINVAL;
 
-    size_t size = 32;
+    lfiptr dst = src;
 
-    // Halt pad cannot go beyond start of bundle
-    if (halt_pad_offset > size || halt_pad_offset > patch_offset)
-        halt_pad_offset = patch_offset;
-
-    if (!jit_codebufvalid(p, dst, size))
+    if (!jit_codebufvalid(p, dst, patch_len))
         return -LINUX_EINVAL;
 
     struct LFIEngine *engine = p->engine->engine;
 
     size_t pagesize = lfi_opts(engine).pagesize;
     lfiptr base = truncp(dst, pagesize);
-    size_t len = ceilp(dst + size - base, pagesize);
+    size_t len = ceilp(dst + patch_len - base, pagesize);
 
     if (lfi_box_mprotect_noverify(p->box, base, len, LFI_PROT_NONE) < 0)
         return -1;
 
     uint8_t *jit_addr = jit_get_aliasptr(p, dst);
-    if (halt_pad_offset)
-        memset(jit_addr + patch_offset - halt_pad_offset, 0xf4, halt_pad_offset);
-    memcpy(jit_addr + patch_offset, &value, patch_len);
+    memcpy(jit_addr, &value, patch_len);
 
     // Verify only the jitcode compilation unit
-    if (!lfi_jitcode_verify(p->box, (uintptr_t)jit_addr, size)) {
+    if (!lfi_jitcode_verify(p->box, (uintptr_t)jit_addr, patch_len)) {
         lfi_box_munmap(p->box, base, len);
         return -1;
     }
@@ -250,7 +240,7 @@ proc_jit_delete(struct LFILinuxProc *p, lfiptr addrp, size_t length)
         return -LINUX_EINVAL;
     if (!jit_codebufvalid(p, addrp, length))
       return -1;
-    memset(jit_get_aliasptr(p, addrp), 0xcc, length);
+    memset(jit_get_aliasptr(p, addrp), 0x00, length);
     return 0;
 }
 
@@ -260,7 +250,7 @@ proc_jit_commit(struct LFILinuxProc *p, lfiptr addrp, size_t length)
     LOCK_WITH_DEFER(&p->lk_box, lk_box);
     if (!jit_codebufvalid(p, addrp, length))
       return -1;
-    memset(jit_get_aliasptr(p, addrp), 0xcc, length);
+    memset(jit_get_aliasptr(p, addrp), 0x00, length);
     return lfi_box_mprotect_noverify(p->box, addrp, length,
         LFI_PROT_READ | LFI_PROT_EXEC);
 }

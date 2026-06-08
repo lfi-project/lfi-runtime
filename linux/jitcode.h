@@ -24,7 +24,7 @@ proc_jit_create2(struct LFILinuxProc *p, lfiptr dst, uint8_t *header,
 
 int
 proc_jit_modify(struct LFILinuxProc *p, lfiptr src, size_t value,
-    size_t patch_len, size_t halt_pad);
+    size_t patch_len);
 
 int
 proc_jit_delete(struct LFILinuxProc *p, lfiptr addrp, size_t length);
