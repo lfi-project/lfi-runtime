@@ -76,6 +76,10 @@ struct LFIContext {
     // Set to 1 if the most recent callback was aborted.
     uint64_t abort_status;
 
+#ifdef SEGUE_CACHE_GS
+    uintptr_t *gs_cache;
+#endif
+
 #ifdef CTXREG
     // Context register storage. The first slot holds a pointer to this
     // LFIContext, and remaining slots are available for thread-local data

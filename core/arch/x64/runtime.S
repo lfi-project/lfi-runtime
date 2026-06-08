@@ -42,6 +42,9 @@ lfi_ctx_entry:
     movq REGS_R12(%rdi), %r12
     movq REGS_R13(%rdi), %r13
     movq REGS_R14(%rdi), %r14
+#ifdef ENABLE_SEGUE
+    seg_gs_set %rdi, %r15
+#endif
     movq REGS_R15(%rdi), %r15
     fldcw REGS_FCW(%rdi)
     ldmxcsr REGS_MXCSR(%rdi)
@@ -56,9 +59,6 @@ lfi_ctx_entry:
     movq REGS_RDI(%rdi), %rdi
 #endif
 
-#ifdef ENABLE_SEGUE
-    wrgsbase %REG_BASE
-#endif
     // zero vector registers
     xorps %xmm0, %xmm0
     xorps %xmm1, %xmm1
@@ -163,12 +163,8 @@ lfi_syscall_entry:
     write_ctx %rcx
 #endif
 
-    // NOTE: consider removing this entirely if we can assume that syscall
-    // execution never modifies %gs (i.e., never calls into another sandbox).
 #ifdef ENABLE_SEGUE
-# ifndef SEGUE_SINGLE_SANDBOX
-    wrgsbase %REG_BASE
-# endif
+    seg_gs_set %rcx, %rax
 #endif
 
     // restore registers

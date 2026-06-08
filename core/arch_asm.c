@@ -94,6 +94,11 @@ _Static_assert(offsetof(struct LFIContext, abort_callback) == CTX_ABORT_CALLBACK
 _Static_assert(offsetof(struct LFIContext, abort_status) == CTX_ABORT_STATUS,
     "incorrect abort_callback offset");
 
+#ifdef SEGUE_CACHE_GS
+_Static_assert(offsetof(struct LFIContext, gs_cache) == CTX_GS_CACHE,
+    "incorrect gs_cache offset");
+#endif
+
 #elif defined(LFI_ARCH_RISCV64)
 
 _Static_assert(offsetof(struct LFIRegs, zero) == REGS_ZERO,
@@ -174,4 +179,6 @@ _Static_assert(offsetof(struct LFIInvokeInfo, ctx) == INVOKE_CTX,
 _Static_assert(offsetof(struct LFIInvokeInfo, targetfn) == INVOKE_TARGETFN,
     "incorrect INVOKE offset");
 _Static_assert(offsetof(struct LFIInvokeInfo, box) == INVOKE_BOX,
+    "incorrect INVOKE offset");
+_Static_assert(offsetof(struct LFIInvokeInfo, gs_base) == INVOKE_GS_BASE,
     "incorrect INVOKE offset");

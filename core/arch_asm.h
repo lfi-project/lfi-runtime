@@ -109,6 +109,8 @@
 
 #define CTX_ABORT_CALLBACK 448
 #define CTX_ABORT_STATUS   456
+// Offset of the gs_cache pointer (only present when SEGUE_CACHE_GS is enabled).
+#define CTX_GS_CACHE       464
 
 // clang-format off
 #ifdef __ASSEMBLER__
@@ -129,6 +131,37 @@
     movq \reg, %fs:(8*TLS_SLOT_LFI)
 .endm
 #endif
+
+// Load the sandbox base (%REG_BASE) into the %gs base register for Segue.
+//
+// Without SEGUE_CACHE_GS this unconditionally executes wrgsbase on every
+// transition into a sandbox. The wrgsbase instruction is slow, so with
+// SEGUE_CACHE_GS we instead keep a per-thread cache of the base currently held
+// in %gs and only execute wrgsbase when entering a sandbox with a different
+// base than the one already loaded. This makes repeated transitions into the
+// same sandbox cheap while still supporting multiple sandboxes. The cache is
+// correct as long as %gs is only ever modified through these LFI transitions
+// (i.e. the host itself never clobbers the %gs base).
+//
+// The cache value lives in a per-thread thread_local slot
+// (lfi_invoke_info.gs_base), but to avoid any TLS access from the transition
+// fast paths each context stores a pointer to its running thread's slot in
+// ctx->gs_cache. The trampoline (which already resolves lfi_invoke_info) and
+// lfi_ctx_run set up that pointer. Here we simply load it and compare. ctx is
+// a register holding the LFIContext pointer and scratch is a register free to
+// clobber at the call site. Both are unused when SEGUE_CACHE_GS is disabled.
+.macro seg_gs_set ctx scratch
+#ifdef SEGUE_CACHE_GS
+    movq CTX_GS_CACHE(\ctx), \scratch
+    cmpq %REG_BASE, (\scratch)
+    je .Lseg_gs_skip\@
+    wrgsbase %REG_BASE
+    movq %REG_BASE, (\scratch)
+.Lseg_gs_skip\@:
+#else
+    wrgsbase %REG_BASE
+#endif
+.endm
 
 // Allow access to all PKU regions.
 .macro pku_all_access
@@ -217,3 +250,4 @@
 #define INVOKE_CTX      0
 #define INVOKE_TARGETFN 8
 #define INVOKE_BOX      16
+#define INVOKE_GS_BASE  24

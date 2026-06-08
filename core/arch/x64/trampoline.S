@@ -117,6 +117,9 @@ lfi_trampoline_struct:
     movq INVOKE_TARGETFN(%r13), %r12
     // Loads a pointer to the context pointer.
     movq INVOKE_BOX(%r13), %r14
+#ifdef SEGUE_CACHE_GS
+    leaq INVOKE_GS_BASE(%r13), %rbx
+#endif
     movq INVOKE_CTX(%r13), %r13
     movq %r13, %r11
 #ifndef CTXREG
@@ -158,6 +161,9 @@ lfi_trampoline:
     movq INVOKE_TARGETFN(%r13), %r12
     // Loads a pointer to the context pointer.
     movq INVOKE_BOX(%r13), %r14
+#ifdef SEGUE_CACHE_GS
+    leaq INVOKE_GS_BASE(%r13), %rbx
+#endif
     movq INVOKE_CTX(%r13), %r13
     movq %r13, %r11
 #ifndef CTXREG
@@ -200,6 +206,11 @@ lfi_trampoline_direct:
 
     lazy_ctx_clone
 
+#ifdef SEGUE_CACHE_GS
+    get_invoke_info %rbx
+    leaq INVOKE_GS_BASE(%rbx), %rbx
+#endif
+
 .lfi_trampoline_common:
     // dummy push to keep the stack aligned
     pushq %rbp
@@ -212,11 +223,11 @@ lfi_trampoline_direct:
     movq REGS_RSP(%r11), %rsp
     // load sandbox base
     movq REGS_BASE(%r11), %REG_BASE
-    // also write base to %gs
 #ifdef ENABLE_SEGUE
-# ifndef SEGUE_SINGLE_SANDBOX
-    wrgsbase %REG_BASE
-# endif
+#ifdef SEGUE_CACHE_GS
+    movq %rbx, CTX_GS_CACHE(%r11)
+#endif
+    seg_gs_set %r11, %rbx
 #endif
 
     // load address of the lfi_retfn function that will make the return rtcall

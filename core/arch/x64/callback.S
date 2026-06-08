@@ -87,9 +87,7 @@
 1:
 
 #ifdef ENABLE_SEGUE
-# ifndef SEGUE_SINGLE_SANDBOX
-    wrgsbase %REG_BASE
-# endif
+    seg_gs_set %r11, %r10
 #endif
 
     // Set the sandbox thread control block to the context pointer.

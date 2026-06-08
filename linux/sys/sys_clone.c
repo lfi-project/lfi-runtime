@@ -184,7 +184,9 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
         // interacts with signals?
         struct LFIInvokeInfo old = lfi_invoke_info;
         threadspawn_fake(p2);
-        lfi_invoke_info = old;
+        lfi_invoke_info.ctx = old.ctx;
+        lfi_invoke_info.targetfn = old.targetfn;
+        lfi_invoke_info.box = old.box;
         new_ctx = p2->ctx;
     } else {
         pthread_t *thread = malloc(sizeof(pthread_t));

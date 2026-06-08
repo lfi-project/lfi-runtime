@@ -24,6 +24,10 @@ lfi_ctx_new(struct LFIBox *box, void *userdata)
         .box = box,
     };
 
+#ifdef SEGUE_CACHE_GS
+    ctx->gs_cache = &lfi_invoke_info.gs_base;
+#endif
+
     lfi_ctx_regs_init(ctx);
 
     return ctx;
@@ -40,6 +44,11 @@ lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
 {
     // Save the ctx in invoke info so it can be retrieved via lfi_cur_ctx.
     lfi_invoke_info.ctx = &ctx;
+#ifdef SEGUE_CACHE_GS
+    // Bind the context's %gs cache slot to this (the running) thread; the
+    // lfi_ctx_entry path does not go through the trampoline.
+    ctx->gs_cache = &lfi_invoke_info.gs_base;
+#endif
     // Enter the sandbox, saving the stack pointer to host_sp.
     int ret = lfi_ctx_entry(ctx, (uintptr_t *) &ctx->regs.host_sp, entry);
     return ret;

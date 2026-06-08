@@ -117,8 +117,15 @@ endif
 if get_option('enable_segue')
   defines += '-DENABLE_SEGUE'
 endif
-if get_option('segue_single_sandbox')
-  defines += '-DSEGUE_SINGLE_SANDBOX'
+if get_option('segue_cache_gs')
+  if not get_option('enable_segue')
+    error('segue_cache_gs requires enable_segue')
+  endif
+  # Only meaningful on x86-64 (Segue uses %gs there). The option also adds a
+  # field to struct LFIContext, so it must not be defined on other architectures.
+  if cpu == 'x86_64'
+    defines += '-DSEGUE_CACHE_GS'
+  endif
 endif
 if get_option('sys_minimal')
   defines += '-DSYS_MINIMAL'

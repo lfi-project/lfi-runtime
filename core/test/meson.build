@@ -10,6 +10,11 @@ if cpu != 'riscv64'
   tests += ['test_trampoline.c', 'test_trampoline_clone.c']
 endif
 
+# Segue (and thus segue_cache_gs) is x86-64 only.
+if cpu == 'x86_64'
+  tests += ['test_segue_multibox.c']
+endif
+
 foreach t : tests
   test(t, executable(
     t + '.elf',

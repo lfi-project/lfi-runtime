@@ -45,17 +45,15 @@ option('stores_only',
   value: false,
   description: 'only sandbox stores -- allows sandboxed programs to read (but not write) outside the sandbox')
 
-# Note: disabling segue or using only one segue sandbox can roughly double the
-# speed of trampolines on x86-64. You can benchmark with test_trampoline.c.
 option('enable_segue',
   type: 'boolean',
   value: true,
   description: 'use %gs for the sandbox base (x86-64 only)')
 
-option('segue_single_sandbox',
+option('segue_cache_gs',
   type: 'boolean',
   value: false,
-  description: 'assume that %gs is never modified by the host, and there is only one sandbox (x86-64 only)')
+  description: 'cache the %gs base per thread and only execute wrgsbase when entering a different sandbox than the one already loaded, avoiding the slow wrgsbase on every transition (x86-64 only; assumes the host never modifies %gs itself)')
 
 option('enable_pku',
   type: 'boolean',
