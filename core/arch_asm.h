@@ -115,6 +115,31 @@
 
 // clang-format off
 #ifdef __ASSEMBLER__
+#ifdef ENABLE_CET
+.macro lfi_cet_note
+.pushsection .note.gnu.property, "a", @note
+.p2align 3
+.long 1f - 0f
+.long 4f - 1f
+.long 5
+0:
+.asciz "GNU"
+1:
+.p2align 3
+.long 0xc0000002
+.long 3f - 2f
+2:
+.long 0x3
+3:
+.p2align 3
+4:
+.popsection
+.endm
+#else
+.macro lfi_cet_note
+.endm
+#endif
+
 #ifdef GS_CONTEXT
 // In gs-context mode the %gs base points to the ctxreg array, so the context
 // pointer is read from %gs:CTXREG_CTX_OFFSET. r15 is a free general register.

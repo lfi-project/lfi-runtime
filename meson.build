@@ -13,6 +13,7 @@ c_args = [
   '-Werror=int-conversion',
   '-fvisibility=hidden',
 ]
+cpp_args = []
 compiler = meson.get_compiler('c')
 has_auto_var_init = compiler.has_argument('-ftrivial-auto-var-init=zero')
 if has_auto_var_init
@@ -76,6 +77,18 @@ endif
 if get_option('enable_pku') and compiler.has_function('pkey_alloc', prefix : '''#define _GNU_SOURCE
 #include <sys/mman.h>''')
   defines += '-DHAVE_PKU'
+endif
+if get_option('enable_cet')
+  if cpu != 'x86_64'
+    error('enable_cet is only supported on x86-64')
+  endif
+  if compiler.has_argument('-fcf-protection=full')
+    c_args += '-fcf-protection=full'
+    cpp_args += '-fcf-protection=full'
+    defines += '-DENABLE_CET'
+  else
+    error('compiler does not support -fcf-protection=full')
+  endif
 endif
 if compiler.compiles('''#include <sys/syscall.h>
 #ifndef SYS_memfd_create
@@ -143,6 +156,7 @@ endif
 
 if not meson.is_subproject()
   add_global_arguments(c_args, language: 'c')
+  add_global_arguments(cpp_args, language: 'cpp')
 endif
 
 subdir('core')
