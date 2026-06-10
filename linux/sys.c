@@ -221,6 +221,10 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
         // Time syscalls.
         SYS(nanosleep,
                 sys_nanosleep(t, a0, a1))
+#ifdef LINUX_SYS_clock_getres
+        SYS(clock_getres,
+                0)
+#endif
         SYS(clock_gettime,
                 sys_clock_gettime(t, a0, a1))
 #ifdef LINUX_SYS_time
