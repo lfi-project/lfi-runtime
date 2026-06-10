@@ -7,7 +7,9 @@
     xorq %r10, %r10
     // skip %r11 (target)
     xorq %r12, %r12
+#ifndef LARGE_SANDBOX
     xorq %r13, %r13
+#endif
     // skip %r14 (base)
 #ifndef CTXREG
     xorq %r15, %r15
@@ -262,6 +264,10 @@ lfi_trampoline_direct:
     pku_box_access REGS_PKEY(%r13)
     movq %rbp, %rdx
     movq %rbx, %rcx
+#endif
+
+#ifdef LARGE_SANDBOX
+    movq REGS_R13(%r13), %r13
 #endif
 
 #ifndef STORES_ONLY
