@@ -22,6 +22,9 @@ lfi_ctx_regs_init(struct LFIContext *ctx)
 #endif
 #ifdef LARGE_SANDBOX
     ctx->regs.r13 = 0x00000000ffffffff;
+# ifdef GS_CONTEXT
+    ctx->regs.r15 = 0x00000000ffffffff;
+# endif
 #endif
 }
 
