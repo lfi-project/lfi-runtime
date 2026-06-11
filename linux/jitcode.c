@@ -53,6 +53,141 @@ jit_get_aliasptr(struct LFILinuxProc *p, lfiptr addr)
     return p->jit_alias + (addr - p->jit_base);
 }
 
+static unsigned dcache_line_size_ = 1;
+static unsigned icache_line_size_ = 1;
+
+uint32_t get_cache_type() {
+#if defined(__aarch64__)
+  uint64_t cache_type_register;
+  // Copy the content of the cache type register to a core register.
+  __asm__ __volatile__ ("mrs %[ctr], ctr_el0"  // NOLINT
+                        : [ctr] "=r" (cache_type_register));
+  // The top bits are reserved, or report information about MTE which currently
+  // we discard. This will likely need to be changed to just return
+  // cache_type_register when we update VIXL next.
+  uint64_t mask = 0xffffffffull;
+  return (uint32_t)(cache_type_register & mask);
+#else
+    return 0;
+#endif
+}
+
+static void
+setup_cache()
+{
+    uint32_t cache_type_register = get_cache_type();
+
+    // The cache type register holds information about the caches, including I
+    // D caches line size.
+    static const int kDCacheLineSizeShift = 16;
+    static const int kICacheLineSizeShift = 0;
+    static const uint32_t kDCacheLineSizeMask = 0xf << kDCacheLineSizeShift;
+    static const uint32_t kICacheLineSizeMask = 0xf << kICacheLineSizeShift;
+
+    // The cache type register holds the size of the I and D caches in words as
+    // a power of two.
+    uint32_t dcache_line_size_power_of_two = (cache_type_register &
+                                                 kDCacheLineSizeMask) >>
+        kDCacheLineSizeShift;
+    uint32_t icache_line_size_power_of_two = (cache_type_register &
+                                                 kICacheLineSizeMask) >>
+        kICacheLineSizeShift;
+
+    dcache_line_size_ = 4 << dcache_line_size_power_of_two;
+    icache_line_size_ = 4 << icache_line_size_power_of_two;
+
+    const uint32_t conservative_line_size = 32;
+    dcache_line_size_ = MIN(dcache_line_size_, conservative_line_size);
+    icache_line_size_ = MIN(icache_line_size_, conservative_line_size);
+}
+
+static inline void flush_icache(void* address, size_t length) {
+#if defined(__aarch64__)
+    if (length == 0) {
+        return;
+    }
+
+    // The code below assumes user space cache operations are allowed.
+
+    // Work out the line sizes for each cache, and use them to determine the
+    // start addresses.
+    uintptr_t start = (uintptr_t)address;
+    uintptr_t dsize = (uintptr_t)dcache_line_size_;
+    uintptr_t isize = (uintptr_t)icache_line_size_;
+    uintptr_t dline = start & ~(dsize - 1);
+    uintptr_t iline = start & ~(isize - 1);
+
+    uintptr_t end = start + length;
+
+    do {
+        __asm__ __volatile__(
+            // Clean each line of the D cache containing the target data.
+            //
+            // dc       : Data Cache maintenance
+            //     c    : Clean
+            //      i   : Invalidate
+            //      va  : by (Virtual) Address
+            //        c : to the point of Coherency
+            // Original implementation used cvau, but changed to civac due to
+            // errata on Cortex-A53 819472, 826319, 827319 and 824069.
+            // See ARM DDI 0406B page B2-12 for more information.
+            //
+            "   dc    civac, %[dline]\n"
+            :
+            : [dline] "r"(dline)
+            // This code does not write to memory, but the "memory" dependency
+            // prevents GCC from reordering the code.
+            : "memory");
+        dline += dsize;
+    } while (dline < end);
+
+    __asm__ __volatile__(
+        // Make sure that the data cache operations (above) complete before the
+        // instruction cache operations (below).
+        //
+        // dsb      : Data Synchronisation Barrier
+        //      ish : Inner SHareable domain
+        //
+        // The point of unification for an Inner Shareable shareability domain
+        // is the point by which the instruction and data caches of all the
+        // processors in that Inner Shareable shareability domain are guaranteed
+        // to see the same copy of a memory location.  See ARM DDI 0406B page
+        // B2-12 for more information.
+        "   dsb   ish\n"
+        :
+        :
+        : "memory");
+
+    do {
+        __asm__ __volatile__(
+            // Invalidate each line of the I cache containing the target data.
+            //
+            // ic      : Instruction Cache maintenance
+            //    i    : Invalidate
+            //     va  : by Address
+            //       u : to the point of Unification
+            "   ic   ivau, %[iline]\n"
+            :
+            : [iline] "r"(iline)
+            : "memory");
+        iline += isize;
+    } while (iline < end);
+
+    __asm__ __volatile__(
+        // Make sure that the instruction cache operations (above) take effect
+        // before the isb (below).
+        "   dsb  ish\n"
+
+        // Ensure that any instructions already in the pipeline are discarded
+        // and reloaded from the new data. isb : Instruction Synchronisation
+        // Barrier
+        "   isb\n"
+        :
+        :
+        : "memory");
+#endif
+}
+
 int
 proc_jit_map(struct LFILinuxProc *p, size_t exec_size, size_t data_size,
     lfiptr *o_addr)
@@ -60,6 +195,8 @@ proc_jit_map(struct LFILinuxProc *p, size_t exec_size, size_t data_size,
     LOCK_WITH_DEFER(&p->lk_box, lk_box);
     if (p->jit_base != 0)
         return -LINUX_EINVAL;
+
+    setup_cache();
 
     int fd = memfd_create("", 0);
     if (fd < 0)
@@ -157,6 +294,8 @@ jit_create_buf(struct LFILinuxProc *p, lfiptr dst, uint8_t *src, size_t length)
         return -1;
     }
 
+    flush_icache(alias_dst, length);
+
     if (lfi_box_mprotect_noverify(p->box, base, len, LFI_PROT_READ | LFI_PROT_EXEC) < 0) {
         return -1;
     }
@@ -224,6 +363,8 @@ proc_jit_modify(struct LFILinuxProc *p, lfiptr src, size_t value,
         lfi_box_munmap(p->box, base, len);
         return -1;
     }
+
+    flush_icache(jit_addr, patch_len);
 
     if (lfi_box_mprotect_noverify(p->box, base, len, LFI_PROT_READ | LFI_PROT_EXEC) < 0) {
         return -1;
