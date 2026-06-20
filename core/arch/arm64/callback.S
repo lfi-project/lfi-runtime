@@ -96,6 +96,8 @@
     // Save previous sandbox sp and return address to stack.
     ldr x11, [x9, REGS_SP]
     stp x11, x30, [sp, #-16]!
+    // Preserve the sandbox's callee-saved x22/x23.
+    stp x22, x23, [sp, #-16]!
     // Save current sandbox sp to context.
     str x12, [x9, REGS_SP]
 
@@ -131,6 +133,8 @@
     ldr d1, [x9, #REGS_V(1)]
 .endif
 
+    // Restore the sandbox's callee-saved x22/x23.
+    ldp x22, x23, [sp], 16
     // Read previous sandbox sp and return address from stack.
     ldp x11, x30, [sp], 16
     // Read current sandbox sp from context.
