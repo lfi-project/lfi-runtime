@@ -5,18 +5,21 @@
 #include "lfi_linux.h"
 
 #include <assert.h>
-#include <sched.h>
-#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <sys/syscall.h>
-#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+
+#ifdef UBENCH_BASELINES
+#include <sched.h>
+#include <signal.h>
+#include <sys/syscall.h>
+#include <sys/wait.h>
+#endif
 
 const char *library = "tools/lfi-ubench/libbench.lfi";
 
@@ -49,6 +52,7 @@ callback(void)
 {
 }
 
+#ifdef UBENCH_BASELINES
 // native_call is a baseline for the cost of an ordinary (non-sandboxed) host
 // function call. The empty volatile asm is a side effect that prevents the
 // compiler from eliding the call, and noinline forces a real call to be made.
@@ -73,6 +77,7 @@ pin_cpu(int cpu)
     (void) cpu;
 #endif
 }
+#endif // UBENCH_BASELINES
 
 static inline uint64_t
 time_ns(void)
@@ -202,6 +207,7 @@ main(int argc, const char **argv)
         LFI_INVOKE(lfi_proc_box(proc), lfi_thread_ctxp(t), fn, void,
             (void (*)(void), size_t), box_callback, iters));
 
+#ifdef UBENCH_BASELINES
     // Host baselines for comparison with the sandboxed benchmarks above.
 
     // An ordinary host function call (baseline for bench_call/bench_callback).
@@ -261,6 +267,7 @@ main(int argc, const char **argv)
         kill(pid, SIGKILL);
         waitpid(pid, NULL, 0);
     }
+#endif // UBENCH_BASELINES
 
     lfi_thread_free(t);
 

@@ -88,3 +88,8 @@ option('ctxreg_tp_offset',
   max: 56,
   value: 16,
   description: 'byte offset of the thread pointer within the ctxreg array (must be a multiple of 8)')
+
+option('enable_ubench_baselines',
+  type: 'boolean',
+  value: false,
+  description: 'build the extra non-LFI host baseline benchmarks (native_call, host_syscall, host_ctxswitch) in lfi-ubench')
