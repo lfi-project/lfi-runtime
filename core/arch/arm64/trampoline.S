@@ -16,7 +16,10 @@
     mov x21, #0
     mov x22, #0
     mov x23, #0
+#ifndef LARGE_SANDBOX
+    // skip x24 for large sandbox (offset)
     mov x24, #0
+#endif
 #ifndef CTXREG
     mov x25, #0
 #endif
@@ -233,6 +236,11 @@ lfi_trampoline_direct:
     ldr REG_BASE, [x13, REGS_BASE]
     // set address pointer to a valid value
     mov REG_ADDR, REG_BASE
+
+#ifdef LARGE_SANDBOX
+    // set offset to a valid value
+    mov REG_OFFSET, xzr
+#endif
 
 #ifdef CTXREG
     ldr x25, [x13, REGS_X(25)]

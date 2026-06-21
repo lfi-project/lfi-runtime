@@ -55,6 +55,18 @@ option('segue_cache_gs',
   value: false,
   description: 'cache the %gs base per thread and only execute wrgsbase when entering a different sandbox than the one already loaded, avoiding the slow wrgsbase on every transition (x86-64 only; assumes the host never modifies %gs itself)')
 
+option('large_sandbox',
+  type: 'boolean',
+  value: false,
+  description: 'allow creation of sandboxes with sizes larger than 4GB')
+
+option('large_sandbox_bits',
+  type: 'integer',
+  min: 32,
+  max: 40,
+  value: 32,
+  description: 'size of the sandbox (arm64 only)')
+
 option('enable_pku',
   type: 'boolean',
   value: false,

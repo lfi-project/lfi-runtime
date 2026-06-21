@@ -39,6 +39,11 @@
 #define REG_BASE  x27
 #define REG_ADDR  x28
 
+#ifdef LARGE_SANDBOX
+#define REGS_OFFSET REGS_X(24) // x24
+#define REG_OFFSET x24
+#endif
+
 // clang-format off
 #ifdef __ASSEMBLER__
 # if defined(CTXREG)
@@ -104,8 +109,12 @@
 #define REGS_XMM(n) (REGS_XMM0 + 16 * n)
 
 #define REGS_BASE   REGS_R14
-
 #define REG_BASE    r14
+
+#ifdef LARGE_SANDBOX
+#define REGS_MASK   REGS_R15
+#define REG_MASK    r15
+#endif
 
 #define CTX_ABORT_CALLBACK 448
 #define CTX_ABORT_STATUS   456

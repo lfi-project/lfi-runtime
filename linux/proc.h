@@ -62,6 +62,11 @@ struct LibSymbols {
     lfiptr setjmp;
 };
 
+struct SigActionEntry {
+    bool valid;
+    struct SigAction entry;
+};
+
 struct LFILinuxProc {
     // Underlying sandbox information.
     struct LFIBox *box;
@@ -72,6 +77,13 @@ struct LFILinuxProc {
     lfiptr brkbase;
     size_t brksize;
     pthread_mutex_t lk_brk;
+
+    // JIT code region (jit_base == 0 if not mapped)
+    lfiptr         jit_base;
+    size_t         jit_exec_size;
+    size_t         jit_data_size;
+    uint8_t       *jit_alias;   // host-side writable alias (mmap of jit_fd)
+    int            jit_fd;      // memfd backing the JIT region
 
     // ELF entrypoint for running the process.
     lfiptr entry;
@@ -136,6 +148,10 @@ struct LFILinuxProc {
     pthread_mutex_t lk_proc;
 
     struct LFILinuxEngine *engine;
+
+    // Per-signal handler table.
+    struct SigActionEntry signals[LINUX_NSIG];
+    pthread_mutex_t lk_signals;
 };
 
 struct LFILinuxThread {

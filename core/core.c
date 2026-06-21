@@ -18,15 +18,21 @@ init_verifier(struct LFIVerifier *v, struct LFIOptions *opts)
     if (opts->no_verify)
         return;
 
-    if (opts->stores_only)
-        v->opts.box = LFI_BOX_STORES;
-    else
-        v->opts.box = LFI_BOX_FULL;
+#ifdef STORES_ONLY
+    v->opts.box = LFI_BOX_STORES;
+#else
+    v->opts.box = LFI_BOX_FULL;
+#endif
 
 #ifdef CTXREG
     v->opts.ctxreg = true;
 #endif
     v->opts.err = logerr;
+
+#ifdef LARGE_SANDBOX
+    v->opts.large = true;
+    v->opts.p2size = LARGE_SANDBOX_BITS;
+#endif
 
 #if defined(LFI_ARCH_ARM64)
     v->verify = lfiv_verify_arm64;
@@ -93,7 +99,7 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
     }
 
     struct BoxMapOptions bm_opts = (struct BoxMapOptions) {
-        .chunksize = gb(4),
+        .chunksize = opts.boxsize,
         .guardsize = REGION_GUARD,
     };
     struct BoxMap *bm = boxmap_new(bm_opts);

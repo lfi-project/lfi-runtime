@@ -27,7 +27,7 @@ lfi_ctx_entry:
     mov x8, sp
     str x8, [x1]
     // put entrypoint in x30
-    mov x30, x2
+    mov x28, x2
 
 #ifndef CTXREG
     // set the sandbox thread control block by saving the old value of
@@ -52,8 +52,8 @@ lfi_ctx_entry:
     ldp x22, x23, [x0, REGS_X(22)]
     ldp x24, x25, [x0, REGS_X(24)]
     ldp x26, x27, [x0, REGS_X(26)]
-    ldp x28, x29, [x0, REGS_X(28)]
-    ldp xzr, x1,  [x0, REGS_X(30)]
+    ldp xzr, x29, [x0, REGS_X(28)]
+    ldp x30, x1,  [x0, REGS_X(30)]
     mov sp, x1
     ldp x0, x1, [x0, REGS_X(0)]
     // zero vector registers
@@ -92,9 +92,11 @@ lfi_ctx_entry:
     // zero integer and fp flags
     ands xzr, xzr, xzr
     msr fpsr, xzr
-    // NOTE: x30 must contain a valid sandbox address
+    // NOTE: x28 and x30 must contain a valid sandbox address
+    // Entry with ret is not compatible with restorer, DO NOT overwrite x30
     add x30, REG_BASE, w30, uxtw
-    ret
+    add x28, REG_BASE, w28, uxtw
+    br x28
 
 // lfi_ctx_end(struct LFIContext *ctx, int val)
 .global lfi_ctx_end
@@ -144,6 +146,9 @@ lfi_syscall_entry:
     stp x14, x15, [REG_BASE, REGS_X(14)]
     stp x16, x17, [REG_BASE, REGS_X(16)]
     str x18, [REG_BASE, REGS_X(18)]
+#ifdef LARGE_SANDBOX
+    str REG_OFFSET, [REG_BASE, REGS_OFFSET]
+#endif
     str REG_ADDR, [REG_BASE, REGS_ADDR]
     mov x1, sp
     stp x30, x1,  [REG_BASE, REGS_X(30)]
@@ -193,6 +198,9 @@ lfi_syscall_entry:
     ldp x14, x15, [x0, REGS_X(14)]
     ldp x16, x17, [x0, REGS_X(16)]
     ldr x18, [x0, REGS_X(18)]
+#ifdef LARGE_SANDBOX
+    ldr REG_OFFSET, [x0, REGS_OFFSET]
+#endif
     ldr REG_ADDR, [x0, REGS_ADDR]
     ldr REG_BASE, [x0, REGS_BASE]
     ldp x30, x1,  [x0, REGS_X(30)]

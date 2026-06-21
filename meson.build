@@ -127,6 +127,12 @@ if get_option('segue_cache_gs')
     defines += '-DSEGUE_CACHE_GS'
   endif
 endif
+if get_option('large_sandbox')
+  defines += '-DLARGE_SANDBOX'
+  if cpu == 'aarch64'
+    defines += '-DLARGE_SANDBOX_BITS=@0@'.format(get_option('large_sandbox_bits'))
+  endif
+endif
 if get_option('sys_minimal')
   defines += '-DSYS_MINIMAL'
 endif

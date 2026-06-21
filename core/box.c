@@ -249,6 +249,14 @@ verify(struct LFIBox *box, uintptr_t base, size_t size, int prot)
     return true;
 }
 
+// Verify a jitcode compilation unit
+EXPORT bool
+lfi_jitcode_verify(struct LFIBox *box, uintptr_t base, size_t size)
+{
+    return box->engine->opts.no_verify ||
+           lfiv_verify(&box->engine->verifier, (char*) base, size, base);
+}
+
 // Set the protection for a memory mapping, and verify if necessary.
 static int
 protectverify(struct LFIBox *box, uintptr_t base, size_t size, int prot,

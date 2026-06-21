@@ -55,6 +55,22 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
     // LFI syscall for pausing execution.
     LFI(pause,
             sys_lfi_pause(t))
+    LFI(jitcode_mmap,
+            sys_jitcode_mmap(t, a0, a1, a2))
+    LFI(jitcode_munmap,
+            sys_jitcode_munmap(t, a0, a1, a2))
+    LFI(jitcode_create,
+            sys_jitcode_create(t, a0, a1, a2))
+    LFI(jitcode_create2,
+            sys_jitcode_create2(t, a0, a1, a2, a3, a4))
+    LFI(jitcode_modify,
+            sys_jitcode_modify(t, a0, a1, a2))
+    LFI(jitcode_delete,
+            sys_jitcode_delete(t, a0, a1))
+    LFI(jitcode_commit,
+            sys_jitcode_commit(t, a0, a1))
+    LFI(jitcode_decommit,
+            sys_jitcode_decommit(t, a0, a1))
     }
     // clang-format on
 
@@ -69,7 +85,7 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
         // clang-format off
         switch (sysno) {
         SYS(getpid,
-                0)
+                BASE_TID)
         SYS(write,
                 sys_write(t, a0, a1, a2))
         SYS(writev,
@@ -103,11 +119,11 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
 
         // Signals (also needed, at least as stubs, for threads).
         SYS(rt_sigaction,
-                sys_ignore(t, "rt_sigaction"))
+                sys_rt_sigaction(t, a0, a1, a2, a3))
         SYS(rt_sigprocmask,
                 sys_ignore(t, "rt_sigprocmask"))
         SYS(rt_sigreturn,
-                sys_ignore(t, "rt_sigreturn"))
+                sys_rt_sigreturn(t))
         SYS(sigaltstack,
                 sys_ignore(t, "sigaltstack"))
 
@@ -205,6 +221,10 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
         // Time syscalls.
         SYS(nanosleep,
                 sys_nanosleep(t, a0, a1))
+#ifdef LINUX_SYS_clock_getres
+        SYS(clock_getres,
+                0)
+#endif
         SYS(clock_gettime,
                 sys_clock_gettime(t, a0, a1))
 #ifdef LINUX_SYS_time

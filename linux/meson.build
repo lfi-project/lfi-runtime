@@ -13,6 +13,7 @@ srcs = files(
   'trampoline.c',
   'debugger.c',
   'cwalk.c',
+  'jitcode.c',
 )
 
 if get_option('sys_minimal')

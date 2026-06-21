@@ -304,3 +304,39 @@ sys_dup(struct LFILinuxThread *t, int oldfd);
 
 int
 sys_dup3(struct LFILinuxThread *t, int oldfd, int newfd, int flags);
+
+int
+sys_rt_sigaction(struct LFILinuxThread *t, int sig, lfiptr actp, lfiptr oldp,
+    uint64_t sigsetsize);
+
+uintptr_t
+sys_rt_sigreturn(struct LFILinuxThread *t);
+
+uintptr_t
+sys_jitcode_mmap(struct LFILinuxThread *t, lfiptr addrp, size_t exec_length,
+    size_t data_length);
+
+int
+sys_jitcode_munmap(struct LFILinuxThread *t, lfiptr addrp, size_t exec_length,
+    size_t data_length);
+
+int
+sys_jitcode_create(struct LFILinuxThread *t, lfiptr addrp, lfiptr bufp,
+    size_t length);
+
+int
+sys_jitcode_create2(struct LFILinuxThread *t, lfiptr addrp, lfiptr headerp,
+    size_t header_length, lfiptr bufp, size_t total_length);
+
+int
+sys_jitcode_modify(struct LFILinuxThread *t, lfiptr addrp, size_t valp,
+    size_t length);
+
+int
+sys_jitcode_delete(struct LFILinuxThread *t, lfiptr addrp, size_t length);
+
+int
+sys_jitcode_commit(struct LFILinuxThread *t, lfiptr addrp, size_t length);
+
+int
+sys_jitcode_decommit(struct LFILinuxThread *t, lfiptr addrp, size_t length);
