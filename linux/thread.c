@@ -170,7 +170,7 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
         (struct Auxv) { LINUX_AT_NULL, 0 },
     };
 
-    uint64_t box_argc = argc;
+    uint64_t box_argc = nargv;
     // Calculate where the sp should go (enough space from rand_start to store
     // argc/argv/envp/auxv).
     lfiptr stack_start = rand_start - sizeof(box_argc) - sizeof(box_argv) -
