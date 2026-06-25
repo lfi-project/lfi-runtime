@@ -175,6 +175,7 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
     // argc/argv/envp/auxv).
     lfiptr stack_start = rand_start - sizeof(box_argc) - sizeof(box_argv) -
         sizeof(box_envp) - sizeof(auxv);
+    stack_start = truncp(stack_start, 16);
     // Copy each item onto the stack.
     lfiptr next = lfi_box_copyto(box, stack_start, &box_argc,
                       sizeof(box_argc)) +
