@@ -20,7 +20,7 @@
 // protector is only stored in this TLS slot to begin with on x86-64 and
 // Android-Arm64. On standard Arm64 the slot is unused because the stack
 // protector is global.
-#define TLS_SLOT_LFI 5
+#define TLS_SLOT_LFI 12
 
 #if defined(__aarch64__) || defined(_M_ARM64)
 
