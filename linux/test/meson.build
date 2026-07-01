@@ -38,11 +38,18 @@ test_reload = executable(
   dependencies: [lfi_linux],
 )
 
+test_argv_mismatch = executable(
+  'test_argv_mismatch.elf',
+  'test_argv_mismatch.c',
+  dependencies: [lfi_linux],
+)
+
 testdata = [
   {'bin': test_run, 'file': 'programs/empty.c', 'inputs': [], 'cflags': []},
   {'bin': test_run, 'file': 'programs/hello.c', 'inputs': [], 'cflags': []},
   {'bin': test_run, 'file': 'programs/alloc.c', 'inputs': [], 'cflags': []},
   {'bin': test_run, 'file': 'programs/argv.c', 'inputs': ['one', 'two', 'three'], 'cflags': []},
+  {'bin': test_argv_mismatch, 'file': 'programs/argv.c', 'inputs': ['one', 'two', 'three'], 'cflags': [], 'suffix': '_mismatch'},
   {'bin': test_run, 'file': 'programs/envp.c', 'inputs': [], 'cflags': []},
   {'bin': test_run, 'file': 'programs/mmap.c', 'inputs': [], 'cflags': []},
   {'bin': test_run, 'file': 'programs/thread.c', 'inputs': [], 'cflags': []},
@@ -62,14 +69,16 @@ testdata = [
 ]
 
 foreach input : testdata
-  out = input['file'].replace('/', '_') + '.lfi'
+  suffix = input.get('suffix', '')
+  out = input['file'].replace('/', '_') + suffix + '.lfi'
   exec = custom_target(out,
     output: out,
     input: input['file'],
     command: [lficc, '-O2', '-o', '@OUTPUT@', '@INPUT@', '-static-pie'] + input['cflags'],
   )
   expected = input['file'] + '.out'
-  test(input['file'],
+  test_name = input['file'] + suffix
+  test(test_name,
     go, args: ['run', 'run.go', expected, input['bin'], exec] + input['inputs'],
     workdir: meson.current_source_dir(),
     suite: ['linux']
