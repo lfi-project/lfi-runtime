@@ -1,6 +1,8 @@
 #include "mmap_c.h"
 #include "addr_space.h"
 
+#include <new>
+
 struct MMapAddrSpace {
   mmap::AddrSpace impl;
 };
