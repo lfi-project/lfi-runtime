@@ -37,6 +37,7 @@ lfi_proc_new(struct LFILinuxEngine *engine)
     pthread_mutex_init(&proc->lk_threads, NULL);
     pthread_mutex_init(&proc->lk_box, NULL);
     pthread_mutex_init(&proc->lk_brk, NULL);
+    pthread_mutex_init(&proc->lk_signals, NULL);
     pthread_mutex_init(&proc->cwd.lk, NULL);
     pthread_cond_init(&proc->cond_threads, NULL);
 
