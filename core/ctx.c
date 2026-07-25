@@ -50,7 +50,9 @@ lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
     ctx->gs_cache = &lfi_invoke_info.gs_base;
 #endif
     // Enter the sandbox, saving the stack pointer to host_sp.
+    ctx->in_ctx_run = true;
     int ret = lfi_ctx_entry(ctx, (uintptr_t *) &ctx->regs.host_sp, entry);
+    ctx->in_ctx_run = false;
     return ret;
 }
 
@@ -97,6 +99,8 @@ EXPORT void
 lfi_ctx_exit(struct LFIContext *ctx, int code)
 {
     // Exit the sandbox, restoring the stack pointer to the value in host_sp.
+    if (!ctx->in_ctx_run)
+        abort();
     lfi_ctx_end(ctx, code);
 }
 

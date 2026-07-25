@@ -93,6 +93,10 @@ struct LFIContext {
 
     // Sandbox that this context is associated with.
     struct LFIBox *box;
+
+    // True while regs.host_sp refers to a frame pushed by lfi_ctx_entry rather
+    // than one pushed by lfi_trampoline.
+    bool in_ctx_run;
 };
 
 extern thread_local int lfi_error;
