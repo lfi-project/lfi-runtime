@@ -37,17 +37,23 @@
 // The fallback is the standard x86-64 TLS global-dynamic access, which
 // involves a normal function call to __tls_get_addr, requiring a full
 // save/restore of all argument registers being used by the invocation.
+//
+// Both call-based sequences below are entered with %rsp 16-byte aligned and
+// reserve a multiple of 16 bytes, so the call itself is made with the
+// alignment the SysV ABI requires.
 .macro get_invoke_info reg
 #if defined(ENABLE_TLS_EXEC)
     movq %fs:0x0, \reg
     addq lfi_invoke_info@gottpoff(%rip), \reg
 #elif defined(ENABLE_TLS_DESC)
-    pushq %rax
+    subq $16, %rsp
+    movq %rax, (%rsp)
     leaq lfi_invoke_info@TLSDESC(%rip), %rax
     callq *lfi_invoke_info@TLSCALL(%rax)
     addq %fs:0x0, %rax
     movq %rax, \reg
-    popq %rax
+    movq (%rsp), %rax
+    addq $16, %rsp
 #else
     // Save/restore registers used for arguments.
     pushq %rdi
@@ -56,7 +62,9 @@
     pushq %rcx
     pushq %r8
     pushq %r9
-    subq $136, %rsp
+    // 128 bytes for %xmm0-%xmm7, plus 16 so that the six pushes above and this
+    // reservation together come to a multiple of 16.
+    subq $144, %rsp
     movdqu %xmm0, 0(%rsp)
     movdqu %xmm1, 16(%rsp)
     movdqu %xmm2, 32(%rsp)
@@ -80,7 +88,7 @@
     movdqu 80(%rsp), %xmm5
     movdqu 96(%rsp), %xmm6
     movdqu 112(%rsp), %xmm7
-    addq $136, %rsp
+    addq $144, %rsp
     popq %r9
     popq %r8
     popq %rcx
@@ -107,6 +115,8 @@ lfi_trampoline_struct:
     endbr64
     // save callee-saved registers
     pushq %r15
+    // dummy push to keep the stack aligned
+    pushq $0
     pushq %r14
     pushq %r13
     pushq %r12
@@ -151,6 +161,7 @@ lfi_trampoline:
     endbr64
     // save callee-saved registers
     pushq %r15
+    pushq $0
     pushq %r14
     pushq %r13
     pushq %r12
@@ -192,6 +203,7 @@ lfi_trampoline_direct:
     // save callee-saved registers
     xchgq %r15, (%rsp)
     // xchgq %r14, -8(%rsp) not included yet
+    pushq $0
     pushq %r14
     pushq %r13
     pushq %r12
@@ -212,8 +224,6 @@ lfi_trampoline_direct:
 #endif
 
 .lfi_trampoline_common:
-    // dummy push to keep the stack aligned
-    pushq %rbp
     // push sandbox rsp
     pushq REGS_RSP(%r11)
 
@@ -303,7 +313,6 @@ lfi_ret_end:
     // restore sandbox sp to its initial value
     popq %rbp
     movq %rbp, REGS_RSP(%rdi)
-    popq %rbp // pop dummy value
     // return value should already be in %rax
     cld
     popq %rbp
@@ -311,6 +320,8 @@ lfi_ret_end:
     popq %r12
     popq %r13
     popq %r14
+    // discard the dummy value
+    addq $8, %rsp
     popq %r15
     ret
 
@@ -326,8 +337,11 @@ lfi_ret_end:
 .endm
 
 // Slowpath taken when the sandbox context needs to be initialized.
+//
+// Reached by a call made with %rsp 16-byte aligned.
 .p2align 4
 .trampoline_clone:
+    subq $8, %rsp
     pushq %rdi
     pushq %rsi
     pushq %rdx
@@ -363,6 +377,7 @@ lfi_ret_end:
     popq %rdx
     popq %rsi
     popq %rdi
+    addq $8, %rsp
     ret
 
 #ifndef __APPLE__
