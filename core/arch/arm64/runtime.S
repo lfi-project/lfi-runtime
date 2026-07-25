@@ -252,6 +252,13 @@ lfi_set_tp:
     ret
 #endif
 
+// Unsupported runtime call.
+.global lfi_rtcall_bad
+.p2align 4
+lfi_rtcall_bad:
+    bti jc
+    brk #0x1f1
+
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits
 

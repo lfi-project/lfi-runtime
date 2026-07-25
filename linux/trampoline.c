@@ -25,12 +25,13 @@ lfi_linux_clone_cb_minimal(struct LFIBox *box)
 {
     struct LFILinuxProc *proc = lfi_box_data(box);
 
-    // Create thread structure.
-    struct LFILinuxThread *t = calloc(sizeof(struct LFILinuxThread), 1);
+    // Create thread structure. This runs on a host thread the embedder owns,
+    // so it is an LFI_THREAD_HOST: it goes on proc->threads for proc_destroy
+    // to free, but exit_group must never signal or wait on it.
+    struct LFILinuxThread *t = thread_alloc(proc, LFI_THREAD_HOST);
     if (!t)
         return NULL;
 
-    t->proc = proc;
     t->ctx = lfi_ctx_new(box, t);
     if (!t->ctx) {
         free(t);
@@ -62,7 +63,6 @@ lfi_linux_clone_cb_minimal(struct LFIBox *box)
     // Register the thread so proc_destroy can free it. sys_minimal has no
     // pthread-key-based attachment mechanism, so the proc itself owns
     // lazily-cloned threads until it is destroyed.
-    list_init(&t->threads_elem);
     lock(&proc->lk_threads);
     list_make_first(&proc->threads, &t->threads_elem);
     unlock(&proc->lk_threads);
@@ -146,15 +146,23 @@ lfi_linux_clone_cb(struct LFIBox *box)
     atomic_fetch_add_explicit(&proc->attached_threads, 1,
         memory_order_relaxed);
 
+    // Reset new_ctx.
+    new_ctx = NULL;
+
     {
         LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
         (void) LFI_INVOKE(box, &proc->clone_ctx, proc->libsyms.thread_create,
             lfiptr, (void) );
     }
 
-    struct LFILinuxThread *thread = lfi_ctx_data(new_ctx);
-    thread->lazy_cloned = true;
+    // Cloning failed for some reason, detach and return failure.
+    if (!new_ctx) {
+        atomic_fetch_sub_explicit(&proc->attached_threads, 1,
+            memory_order_relaxed);
+        return NULL;
+    }
 
+    // sys_clone already marked this LFI_THREAD_HOST on the way through.
     struct AttachedCtx *node = malloc(sizeof(*node));
     if (!node)
         ERROR("%s:%d: failed to allocate AttachedCtx", __FILE__, __LINE__);

@@ -1,3 +1,4 @@
+#include "list.h"
 #include "sys/sys.h"
 
 #include <limits.h>
@@ -22,30 +23,41 @@ clearctid(struct LFILinuxThread *t)
 extern void
 lfi_ret_end(struct LFIContext *ctx) __asm__("lfi_ret_end");
 
-uintptr_t
-sys_exit(struct LFILinuxThread *t, int code)
+void
+thread_exit(struct LFILinuxThread *t, enum LFIExitKind kind, int code)
 {
-    // If the current sandbox thread was created by the lazily clone mechanism,
-    // then it is exiting due to a destructor invocation of
-    // _lfi_thread_destroy. We should service that by simulating the return of
-    // that function via lfi_ret.
-    if (t->lazy_cloned) {
+    // Publish the request before anything else, so a thread that reaches a
+    // checkpoint while we are still unwinding sees it.
+    if (kind == LFI_EXIT_PROCESS) {
+        atomic_store_explicit(&t->proc->exit_code, code, memory_order_relaxed);
+        atomic_store_explicit(&t->proc->terminating, true,
+            memory_order_release);
+    }
+
+    // A host thread that attached itself through the trampoline is not ours to
+    // terminate.
+    if (t->owner == LFI_THREAD_HOST) {
         clearctid(t);
         lfi_ret_end(t->ctx);
         __builtin_unreachable();
     }
 
-    // If already exited (e.g., after a pause in library mode), abort instead
-    // of calling ctx_exit again.
-    if (atomic_exchange_explicit(&t->exited, true, memory_order_acq_rel)) {
+    // Already exited.
+    if (atomic_exchange_explicit(&t->exited, true, memory_order_acq_rel))
         abort();
-    }
 
     {
         LOCK_WITH_DEFER(&t->proc->lk_threads, lk_threads);
         list_remove(&t->proc->threads, &t->threads_elem);
     }
     clearctid(t);
+
     lfi_ctx_exit(t->ctx, code);
     __builtin_unreachable();
+}
+
+uintptr_t
+sys_exit(struct LFILinuxThread *t, int code)
+{
+    thread_exit(t, LFI_EXIT_THREAD, code);
 }

@@ -12,6 +12,9 @@ uintptr_t
 syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
     uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5)
 {
+    // Exit if another thread asked the sandbox to terminate.
+    sys_checkpoint(t);
+
     uintptr_t r = -LINUX_ENOSYS;
     bool handled = false;
 

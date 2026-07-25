@@ -272,6 +272,16 @@ proc_destroy(struct LFILinuxProc *proc)
     free(proc);
 }
 
+EXPORT bool
+lfi_proc_exited(struct LFILinuxProc *proc, int *code)
+{
+    if (!atomic_load_explicit(&proc->terminating, memory_order_acquire))
+        return false;
+    if (code)
+        *code = atomic_load_explicit(&proc->exit_code, memory_order_relaxed);
+    return true;
+}
+
 EXPORT void
 lfi_proc_free(struct LFILinuxProc *proc)
 {

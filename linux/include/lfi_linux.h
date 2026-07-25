@@ -123,6 +123,15 @@ lfi_proc_reload(struct LFILinuxProc *proc, const uint8_t *prog,
 uint64_t
 lfi_proc_sym(struct LFILinuxProc *proc, const char *symname);
 
+// Returns true if the sandbox asked to terminate by calling exit_group, and
+// stores the exit code it requested in *code if code is non-NULL.
+//
+// The runtime does not stop threads that were already running when the sandbox
+// calls exit. Note that lfi_proc_free waits for the sandbox's threads to exit
+// before returning.
+bool
+lfi_proc_exited(struct LFILinuxProc *proc, int *code);
+
 // Frees an LFILinuxProc.
 void
 lfi_proc_free(struct LFILinuxProc *proc);

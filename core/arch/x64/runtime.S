@@ -255,6 +255,13 @@ lfi_set_tp:
 #endif
     jmpq *%r11
 
+// Unsupported runtime call.
+.global lfi_rtcall_bad
+.p2align 4
+lfi_rtcall_bad:
+    endbr64
+    ud2
+
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits
 #endif

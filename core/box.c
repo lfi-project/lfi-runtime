@@ -40,6 +40,8 @@ lfi_set_tp(void) __asm__("lfi_set_tp");
 #endif
 extern void
 lfi_ret(void) __asm__("lfi_ret");
+extern void
+lfi_rtcall_bad(void) __asm__("lfi_rtcall_bad");
 
 static int
 protectmem(void *start, size_t size, int prot, int pkey)
@@ -72,6 +74,8 @@ syssetup(struct LFIBox *box)
         sizeof(struct Sys));
 
     size_t n = sizeof(box->sys->rtcalls) / sizeof(box->sys->rtcalls[0]);
+    for (size_t i = 0; i < n; i++)
+        box->sys->rtcalls[i] = (uintptr_t) &lfi_rtcall_bad;
     box->sys->rtcalls[n - 1] = (uintptr_t) &lfi_syscall_entry;
 #ifndef SYS_MINIMAL
     box->sys->rtcalls[n - 2] = (uintptr_t) &lfi_get_tp;

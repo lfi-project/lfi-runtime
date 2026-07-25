@@ -231,6 +231,11 @@ main(int argc, char **argv)
     free(envs);
     free(dirs);
 
+    // Wait for the sandbox's other threads before tearing anything down.
+    lfi_thread_free(t);
+
+    lfi_proc_free(proc);
+
     lfi_linux_free(linux_);
 
     lfi_free(engine);

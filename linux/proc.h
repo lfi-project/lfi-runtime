@@ -88,16 +88,26 @@ struct LFILinuxProc {
     // used (Linux/macOS).
     struct Futexes *futexes;
 
+    // Set when the sandbox asks to exit. Read via lfi_proc_exited.
+    _Atomic(bool) terminating;
+    // Exit code the sandbox asked for. Only meaningful once terminating is
+    // set.
+    _Atomic(int) exit_code;
+
     // Total number of threads this proc has spawned (cumulative).
     _Atomic(int) total_thread_count;
-    // List of threads currently spawned in this process via a clone that
-    // originated in the sandbox (not via a host thread).
+    // Threads this proc is responsible for freeing when it is destroyed. What
+    // ends up here depends on the configuration: the full runtime tracks the
+    // LFI_THREAD_RUNTIME threads sys_clone spawned, while sys_minimal has no
+    // sys_clone and instead tracks LFI_THREAD_HOST attachments, since it has
+    // no pthread-key teardown to reclaim those.
     struct List *threads;
-    // Lock for threads.
+    // Number of runtime-spawned threads still running. lfi_proc_free waits for
+    // this to reach zero before freeing anything.
     int active_threads;
-    // Lock for thread variables above.
+    // Guards threads and active_threads.
     pthread_mutex_t lk_threads;
-    // Conditional variable to signal when thread exits.
+    // Signalled when a thread exits and active_threads changes.
     pthread_cond_t cond_threads;
 
     // After the ELF image is loaded, these ELF sections are tracked (if they
@@ -138,6 +148,21 @@ struct LFILinuxProc {
     struct LFILinuxEngine *engine;
 };
 
+// Who owns the host thread a sandbox thread runs on. This decides how the
+// thread leaves the sandbox when it exits, and who reclaims it afterwards.
+enum LFIThreadOwner {
+    // Created by lfi_thread_new and entered by whoever calls lfi_thread_run.
+    LFI_THREAD_MAIN,
+    // The runtime created this thread's pthread in sys_clone, so it owns both
+    // the host thread and this structure and frees them once the thread leaves
+    // the sandbox.
+    LFI_THREAD_RUNTIME,
+    // The context is entered by a host thread calling in through the
+    // trampoline, so the embedder owns that thread and the runtime has no
+    // handle for it.
+    LFI_THREAD_HOST,
+};
+
 struct LFILinuxThread {
     // Underlying sandbox context.
     struct LFIContext *ctx;
@@ -153,27 +178,18 @@ struct LFILinuxThread {
     // This thread's virtual TID.
     int tid;
 
-    // Pthread object if this thread was spawned by the LFI runtime using a
-    // pthread.
+    // Pthread object. Only set, and only valid, for LFI_THREAD_RUNTIME.
     pthread_t *pthread;
-    // True if this thread was lazily spawned via the lfi_clone trampoline
-    // callback (i.e., one host thread per attachment). Routes thread exit
-    // through lfi_ret_end so the trampoline frame on the host stack is
-    // properly unwound.
-    bool lazy_cloned;
+
+    // Who owns the host thread this runs on. See enum LFIThreadOwner.
+    enum LFIThreadOwner owner;
 
     // Element in the parent proc's threads list.
     struct List threads_elem;
 
-    // Used to signal the condition variable that the thread is ready.
-    bool ready;
-    pthread_mutex_t lk_ready;
-    pthread_cond_t cond_ready;
-
     struct LFILinuxProc *proc;
 
-    // Set to true when sys_exit or sys_exit_group is called. If called again
-    // while already exited, abort() is called instead of ctx_exit.
+    // Set when this thread exits and unwinds out of lfi_ctx_run.
     _Atomic(bool) exited;
 };
 
@@ -192,8 +208,12 @@ proc_mapat(struct LFILinuxProc *p, lfiptr start, size_t size, int prot,
 int
 proc_unmap(struct LFILinuxProc *p, lfiptr start, size_t size);
 
+// Allocates a thread. Callers still have to set up ctx and any stack.
 struct LFILinuxThread *
-thread_clone(struct LFILinuxThread *t);
+thread_alloc(struct LFILinuxProc *proc, enum LFIThreadOwner owner);
+
+struct LFILinuxThread *
+thread_clone(struct LFILinuxThread *t, enum LFIThreadOwner owner);
 
 int
 proc_chdir(struct LFILinuxProc *p, const char *path);
