@@ -191,6 +191,10 @@ struct LFILinuxThread {
 
     // Set when this thread exits and unwinds out of lfi_ctx_run.
     _Atomic(bool) exited;
+
+    // Set once the sandbox has handed this context back with the LFI pause
+    // syscall, which happens at most once, at the end of its startup.
+    bool paused;
 };
 
 #ifdef __cplusplus
