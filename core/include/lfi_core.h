@@ -309,7 +309,11 @@ lfi_ctx_regs_init(struct LFIContext *ctx);
 void
 lfi_ctx_regs_relink_ctxreg(struct LFIContext *ctx);
 
-// Causes the sandbox context to exit with a given exit code.
+// Causes the sandbox context to exit with a given exit code, returning control
+// to lfi_ctx_run with that code.
+//
+// Only valid while the context is executing under lfi_ctx_run. Calling this
+// from inside an invocation (LFI_INVOKE) causes an abort.
 void
 lfi_ctx_exit(struct LFIContext *ctx, int code);
 
