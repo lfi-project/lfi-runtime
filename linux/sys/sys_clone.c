@@ -13,19 +13,6 @@ isfork(uint64_t flags)
         (LINUX_CLONE_VM | LINUX_CLONE_VFORK | LINUX_SIGCHLD);
 }
 
-// Receiver for SIGLFI when the main thread wants to kill child threads.
-static void
-thread_signal(int sig)
-{
-    assert(sig == SIGLFI);
-
-    struct LFIContext *ctx = lfi_cur_ctx();
-    assert(ctx);
-    struct LFILinuxThread *t = lfi_ctx_data(ctx);
-    assert(t);
-    sys_exit(t, 0);
-}
-
 static void
 threadspawn_fake(struct LFILinuxThread *t)
 {
@@ -70,25 +57,13 @@ threadspawn(void *arg)
     ss.ss_size = SIGSTKSZ;
     ss.ss_flags = 0;
 
-    // Register alternate stack.
+    // Register an alternate stack, so that a host signal arriving while this
+    // thread is executing sandbox code does not run its handler on the sandbox
+    // stack, where other sandbox threads could manipulate it.
     if (sigaltstack(&ss, NULL) == -1) {
         LOG(t->proc->engine, "failed to register signal stack");
         goto end;
     }
-
-    struct sigaction sa = { 0 };
-    sa.sa_handler = &thread_signal;
-    sa.sa_flags = SA_ONSTACK;
-    if (sigaction(SIGLFI, &sa, NULL) == -1) {
-        LOG(t->proc->engine, "failed to register SIGLFI handler");
-        goto end;
-    }
-
-    // Signal to the parent that the thread is now ready.
-    pthread_mutex_lock(&t->lk_ready);
-    t->ready = true;
-    pthread_cond_signal(&t->cond_ready);
-    unlock(&t->lk_ready);
 
     lfi_ctx_run(t->ctx, entry);
 
@@ -145,7 +120,14 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
     _Atomic(int) *ctid = (_Atomic(int) *) ptrhost(p, ctidp);
     _Atomic(int) *ptid = (_Atomic(int) *) ptrhost(p, ptidp);
 
-    struct LFILinuxThread *p2 = thread_clone(p);
+    // A clone issued on the proc's clone_ctx is not a real thread: it is the
+    // lazy-attachment path, which hands the new context back to
+    // lfi_linux_clone_cb so a host thread can run on it. Everything else gets
+    // a pthread the runtime owns.
+    bool attach = p->ctx == p->proc->clone_ctx;
+
+    // Both paths start out running under lfi_ctx_run below.
+    struct LFILinuxThread *p2 = thread_clone(p, LFI_THREAD_RUNTIME);
     if (!p2) {
         return -LINUX_EAGAIN;
     }
@@ -179,7 +161,7 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
 #error "invalid arch"
 #endif
 
-    if (p->ctx == p->proc->clone_ctx) {
+    if (attach) {
         // TODO: rethink whether this save/restore is necessary and how it
         // interacts with signals?
         struct LFIInvokeInfo old = lfi_invoke_info;
@@ -187,6 +169,11 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
         lfi_invoke_info.ctx = old.ctx;
         lfi_invoke_info.targetfn = old.targetfn;
         lfi_invoke_info.box = old.box;
+
+        // The lfi_ctx_run frame is gone and from here the context is only ever
+        // entered through the trampoline, by whichever host thread the clone
+        // callback hands it to.
+        p2->owner = LFI_THREAD_HOST;
         new_ctx = p2->ctx;
     } else {
         pthread_t *thread = malloc(sizeof(pthread_t));
@@ -204,6 +191,12 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
         int err = pthread_create(thread, &attr, threadspawn, p2);
         pthread_attr_destroy(&attr);
         if (err) {
+            lock(&p->proc->lk_threads);
+            list_remove(&p->proc->threads, &p2->threads_elem);
+            p->proc->active_threads--;
+            pthread_cond_signal(&p->proc->cond_threads);
+            unlock(&p->proc->lk_threads);
+
             lfi_thread_free(p2);
             return -LINUX_EAGAIN;
         }

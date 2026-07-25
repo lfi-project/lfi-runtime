@@ -33,5 +33,9 @@ lfi_clone(struct LFIBox *box, struct LFIContext **ctxp)
         abort();
     }
     struct LFIContext *ctx = box->engine->clone_cb(box);
+    if (!ctx) {
+        LOG_("error: clone callback did not produce a context");
+        abort();
+    }
     *ctxp = ctx;
 }

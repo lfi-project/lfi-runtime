@@ -73,6 +73,12 @@ main(int argc, const char **argv)
     int result = lfi_thread_run(t);
     assert(result == 0);
 
+    // Returning from main goes through exit_group, so the proc must report
+    // terminating with the same code lfi_thread_run handed back.
+    int exit_code = -1;
+    assert(lfi_proc_exited(proc, &exit_code));
+    assert(exit_code == result);
+
     lfi_thread_free(t);
 
     lfi_proc_free(proc);

@@ -13,10 +13,9 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <stdalign.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define SIGLFI SIGUSR1
 
 // Returns true if the pointer is valid for the sandbox.
 static inline bool
@@ -140,6 +139,27 @@ sys_write(struct LFILinuxThread *t, int fd, lfiptr bufp, size_t size);
 
 ssize_t
 sys_writev(struct LFILinuxThread *t, int fd, lfiptr iovp, size_t iovcnt);
+
+// What an exit syscall is asking for.
+enum LFIExitKind {
+    // exit: this thread only.
+    LFI_EXIT_THREAD,
+    // exit_group: the whole sandbox. Marks the proc terminating so the other
+    // threads leave at their next checkpoint.
+    LFI_EXIT_PROCESS,
+};
+
+_Noreturn void
+thread_exit(struct LFILinuxThread *t, enum LFIExitKind kind, int code);
+
+// The one place a thread that is not itself exiting can be told to exit.
+static inline void
+sys_checkpoint(struct LFILinuxThread *t)
+{
+    if (atomic_load_explicit(&t->proc->terminating, memory_order_acquire))
+        thread_exit(t, LFI_EXIT_THREAD,
+            atomic_load_explicit(&t->proc->exit_code, memory_order_relaxed));
+}
 
 uintptr_t
 sys_exit_group(struct LFILinuxThread *t, int code);

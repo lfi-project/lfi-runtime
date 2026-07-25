@@ -330,6 +330,12 @@ lfi_set_tp:
     add.uw ra, ra, REG_BASE
     ret
 
+// Unsupported runtime call.
+.global lfi_rtcall_bad
+.p2align 4
+lfi_rtcall_bad:
+    ebreak
+
 #ifndef __APPLE__
 .section .note.GNU-stack,"",@progbits
 #endif

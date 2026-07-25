@@ -215,21 +215,29 @@ lfi_thread_reload(struct LFILinuxThread *t, int argc, const char **argv,
     sp_init(t, sp);
 }
 
+struct LFILinuxThread *
+thread_alloc(struct LFILinuxProc *proc, enum LFIThreadOwner owner)
+{
+    struct LFILinuxThread *t = calloc(1, sizeof(struct LFILinuxThread));
+    if (!t)
+        return NULL;
+    t->proc = proc;
+    t->owner = owner;
+    t->tid = next_tid(proc);
+    list_init(&t->threads_elem);
+    return t;
+}
+
 EXPORT struct LFILinuxThread *
 lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
     const char **envp)
 {
-    struct LFILinuxThread *t = calloc(sizeof(struct LFILinuxThread), 1);
+    struct LFILinuxThread *t = thread_alloc(proc, LFI_THREAD_MAIN);
     if (!t)
         goto err1;
-    t->proc = proc;
     t->ctx = lfi_ctx_new(proc->box, t);
     if (!t->ctx)
         goto err2;
-    t->tid = next_tid(proc);
-    pthread_mutex_init(&t->lk_ready, NULL);
-    pthread_cond_init(&t->cond_ready, NULL);
-    list_init(&t->threads_elem);
 
     size_t stacksize = proc->engine->opts.stacksize;
     t->stack = lfi_box_mapat(proc->box, proc->box_info.max - stacksize,
@@ -257,22 +265,15 @@ err1:
 
 // Create a new thread cloned from the given thread.
 struct LFILinuxThread *
-thread_clone(struct LFILinuxThread *t)
+thread_clone(struct LFILinuxThread *t, enum LFIThreadOwner owner)
 {
-    struct LFILinuxThread *new_t = calloc(sizeof(struct LFILinuxThread), 1);
+    struct LFILinuxThread *new_t = thread_alloc(t->proc, owner);
     if (!new_t)
         goto err1;
     struct LFIContext *ctx = lfi_ctx_new(t->proc->box, new_t);
     if (!ctx)
         goto err2;
     new_t->ctx = ctx;
-    new_t->proc = t->proc;
-    new_t->tid = next_tid(t->proc);
-    pthread_mutex_init(&new_t->lk_ready, NULL);
-    pthread_cond_init(&new_t->cond_ready, NULL);
-    list_init(&new_t->threads_elem);
-    if (new_t->tid == -1)
-        goto err2;
     // Copy all registers.
     *lfi_ctx_regs(new_t->ctx) = *lfi_ctx_regs(t->ctx);
     lfi_ctx_regs_relink_ctxreg(new_t->ctx);
