@@ -26,6 +26,13 @@ lfi_ret_end(struct LFIContext *ctx) __asm__("lfi_ret_end");
 void
 thread_exit(struct LFILinuxThread *t, enum LFIExitKind kind, int code)
 {
+#ifdef SYS_MINIMAL
+    if (t->owner != LFI_THREAD_MAIN) {
+        ERROR("sandbox tried to exit a context that was never entered to run");
+        abort();
+    }
+#endif
+
     // Publish the request before anything else, so a thread that reaches a
     // checkpoint while we are still unwinding sees it.
     if (kind == LFI_EXIT_PROCESS) {
@@ -34,12 +41,19 @@ thread_exit(struct LFILinuxThread *t, enum LFIExitKind kind, int code)
             memory_order_release);
     }
 
+#ifndef SYS_MINIMAL
     // A host thread that attached itself through the trampoline is not ours to
     // terminate.
     if (t->owner == LFI_THREAD_HOST) {
         clearctid(t);
         lfi_ret_end(t->ctx);
         __builtin_unreachable();
+    }
+#endif
+
+    if (t->paused) {
+        ERROR("sandbox tried to exit a context that has already paused");
+        abort();
     }
 
     // Already exited.

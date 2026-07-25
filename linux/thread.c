@@ -213,6 +213,8 @@ lfi_thread_reload(struct LFILinuxThread *t, int argc, const char **argv,
     *lfi_ctx_regs(t->ctx) = (struct LFIRegs) { 0 };
     lfi_ctx_regs_init(t->ctx);
     sp_init(t, sp);
+    t->paused = false;
+    atomic_store_explicit(&t->exited, false, memory_order_relaxed);
 }
 
 struct LFILinuxThread *
