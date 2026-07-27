@@ -50,7 +50,8 @@ elf_has_bti(struct Buf elf, Elf64_Ehdr *ehdr, Elf64_Phdr *phdrs)
 
             if (nhdr.n_type == NT_GNU_PROPERTY_TYPE_0 && nhdr.n_namesz == 4) {
                 char name[4];
-                buf_read(elf, name, 4, offset + sizeof(nhdr));
+                if (buf_read(elf, name, 4, offset + sizeof(nhdr)) != 4)
+                    break;
                 if (memcmp(name, "GNU", 4) == 0) {
                     // Parse the property descriptors.
                     size_t desc_offset = offset + sizeof(nhdr) + name_size;
@@ -58,13 +59,16 @@ elf_has_bti(struct Buf elf, Elf64_Ehdr *ehdr, Elf64_Phdr *phdrs)
 
                     while (desc_offset + 8 <= desc_end) {
                         uint32_t pr_type, pr_datasz;
-                        buf_read(elf, &pr_type, 4, desc_offset);
-                        buf_read(elf, &pr_datasz, 4, desc_offset + 4);
+                        if (buf_read(elf, &pr_type, 4, desc_offset) != 4)
+                            break;
+                        if (buf_read(elf, &pr_datasz, 4, desc_offset + 4) != 4)
+                            break;
 
                         if (pr_type == GNU_PROPERTY_AARCH64_FEATURE_1_AND &&
                             pr_datasz >= 4) {
                             uint32_t features;
-                            buf_read(elf, &features, 4, desc_offset + 8);
+                            if (buf_read(elf, &features, 4, desc_offset + 8) != 4)
+                                break;
                             if (features & GNU_PROPERTY_AARCH64_FEATURE_1_BTI)
                                 return true;
                         }
