@@ -3,6 +3,7 @@ tests = [
   'test_box.c',
   'test_ctx.c',
   'test_mmap.c',
+  'test_aslr.c',
 ]
 
 # Add architecture-specific tests

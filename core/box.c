@@ -8,9 +8,16 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <time.h>
+#include <unistd.h>
+
+#if defined(HAVE_GETRANDOM)
+#include <sys/random.h>
+#endif
 
 // Use of the following two functions assumes that the sandbox and host share
 // an address space.
@@ -89,6 +96,35 @@ syssetup(struct LFIBox *box)
     assert(r == 0);
 }
 
+// Generate a random seed for address space layout randomization.
+static uint64_t
+aslr_seed(void)
+{
+    uint64_t seed;
+#if defined(HAVE_GETRANDOM)
+    if (getrandom(&seed, sizeof(seed), 0) == sizeof(seed))
+        return seed;
+#elif defined(HAVE_ARC4RANDOM_BUF)
+    arc4random_buf(&seed, sizeof(seed));
+    return seed;
+#elif defined(HAVE_GETENTROPY)
+    if (getentropy(&seed, sizeof(seed)) == 0)
+        return seed;
+#endif
+    int fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+    if (fd >= 0) {
+        ssize_t n = read(fd, &seed, sizeof(seed));
+        close(fd);
+        if (n == (ssize_t) sizeof(seed))
+            return seed;
+    }
+    // Weak fallback: not unpredictable, but better than nothing.
+    struct timespec ts = { 0 };
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ((uint64_t) ts.tv_sec << 32) ^ (uint64_t) ts.tv_nsec ^
+        (uint64_t) (uintptr_t) &seed;
+}
+
 EXPORT struct LFIBox *
 lfi_box_new(struct LFIEngine *engine)
 {
@@ -141,6 +177,8 @@ lfi_box_new(struct LFIEngine *engine)
         lfi_error = LFI_ERR_MMAP;
         goto err2;
     }
+    if (!engine->opts.no_aslr)
+        mmap_enable_aslr(box->mm, aslr_seed());
 
     return box;
 

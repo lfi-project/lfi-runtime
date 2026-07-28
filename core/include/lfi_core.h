@@ -48,6 +48,13 @@ struct LFIOptions {
     // If allow_wx is enabled you must also enable no_verify.
     bool allow_wx;
 
+    // Disable address space layout randomization within the sandbox.
+    //
+    // By default, mappings that are created without a fixed address are placed
+    // at a random page-aligned location within the sandbox region. Setting
+    // no_aslr makes placement deterministic.
+    bool no_aslr;
+
     // Do not initialize a sigaltstack automatically. For multithreaded
     // sandboxes, if a signal arrives during sandbox execution, the signal
     // handler must execute on a different stack from the sandbox stack,

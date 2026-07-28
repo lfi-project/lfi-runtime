@@ -56,6 +56,7 @@ usage(const char *prog_name)
     printf("  -v, --verify           enable verification\n");
     printf("  --no-debug             disable debugging support\n");
     printf("  -p, --sys-passthrough  pass most system calls directly to the host\n");
+    printf("  --no-aslr              disable address space layout randomization\n");
     printf("  --pagesize=<int>       system page size\n");
     printf("  --env=<var=val>        set environment variable\n");
     printf("  --dir=<box=host>       map sandbox path to host directory\n");
@@ -74,6 +75,7 @@ main(int argc, char **argv)
     bool no_debug = false;
     bool sys_passthrough = false;
     int pagesize = 0;
+    bool no_aslr = false;
     const char **envs = NULL;
     int envs_count = 0;
     const char **dirs = NULL;
@@ -92,6 +94,7 @@ main(int argc, char **argv)
         { "env", required_argument, 0, 4 },
         { "dir", required_argument, 0, 5 },
         { "wd", required_argument, 0, 6 },
+        { "no-aslr", no_argument, 0, 7 },
         { "restricted", no_argument, 0, 'r' },
         { 0, 0, 0, 0 }
     };
@@ -135,6 +138,9 @@ main(int argc, char **argv)
         case 6:
             wd = optarg;
             break;
+        case 7:
+            no_aslr = true;
+            break;
         case 'r':
             restricted = true;
             break;
@@ -155,6 +161,7 @@ main(int argc, char **argv)
             .boxsize = gb(4),
             .pagesize = pagesize > 0 ? pagesize : getpagesize(),
             .no_verify = !verify,
+            .no_aslr = no_aslr,
             .verbose = verbose,
         },
         4);

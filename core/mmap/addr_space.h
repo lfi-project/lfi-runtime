@@ -30,6 +30,10 @@ struct AddrSpace {
   bool init(uintptr_t start, size_t len, size_t pagesize);
   void reset();
 
+  // Enable randomized placement (ASLR) for map_any. The seed should come from
+  // a secure source.
+  void enable_aslr(uint64_t seed);
+
   uintptr_t map_any(uintptr_t hint, size_t len, int prot, int flags, int fd,
                     int64_t offset);
   uintptr_t map_at(uintptr_t addr, size_t len, int prot, int flags, int fd,
@@ -52,6 +56,9 @@ private:
     return pages;
   }
   uintptr_t to_addr(uint64_t page) const { return page << p2pagesize_; }
+  bool find_free(uint64_t pages, uint64_t *start);
+  uint64_t next_rand();
+  uint64_t rand_below(uint64_t n);
   void check_in_region(uintptr_t addr, size_t len) const;
   bool is_valid(uint64_t start, uint64_t len) const {
     if (start < base_)
@@ -64,6 +71,8 @@ private:
   uint64_t base_;
   uint64_t len_;
   size_t p2pagesize_;
+  bool aslr_;
+  uint64_t rand_state_;
   RangeMap<uint64_t, MapInfo> regions_;
 };
 

@@ -19,11 +19,68 @@ bool AddrSpace::init(uintptr_t start, size_t len, size_t pagesize) {
     p2pagesize_++;
   base_ = to_page(start);
   len_ = to_page_ceil(len);
+  aslr_ = false;
+  rand_state_ = 0;
   regions_.clear();
   return true;
 }
 
 void AddrSpace::reset() { regions_.clear(); }
+
+void AddrSpace::enable_aslr(uint64_t seed) {
+  aslr_ = true;
+  rand_state_ = seed;
+}
+
+// splitmix64: statistically uniform, but not cryptographically secure, so an
+// observer of previous placements can predict future ones.
+uint64_t AddrSpace::next_rand() {
+  uint64_t z = (rand_state_ += 0x9E3779B97F4A7C15ULL);
+  z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
+  z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+  return z ^ (z >> 31);
+}
+
+// Return a uniform value in [0, n). The modulo bias is negligible because n
+// (a page count) is far below 2^64.
+uint64_t AddrSpace::rand_below(uint64_t n) {
+  return next_rand() % n;
+}
+
+// Choose the start page for a new mapping of 'pages' pages from the free
+// gaps, or return false if no gap is large enough. With ASLR enabled, the
+// position is chosen uniformly at random among all positions that fit;
+// otherwise the lowest position is chosen.
+bool AddrSpace::find_free(uint64_t pages, uint64_t *start) {
+  auto gaps = regions_.get_gaps(base_, base_ + len_);
+  if (!aslr_) {
+    for (auto &gap : gaps) {
+      if (gap.second - gap.first >= pages) {
+        *start = gap.first;
+        return true;
+      }
+    }
+    return false;
+  }
+  uint64_t total = 0;
+  for (auto &gap : gaps)
+    if (gap.second - gap.first >= pages)
+      total += gap.second - gap.first - pages + 1;
+  if (total == 0)
+    return false;
+  uint64_t idx = rand_below(total);
+  for (auto &gap : gaps) {
+    if (gap.second - gap.first < pages)
+      continue;
+    uint64_t positions = gap.second - gap.first - pages + 1;
+    if (idx < positions) {
+      *start = gap.first + idx;
+      return true;
+    }
+    idx -= positions;
+  }
+  return false;
+}
 
 uintptr_t AddrSpace::map_any(uintptr_t hint, size_t len, int prot, int flags,
                              int fd, int64_t offset) {
@@ -43,17 +100,13 @@ uintptr_t AddrSpace::map_any(uintptr_t hint, size_t len, int prot, int flags,
       return to_addr(start);
     }
   }
-  auto gaps = regions_.get_gaps(base_, base_ + len_);
-  for (auto &gap : gaps) {
-    if (gap.second - gap.first >= pages) {
-      uint64_t start = gap.first;
-      regions_.insert(start, start + pages,
-                      MapInfo{prot, flags, fd, offset, false});
-      check_in_region(to_addr(start), len);
-      return to_addr(start);
-    }
-  }
-  return (uintptr_t)-1;
+  uint64_t start;
+  if (!find_free(pages, &start))
+    return (uintptr_t)-1;
+  regions_.insert(start, start + pages,
+                  MapInfo{prot, flags, fd, offset, false});
+  check_in_region(to_addr(start), len);
+  return to_addr(start);
 }
 
 uintptr_t AddrSpace::map_at(uintptr_t addr, size_t len, int prot, int flags,

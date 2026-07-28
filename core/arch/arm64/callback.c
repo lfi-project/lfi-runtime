@@ -93,8 +93,8 @@ init_cb(struct LFIBox *box)
     if (aliasmap == (void *) -1)
         goto err;
     box->cbinfo.dataentries_alias = (struct CallbackDataEntry *) aliasmap;
-    // Map the code entry region.
-    lfiptr codemap = lfi_box_mapany(box, size / 2,
+    // Map the code/data entry regions.
+    lfiptr codemap = lfi_box_mapany(box, size,
         LFI_PROT_READ | LFI_PROT_WRITE, LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1,
         0);
     if (codemap == (lfiptr) -1)
@@ -109,7 +109,8 @@ init_cb(struct LFIBox *box)
     r = lfi_box_mprotect_noverify(box, codemap, size / 2,
         LFI_PROT_READ | LFI_PROT_EXEC);
     if (r == -1)
-        goto err1;
+        goto err2;
+    // Map the data entries over the second half of the reservation.
     lfiptr boxmap = lfi_box_mapat(box, codemap + size / 2, size / 2,
         LFI_PROT_READ, LFI_MAP_SHARED, fd, 0);
     if (boxmap == (lfiptr) -1)
@@ -120,7 +121,7 @@ init_cb(struct LFIBox *box)
     close(fd);
     return true;
 err2:
-    lfi_box_munmap(box, codemap, size / 2);
+    lfi_box_munmap(box, codemap, size);
 err1:
     munmap(aliasmap, size / 2);
 err:
