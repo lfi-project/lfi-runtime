@@ -44,6 +44,8 @@ host_getauxval(unsigned long type)
 #define ARGV_MAXLEN 1024
 // Maxmimum length of an envp string.
 #define ENVP_MAXLEN 1024
+// Window for randomizing the stack's sub-page offset.
+#define STACK_RND_RANGE 8192
 
 static int
 next_tid(struct LFILinuxProc *p)
@@ -118,9 +120,20 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
     box_argv[nargv] = 0;
     box_envp[nenvp] = 0;
 
+    lfiptr stack_top = t->stack + t->stack_size;
+    // Randomize the stack's sub-page offset, so that the low bits of the
+    // initial stack pointer are not predictable.
+    if (!lfi_opts(t->proc->engine->engine).no_aslr) {
+        uint16_t r = 0;
+        if (host_getrandom(&r, sizeof(r), 0) != (ssize_t) sizeof(r))
+            LOG(t->proc->engine,
+                "warning: getrandom for stack offset failed");
+        stack_top -= r % STACK_RND_RANGE;
+    }
+
     // We make this 16-byte aligned so that we can use this as a base offset
     // for also storing aligned values.
-    lfiptr strs_start = truncp(t->stack + t->stack_size - strs_len, 16);
+    lfiptr strs_start = truncp(stack_top - strs_len, 16);
     size_t count = 0;
     struct LFIBox *box = t->proc->box;
     // Copy the argv and envp strings into the sandbox.
@@ -242,9 +255,17 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
         goto err2;
 
     size_t stacksize = proc->engine->opts.stacksize;
-    t->stack = lfi_box_mapat(proc->box, proc->box_info.max - stacksize,
-        stacksize, LFI_PROT_READ | LFI_PROT_WRITE,
-        LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+    if (lfi_opts(proc->engine->engine).no_aslr) {
+        // Deterministic placement: the stack goes at the top of the sandbox.
+        t->stack = lfi_box_mapat(proc->box, proc->box_info.max - stacksize,
+            stacksize, LFI_PROT_READ | LFI_PROT_WRITE,
+            LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+    } else {
+        // Place the main thread stack at a random location.
+        t->stack = lfi_box_mapany(proc->box, stacksize,
+            LFI_PROT_READ | LFI_PROT_WRITE,
+            LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+    }
     if (t->stack == (lfiptr) -1) {
         LOG(proc->engine, "failed to map stack");
         goto err3;
