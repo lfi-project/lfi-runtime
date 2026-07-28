@@ -11,12 +11,45 @@ foreach t : tests
   ), suite: ['linux'])
 endforeach
 
-if get_option('sys_minimal')
+if not lficc.found()
+  warning('lficc not found: cannot test liblfi')
   subdir_done()
 endif
 
-if not lficc.found()
-  warning('lficc not found: cannot test liblfi')
+if get_option('sys_minimal')
+  minialloc = subproject('minialloc')
+  lib = custom_target('lib.lfi',
+    output: 'lib.lfi',
+    input: ['library/add.c'] + minialloc.get_variable('minialloc_srcs'),
+    command: [lficc, '-O2', '-o', '@OUTPUT@', '@INPUT@', '-static-pie',
+              '-lboxrt', '-Wl,--export-dynamic'],
+  )
+else
+  lib = custom_target('lib.lfi',
+    output: 'lib.lfi',
+    input: [
+      'library/main.c',
+      'library/tls.c',
+      'library/add.c',
+      'library/hello.c',
+    ],
+    command: [lficc, '-O2', '-o', '@OUTPUT@', '@INPUT@', '-static-pie', '-Wl,--export-dynamic'],
+  )
+endif
+
+test_detach = executable(
+  'test_detach.elf',
+  'test_detach.c',
+  dependencies: [lfi_linux],
+  c_args: c_args_warnings,
+)
+
+test('detach.lfi',
+  test_detach, args: [lib],
+  suite: ['linux'],
+)
+
+if get_option('sys_minimal')
   subdir_done()
 endif
 
@@ -92,30 +125,7 @@ test_lib = executable(
   c_args: c_args_warnings,
 )
 
-test_detach = executable(
-  'test_detach.elf',
-  'test_detach.c',
-  dependencies: [lfi_linux],
-  c_args: c_args_warnings,
-)
-
-lib = custom_target( 'lib.lfi',
-  output: 'lib.lfi',
-  input: [
-    'library/main.c',
-    'library/tls.c',
-    'library/add.c',
-    'library/hello.c',
-  ],
-  command: [lficc, '-O2', '-o', '@OUTPUT@', '@INPUT@', '-static-pie', '-Wl,--export-dynamic'],
-)
-
 test('lib.lfi',
   test_lib, args: [lib],
-  suite: ['linux'],
-)
-
-test('detach.lfi',
-  test_detach, args: [lib],
   suite: ['linux'],
 )

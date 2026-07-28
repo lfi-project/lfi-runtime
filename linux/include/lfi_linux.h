@@ -163,9 +163,13 @@ void
 lfi_linux_init_clone(struct LFILinuxThread *main_thread);
 
 // Detach the current host thread from the given proc, if it has been lazily
-// attached via lfi_linux_init_clone's clone callback. Runs the in-sandbox
-// teardown that would otherwise run when the host thread exits, and clears
-// this thread's TLS entry for proc so the destructor will not fire later.
+// attached via lfi_linux_init_clone's clone callback. Runs the teardown that
+// would otherwise run when the host thread exits (freeing the attached
+// context and its stack, plus the in-sandbox teardown where there is one), and
+// clears this thread's TLS entry for proc so the destructor will not fire
+// later. The caller must not reuse the context pointer afterwards, a
+// subsequent call into proc from this thread needs a null context pointer so
+// that the clone callback runs again.
 //
 // Safe to call multiple times: if the current thread is not attached to proc,
 // this is a no-op. Should be called before the host thread exits when the

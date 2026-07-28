@@ -96,11 +96,11 @@ struct LFILinuxProc {
 
     // Total number of threads this proc has spawned (cumulative).
     _Atomic(int) total_thread_count;
-    // Threads this proc is responsible for freeing when it is destroyed. What
-    // ends up here depends on the configuration: the full runtime tracks the
-    // LFI_THREAD_RUNTIME threads sys_clone spawned, while sys_minimal has no
-    // sys_clone and instead tracks LFI_THREAD_HOST attachments, since it has
-    // no pthread-key teardown to reclaim those.
+    // Threads this proc is responsible for freeing when it is destroyed: the
+    // LFI_THREAD_RUNTIME threads sys_clone spawned. LFI_THREAD_HOST
+    // attachments are not tracked here. They are owned by the host thread that
+    // attached and are freed by the pthread-key destructor in trampoline.c.
+    // sys_minimal has no sys_clone, so this list stays empty there.
     struct List *threads;
     // Number of runtime-spawned threads still running. lfi_proc_free waits for
     // this to reach zero before freeing anything.

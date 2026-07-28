@@ -234,6 +234,33 @@ test_destructor_only(struct LFILinuxEngine *linux_, struct Buf prog,
     printf("destructor-only OK\n");
 }
 
+// Churn scenario: one host thread attaches and detaches far more times than
+// the sandbox has room for concurrent thread stacks. Each detach has to hand
+// the stack back, otherwise the sandbox address space fills up and the clone
+// callback fails.
+//
+// gb(4) of sandbox with mb(2) stacks holds at most ~2048 at once, so a run of
+// ATTACH_CHURN_ITERS only survives if stacks are actually being reclaimed.
+#define ATTACH_CHURN_ITERS 3000
+
+static void
+test_attach_churn(struct LFILinuxEngine *linux_, struct Buf prog,
+    const char **argv, int argc, const char **envp)
+{
+    struct LFILinuxProc *proc = make_proc(linux_, prog, argv, argc, envp);
+
+    for (int i = 0; i < ATTACH_CHURN_ITERS; i++) {
+        // A null ctx makes the trampoline re-run the clone callback, which
+        // allocates a fresh stack for this attachment.
+        struct LFIContext *ctx = NULL;
+        invoke_add(proc, &ctx, i, 1);
+        lfi_linux_detach_thread(proc);
+    }
+
+    lfi_proc_free(proc);
+    printf("attach churn OK\n");
+}
+
 static struct LFILinuxEngine *
 make_engine(struct LFIEngine *engine, const char **maps)
 {
@@ -310,6 +337,16 @@ main(int argc, const char **argv)
         struct LFILinuxEngine *linux_ = make_engine(engine, maps);
         assert(linux_);
         test_destructor_only(linux_, prog, &argv[1], argc - 1, envp);
+        lfi_linux_free(linux_);
+        lfi_free(engine);
+    }
+
+    {
+        struct LFIEngine *engine = make_lfi(pagesize);
+        assert(engine);
+        struct LFILinuxEngine *linux_ = make_engine(engine, maps);
+        assert(linux_);
+        test_attach_churn(linux_, prog, &argv[1], argc - 1, envp);
         lfi_linux_free(linux_);
         lfi_free(engine);
     }
