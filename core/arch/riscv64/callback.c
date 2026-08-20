@@ -9,15 +9,6 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#if !defined(HAVE_MEMFD_CREATE) && defined(HAVE_SYS_MEMFD_CREATE)
-#include <sys/syscall.h>
-int
-memfd_create(const char *name, unsigned flags)
-{
-    return syscall(SYS_memfd_create, name, flags);
-}
-#endif
-
 EXPORT void *
 lfi_box_register_cb(struct LFIBox *box, void *fn)
 {

@@ -1,6 +1,4 @@
-#ifdef HAVE_MEMFD_CREATE
 #define _GNU_SOURCE
-#endif
 
 #include "core.h"
 
@@ -11,16 +9,22 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#if !defined(HAVE_MEMFD_CREATE) && defined(HAVE_SYS_MEMFD_CREATE)
+#if defined(HAVE_SYS_MEMFD_CREATE)
 #include <sys/syscall.h>
-int
-memfd_create(const char *name, unsigned flags)
+static int
+memfdcreate(const char *name, unsigned int flags)
 {
     return syscall(SYS_memfd_create, name, flags);
 }
+#elif defined(HAVE_MEMFD_CREATE)
+static int
+memfdcreate(const char *name, unsigned int flags)
+{
+    return memfd_create(name, flags);
+}
 #elif defined(__APPLE__)
-int
-memfd_create(const char *name, unsigned int flags)
+static int
+memfdcreate(const char *name, unsigned int flags)
 {
     char template[] = "/tmp/memfd-XXXXXX";
     int fd = mkstemp(template);
@@ -80,7 +84,7 @@ _Static_assert(MAXCALLBACKS * sizeof(struct CallbackEntry) % 16384 == 0,
 static bool
 init_cb(struct LFIBox *box)
 {
-    int fd = memfd_create("", 0);
+    int fd = memfdcreate("", 0);
     if (fd < 0)
         return false;
     size_t size = 2 * MAXCALLBACKS * sizeof(struct CallbackEntry);
