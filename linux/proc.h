@@ -13,6 +13,9 @@
 #define LINUX_NOFILE 1024
 // Maximum number of bytes that can be allocated via sys_brk.
 #define BRKMAXSIZE (512UL * 1024 * 1024)
+// Window for randomizing the gap between the end of the loaded ELF image and
+// the start of the brk region.
+#define BRKRNDSIZE (32UL * 1024 * 1024)
 
 struct FDTable {
     // File descriptor conversion table.
@@ -77,6 +80,9 @@ struct LFILinuxProc {
     lfiptr entry;
     // ELF load info.
     struct ELFLoadInfo elfinfo;
+    // Base address the ELF image was loaded at. Chosen at initial load time
+    // (randomized unless no_aslr is set) and reused on reload.
+    lfiptr loadbase;
 
     // File descriptor table.
     struct FDTable fdtable;

@@ -154,7 +154,21 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
                 "could not find .dynsym/.dynstr: dynamic symbol lookup will be unavailable");
     }
 
-    proc->brkbase = info.lastva;
+    if (!reload) {
+        // Place the brk region at a random page-aligned gap after the end of
+        // the loaded ELF image. The gap is chosen once at initial load time;
+        // reloads must reuse it because the reserved region is still at the
+        // old location.
+        lfiptr brkbase = info.lastva;
+        if (!lfi_opts(proc->engine->engine).no_aslr) {
+            size_t pagesize = lfi_opts(proc->engine->engine).pagesize;
+            uint64_t r = 0;
+            if (host_getrandom(&r, sizeof(r), 0) != (ssize_t) sizeof(r))
+                LOG(proc->engine, "warning: getrandom for brk base failed");
+            brkbase += (r % (BRKRNDSIZE / pagesize)) * pagesize;
+        }
+        proc->brkbase = brkbase;
+    }
     proc->brksize = 0;
 
     size_t brkmaxsize = proc->engine->opts.brk_control ?

@@ -49,6 +49,19 @@ test('detach.lfi',
   suite: ['linux'],
 )
 
+test_layout_aslr = executable(
+  'test_layout_aslr.elf',
+  'test_layout_aslr.c',
+  dependencies: [lfi_linux],
+  include_directories: include_directories('..', '../arch/' + archmap[cpu]),
+  c_args: c_args_warnings,
+)
+
+test('layout_aslr.lfi',
+  test_layout_aslr, args: [lib],
+  suite: ['linux'],
+)
+
 if get_option('sys_minimal')
   subdir_done()
 endif

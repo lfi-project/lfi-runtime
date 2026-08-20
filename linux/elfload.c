@@ -7,6 +7,7 @@
 #include "buf.h"
 #include "debugger.h"
 #include "elfdefs.h"
+#include "host.h"
 #include "log.h"
 
 #include <assert.h>
@@ -407,6 +408,36 @@ err1:
     return false;
 }
 
+// Choose the base address for loading the ELF image. With ASLR enabled (the
+// default), the base is placed at a random page-aligned offset within the
+// sandbox, leaving enough room for the loaded image(s) (each bounded by
+// CODE_MAX), the randomized brk region, and other mappings (e.g., the stack).
+static uintptr_t
+elf_load_base(struct LFILinuxProc *proc, bool has_interp)
+{
+    uintptr_t min = proc->box_info.min;
+    if (lfi_opts(proc->engine->engine).no_aslr)
+        return min;
+    size_t brkmax = proc->engine->opts.brk_control ?
+        proc->engine->opts.brk_size :
+        BRKMAXSIZE;
+    // Extra slack for the stack and other runtime mappings.
+    size_t slack = 16UL * 1024 * 1024;
+    size_t images = has_interp ? 2 * CODE_MAX : CODE_MAX;
+    size_t reserve = images + brkmax + BRKRNDSIZE + slack;
+    size_t usable = proc->box_info.max - min;
+    if (usable <= reserve)
+        return min;
+    size_t pagesize = lfi_opts(proc->engine->engine).pagesize;
+    uint64_t window = (usable - reserve) / pagesize;
+    if (window == 0)
+        return min;
+    uint64_t r = 0;
+    if (host_getrandom(&r, sizeof(r), 0) != (ssize_t) sizeof(r))
+        LOG(proc->engine, "warning: getrandom for ELF load base failed");
+    return min + (r % window) * pagesize;
+}
+
 bool
 elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
     const uint8_t *prog_data, size_t prog_size, const char *interp_path,
@@ -425,9 +456,18 @@ elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
         .size = interp_size,
     };
 
-    uintptr_t base = proc->box_info.min;
     uintptr_t p_first, p_last, p_entry, i_first, i_last, i_entry;
     bool has_interp = interp.data != NULL;
+
+    // The load base is chosen once at initial load time; reloads must reuse
+    // it because the original mappings are still at the old base.
+    uintptr_t base;
+    if (reload) {
+        base = proc->loadbase;
+    } else {
+        base = elf_load_base(proc, has_interp);
+        proc->loadbase = base;
+    }
     size_t pagesize = lfi_opts(proc->engine->engine).pagesize;
     Elf64_Ehdr p_ehdr, i_ehdr;
 
