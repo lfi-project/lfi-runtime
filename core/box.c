@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/syscall.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -101,7 +102,10 @@ static uint64_t
 aslr_seed(void)
 {
     uint64_t seed;
-#if defined(HAVE_GETRANDOM)
+#if defined(HAVE_SYS_GETRANDOM)
+    if (syscall(SYS_getrandom, &seed, sizeof(seed), 0) == (long) sizeof(seed))
+        return seed;
+#elif defined(HAVE_GETRANDOM)
     if (getrandom(&seed, sizeof(seed), 0) == sizeof(seed))
         return seed;
 #elif defined(HAVE_ARC4RANDOM_BUF)

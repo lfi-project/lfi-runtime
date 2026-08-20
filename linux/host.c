@@ -8,9 +8,13 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/random.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <unistd.h>
+
+#if defined(HAVE_GETRANDOM)
+#include <sys/random.h>
+#endif
 
 int
 host_err(int err)
@@ -45,8 +49,14 @@ host_err(int err)
     }
 }
 
-#if defined(HAVE_GETRANDOM)
-#include <sys/random.h>
+#if defined(HAVE_SYS_GETRANDOM) || defined(HAVE_GETRANDOM)
+// Kernel ABI values, also provided by <sys/random.h> when it exists.
+#ifndef GRND_NONBLOCK
+#define GRND_NONBLOCK 0x0001
+#endif
+#ifndef GRND_RANDOM
+#define GRND_RANDOM 0x0002
+#endif
 
 static unsigned int
 randomflags(unsigned int flags)
@@ -63,18 +73,32 @@ randomflags(unsigned int flags)
 ssize_t
 host_getrandom(void *buf, size_t size, unsigned int flags)
 {
-#if defined(HAVE_GETRANDOM)
+#if defined(HAVE_SYS_GETRANDOM)
+    ssize_t r = syscall(SYS_getrandom, buf, size, randomflags(flags));
+    if (r < 0)
+        return host_err(errno);
+    return r;
+#elif defined(HAVE_GETRANDOM)
     ssize_t r = getrandom(buf, size, randomflags(flags));
     if (r < 0)
         return host_err(errno);
     return r;
-#else
+#elif defined(HAVE_GETENTROPY)
     if (size > 256)
         size = 256;
-    int r = getentropy(buf, size);
-    if (r < 0)
+    if (getentropy(buf, size) < 0)
         return host_err(errno);
     return size;
+#else
+    int fd = open("/dev/urandom", O_RDONLY | O_CLOEXEC);
+    if (fd < 0)
+        return host_err(errno);
+    ssize_t r = read(fd, buf, size);
+    int err = errno;
+    close(fd);
+    if (r < 0)
+        return host_err(err);
+    return r;
 #endif
 }
 
@@ -125,26 +149,31 @@ host_fstatat(int fd, const char *path, struct Stat *stat_, int flags)
     return 0;
 }
 
-#if defined(HAVE_GETDENTS64) || defined(HAVE_SYS_GETDENTS64)
+#if defined(HAVE_SYS_GETDENTS64) || defined(HAVE_GETDENTS64)
 
 #include <dirent.h>
 #include <limits.h>
-#include <sys/syscall.h>
 
-#if !defined(HAVE_GETDENTS64)
-static int
-getdents64(int fd, struct dirent *buf, size_t len)
+#if defined(HAVE_SYS_GETDENTS64)
+static ssize_t
+getdents(int fd, void *buf, size_t len)
 {
     if (len > INT_MAX)
         len = INT_MAX;
-    return HOST_ERR(int, syscall(SYS_getdents64, fd, buf, len));
+    return syscall(SYS_getdents64, fd, buf, len);
+}
+#else
+static ssize_t
+getdents(int fd, void *buf, size_t len)
+{
+    return getdents64(fd, buf, len);
 }
 #endif
 
 ssize_t
 host_getdents64(int fd, void *dirp, size_t count)
 {
-    return HOST_ERR(ssize_t, getdents64(fd, dirp, count));
+    return HOST_ERR(ssize_t, getdents(fd, dirp, count));
 }
 
 #else

@@ -84,6 +84,13 @@ if compiler.compiles('''#include <sys/syscall.h>
 ''')
   defines += '-DHAVE_SYS_MEMFD_CREATE'
 endif
+if compiler.compiles('''#include <sys/syscall.h>
+#ifndef SYS_getrandom
+#error "no SYS_getrandom"
+#endif
+''')
+  defines += '-DHAVE_SYS_GETRANDOM'
+endif
 if compiler.has_function('getentropy', prefix : '#include <unistd.h>')
   defines += '-DHAVE_GETENTROPY'
 endif
