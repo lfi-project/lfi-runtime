@@ -82,6 +82,11 @@ option('sys_minimal',
   value: false,
   description: 'enable the minimal runtime, which only supports syscalls for basic functionality and memory allocation')
 
+option('disable_signals',
+  type: 'boolean',
+  value: false,
+  description: 'disable signal handling support')
+
 option('ctxreg',
   type: 'boolean',
   value: true,

@@ -13,6 +13,7 @@
 
 #define ROUNDDOWN(X, K) ((X) & -(K))
 
+#ifndef DISABLE_SIGNALS
 static const int kRedzoneSize = 128;
 
 static void
@@ -34,6 +35,7 @@ read64(uint8_t *p)
     __builtin_memcpy(&v, p, 8);
     return v;
 }
+#endif
 
 void
 arch_syshandle(struct LFIContext *ctx)
@@ -48,6 +50,7 @@ arch_syshandle(struct LFIContext *ctx)
         regs->r10, regs->r8, regs->r9);
 }
 
+#ifndef DISABLE_SIGNALS
 // Deliver a signal to the currently-running sandbox context on this thread.
 // Returns true if the signal was successfully delivered to a sandbox handler
 // and returned, false if it fails to handle the forwarded signal.
@@ -186,3 +189,4 @@ arch_forward_signal(struct LFIContext *ctx, int sig, siginfo_t *si,
 
     return true;
 }
+#endif

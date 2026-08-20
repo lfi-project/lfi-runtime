@@ -57,8 +57,11 @@ if not get_option('sys_minimal')
     'sys_unlinkat.c',
     'sys_uname.c',
     'sys_jitcode.c',
-    'sys_signal.c',
     'sys_write.c',
     'sys_writev.c',
   )
+
+  if not get_option('disable_signals')
+    srcs += files('sys_signal.c')
+  endif
 endif

@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <assert.h>
 
-#ifndef SYS_MINIMAL
+#if !defined(SYS_MINIMAL) && !defined(DISABLE_SIGNALS)
 static inline struct sigaction*
 get_engine_sigaction(struct LFIContext *ctx, int sig) {
     if (!ctx)
@@ -116,7 +116,7 @@ lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
         .opts = opts,
     };
 
-#ifndef SYS_MINIMAL
+#if !defined(SYS_MINIMAL) && !defined(DISABLE_SIGNALS)
     lfi_linux_register_sighandler(engine);
 #endif
 

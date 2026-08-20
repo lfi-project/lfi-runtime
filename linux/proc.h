@@ -62,10 +62,12 @@ struct LibSymbols {
     lfiptr setjmp;
 };
 
+#ifndef DISABLE_SIGNALS
 struct SigActionEntry {
     bool valid;
     struct SigAction entry;
 };
+#endif
 
 struct LFILinuxProc {
     // Underlying sandbox information.
@@ -149,9 +151,11 @@ struct LFILinuxProc {
 
     struct LFILinuxEngine *engine;
 
+#ifndef DISABLE_SIGNALS
     // Per-signal handler table.
     struct SigActionEntry signals[LINUX_NSIG];
     pthread_mutex_t lk_signals;
+#endif
 };
 
 struct LFILinuxThread {

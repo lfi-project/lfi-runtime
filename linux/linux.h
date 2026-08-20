@@ -11,7 +11,7 @@ struct LFILinuxEngine {
     struct LFIEngine *engine;
     struct LFILinuxOptions opts;
 
-#ifndef SYS_MINIMAL
+#if !defined(SYS_MINIMAL) && !defined(DISABLE_SIGNALS)
     struct sigaction oldact_sigsegv;
     struct sigaction oldact_sigill;
     struct sigaction oldact_sigbus;

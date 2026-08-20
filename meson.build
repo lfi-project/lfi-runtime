@@ -136,6 +136,9 @@ endif
 if get_option('sys_minimal')
   defines += '-DSYS_MINIMAL'
 endif
+if get_option('disable_signals')
+  defines += '-DDISABLE_SIGNALS'
+endif
 if get_option('ctxreg')
   defines += '-DCTXREG'
   defines += '-DCTXREG_CTX_OFFSET=@0@'.format(get_option('ctxreg_ctx_offset'))

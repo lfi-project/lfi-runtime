@@ -12,6 +12,7 @@
 
 #define ROUNDDOWN(X, K) ((X) & -(K))
 
+#ifndef DISABLE_SIGNALS
 static void
 put32(uint8_t *p, uint32_t v)
 {
@@ -31,6 +32,7 @@ read64(uint8_t *p)
     __builtin_memcpy(&v, p, 8);
     return v;
 }
+#endif
 
 void
 arch_syshandle(struct LFIContext *ctx)
@@ -43,6 +45,7 @@ arch_syshandle(struct LFIContext *ctx)
         regs->x4, regs->x5);
 }
 
+#ifndef DISABLE_SIGNALS
 bool
 arch_forward_signal(struct LFIContext *ctx, int sig, siginfo_t *si,
     void *ucontext)
@@ -172,3 +175,4 @@ arch_forward_signal(struct LFIContext *ctx, int sig, siginfo_t *si,
 
     return true;
 }
+#endif

@@ -118,12 +118,19 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
                 sys_sched_yield(t))
 
         // Signals (also needed, at least as stubs, for threads).
+#ifndef DISABLE_SIGNALS
         SYS(rt_sigaction,
                 sys_rt_sigaction(t, a0, a1, a2, a3))
-        SYS(rt_sigprocmask,
-                sys_ignore(t, "rt_sigprocmask"))
         SYS(rt_sigreturn,
                 sys_rt_sigreturn(t))
+#else
+        SYS(rt_sigaction,
+                sys_ignore(t, "rt_sigaction"))
+        SYS(rt_sigreturn,
+                sys_nosys(t, "rt_sigreturn"))
+#endif
+        SYS(rt_sigprocmask,
+                sys_ignore(t, "rt_sigprocmask"))
         SYS(sigaltstack,
                 sys_ignore(t, "sigaltstack"))
 
