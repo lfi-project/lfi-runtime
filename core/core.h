@@ -28,6 +28,12 @@ struct LFIEngine {
 };
 
 struct LFIBox {
+    // Address of the entry springboard inside the sandbox.
+    lfiptr springboard;
+
+    // Page inside the sandbox holding the return stub and springboard.
+    lfiptr stub_page;
+
     // Non-zero protection key if pku is enabled (zero if disabled).
     int pkey;
 

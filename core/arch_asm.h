@@ -36,6 +36,8 @@
 #define CTX_ABORT_STATUS   808
 #define CTX_CTXREG         816
 
+#define BOX_SPRINGBOARD 0
+
 #define REG_BASE  x27
 #define REG_ADDR  x28
 
@@ -47,9 +49,10 @@
 // clang-format off
 #ifdef __ASSEMBLER__
 # if defined(CTXREG)
-// With CTXREG, x25 points to the ctxreg array and ctxreg[0] holds the context pointer.
+// With CTXREG, x25 points to the ctxreg array, which is embedded in the
+// LFIContext at offset CTX_CTXREG.
 .macro get_ctx reg
-    ldr \reg, [x25, CTXREG_CTX_OFFSET]
+    sub \reg, x25, CTX_CTXREG
 .endm
 
 // With CTXREG, we never need to write the ctx.

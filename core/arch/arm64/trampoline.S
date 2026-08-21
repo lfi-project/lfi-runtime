@@ -8,7 +8,7 @@
     mov x13, #0
     mov x14, #0
     mov x15, #0
-    mov x16, #0
+    // skip x16 (springboard address)
     mov x17, #0
     // skip x18 (platform-reserved)
     mov x19, #0
@@ -207,9 +207,10 @@ lfi_trampoline_direct:
     lazy_ctx_clone
 
 .lfi_trampoline_common:
-    ldr x9, [x13, #REGS_RETADDR]
     // load target into x10
     mov x10, x22
+    // load the entry springboard's address from the box (x21)
+    ldr x16, [x21, #BOX_SPRINGBOARD]
 
 #ifndef CTXREG
     // set the sandbox thread control block by saving the old value of
@@ -230,8 +231,6 @@ lfi_trampoline_direct:
 
     // set guest stack
     mov sp, x12
-    // set return address to lfi_retfn
-    mov x30, x9
     // set base pointer
     ldr REG_BASE, [x13, REGS_BASE]
     // set address pointer to a valid value
@@ -253,10 +252,10 @@ lfi_trampoline_direct:
     zero_regs
 #endif
 
-    // enter sandbox
-    add x16, REG_BASE, w10, uxtw
+    // Enter the sandbox through the springboard.
+    mov x30, x16
     br x16
-    // the previous call should return through lfi_ret
+    // the sandbox call returns through lfi_ret
     udf #0
 
 .global lfi_ret_end
