@@ -61,21 +61,6 @@ threadspawn(void *arg)
 #error "invalid arch"
 #endif
 
-    stack_t ss;
-    ss.ss_sp = malloc(SIGSTKSZ);
-    if (!ss.ss_sp) {
-        LOG(t->proc->engine, "failed to allocate signal stack");
-        goto end;
-    }
-    ss.ss_size = SIGSTKSZ;
-    ss.ss_flags = 0;
-
-    // Register alternate stack.
-    if (sigaltstack(&ss, NULL) == -1) {
-        LOG(t->proc->engine, "failed to register signal stack");
-        goto end;
-    }
-
     struct sigaction sa = { 0 };
     sa.sa_handler = &thread_signal;
     sa.sa_flags = SA_ONSTACK;
@@ -96,7 +81,6 @@ end:;
     struct LFILinuxProc *proc = t->proc;
     int tid = t->tid;
     lfi_thread_free(t);
-    free(ss.ss_sp);
     lock(&proc->lk_threads);
     proc->active_threads--;
     pthread_cond_signal(&proc->cond_threads);

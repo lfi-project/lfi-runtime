@@ -55,6 +55,10 @@ struct LFIOptions {
     // the host signal handler executes on. The user is responsible for making
     // sure that signal handlers use SA_ONSTACK. If this option is enabled,
     // the user is also responsible for creating an alternate signal stack.
+    //
+    // The stack is per-thread: every thread that enters a sandbox gets one on
+    // entry and it is freed when that thread exits. A thread that already has
+    // an alternate stack does not get a new one.
     bool no_init_sigaltstack;
 };
 

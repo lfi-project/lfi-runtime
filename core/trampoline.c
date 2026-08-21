@@ -27,6 +27,7 @@ lfi_clone(struct LFIBox *box, struct LFIContext **ctxp) __asm__("lfi_clone");
 EXPORT void
 lfi_clone(struct LFIBox *box, struct LFIContext **ctxp)
 {
+    lfi_init_sigaltstack(box->engine);
     if (!box->engine->clone_cb) {
         LOG_(
             "error: performing automatic clone during trampoline, but clone_cb is NULL");

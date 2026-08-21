@@ -42,6 +42,8 @@ lfi_ctx_data(struct LFIContext *ctx)
 EXPORT int
 lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
 {
+    lfi_init_sigaltstack(ctx->box->engine);
+
     // Save and restore invoke_info.ctx so that nested calls (e.g. running a
     // signal handler while sandbox execution is still live on this thread)
     // leave the outer ctx intact.

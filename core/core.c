@@ -1,6 +1,8 @@
 #include "core.h"
 
 #include <assert.h>
+#include <limits.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,21 +69,96 @@ check_pku(void)
 #endif
 
 static bool
-init_sigaltstack(struct LFIEngine *engine)
+has_sigaltstack(void)
 {
-    engine->altstack.ss_sp = malloc(SIGSTKSZ);
-    if (engine->altstack.ss_sp == NULL) {
-        lfi_error = LFI_ERR_ALLOC;
+    stack_t cur;
+    if (sigaltstack(NULL, &cur) == -1)
         return false;
+    return (cur.ss_flags & SS_DISABLE) == 0 && cur.ss_sp != NULL;
+}
+
+static void
+disable_sigaltstack(void)
+{
+    sigaltstack(&(stack_t) { .ss_flags = SS_DISABLE }, NULL);
+}
+
+// Holds the stack a thread installed for itself so that the destructor can
+// free it when that thread exits.
+static pthread_key_t altstack_key;
+static pthread_once_t altstack_key_once = PTHREAD_ONCE_INIT;
+static bool altstack_key_ready;
+
+// Set once this thread has been through lfi_init_sigaltstack.
+static thread_local bool altstack_done;
+
+// Number of destructor rounds this thread has been through.
+static thread_local int altstack_rounds;
+
+static void
+altstack_destructor(void *stack)
+{
+    // Destructors run in rounds, in an unspecified order within a round, and
+    // some of them re-enter the sandbox on this thread (the Linux runtime
+    // tears down a thread's context with a sandbox call). Handing the stack
+    // back to the key asks for another round, which keeps it registered until
+    // every destructor that does not do the same has finished.
+    if (++altstack_rounds < PTHREAD_DESTRUCTOR_ITERATIONS &&
+        pthread_setspecific(altstack_key, stack) == 0)
+        return;
+    disable_sigaltstack();
+    free(stack);
+}
+
+static void
+init_altstack_key(void)
+{
+    altstack_key_ready = pthread_key_create(&altstack_key,
+        altstack_destructor) == 0;
+}
+
+void
+lfi_init_sigaltstack(struct LFIEngine *engine)
+{
+    if (engine->opts.no_init_sigaltstack || altstack_done)
+        return;
+    altstack_done = true;
+
+    if (has_sigaltstack()) {
+        LOG(engine, "alternate signal stack already registered");
+        return;
     }
-    engine->altstack.ss_size = SIGSTKSZ;
-    engine->altstack.ss_flags = 0;
-    if (sigaltstack(&engine->altstack, NULL) == -1) {
-        free(engine->altstack.ss_sp);
+
+    pthread_once(&altstack_key_once, init_altstack_key);
+    if (!altstack_key_ready) {
         lfi_error = LFI_ERR_SIGALTSTACK;
-        return false;
+        ERROR("warning: failed to create signal stack key");
+        return;
     }
-    return true;
+
+    stack_t ss = (stack_t) {
+        .ss_sp = malloc(SIGSTKSZ),
+        .ss_size = SIGSTKSZ,
+        .ss_flags = 0,
+    };
+    if (ss.ss_sp == NULL) {
+        lfi_error = LFI_ERR_ALLOC;
+        ERROR("warning: failed to allocate signal stack");
+        return;
+    }
+    if (sigaltstack(&ss, NULL) == -1) {
+        free(ss.ss_sp);
+        lfi_error = LFI_ERR_SIGALTSTACK;
+        ERROR("warning: failed to register signal stack");
+        return;
+    }
+
+    if (pthread_setspecific(altstack_key, ss.ss_sp) != 0) {
+        disable_sigaltstack();
+        free(ss.ss_sp);
+        lfi_error = LFI_ERR_SIGALTSTACK;
+        ERROR("warning: failed to register signal stack destructor");
+    }
 }
 
 EXPORT struct LFIEngine *
@@ -132,10 +209,6 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
         .opts = opts,
     };
 
-    if (!engine->opts.no_init_sigaltstack)
-        if (!init_sigaltstack(engine))
-            goto err2;
-
     if (opts.no_verify)
         LOG(engine, "unsafe: verification disabled");
     if (opts.allow_wx)
@@ -167,7 +240,6 @@ lfi_free(struct LFIEngine *engine)
 {
     // Unmaps all virtual memory reserved by the engine.
     boxmap_delete(engine->bm);
-    free(engine->altstack.ss_sp);
     free(engine);
 }
 
