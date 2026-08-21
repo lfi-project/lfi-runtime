@@ -31,8 +31,8 @@ uint64_t
 boxmap_active(struct BoxMap *map);
 
 // boxmap_reserve reserves 'size' bytes of space in 'map'. If 'size' is 0, it
-// will attempt to reserve as much space as possible. Returns false if an error
-// occurred.
+// will attempt to reserve as much space as possible, failing only if a
+// minimum amount could not be reserved. Returns false if an error occurred.
 bool
 boxmap_reserve(struct BoxMap *map, size_t size);
 

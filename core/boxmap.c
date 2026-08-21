@@ -117,7 +117,7 @@ addregion(struct BoxMap *map, void *base, size_t size)
     void *region = mmap((void *) alignbase, alignsize, PROT_NONE,
         MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
     if (region != (void *) alignbase) {
-        free(alloc);
+        extalloc_delete(alloc);
         return false;
     }
 
@@ -138,16 +138,21 @@ boxmap_reserve(struct BoxMap *map, size_t size)
     size_t total = size;
     size_t min = size;
     size_t totalgot = 0;
+    // Total amount to aim for, and the amount below which the reservation
+    // counts as failed.
+    size_t want = size;
+    size_t need = size;
 
     if (size == 0) {
+        // Reserve as much as possible.
         total = tb(256);
         size = tb(255);
         min = gb(32);
+        want = size;
+        need = min;
     }
-    size_t i_size = size;
 
-    int i;
-    for (i = 0; i < ADDR_REGION_MAX; i++) {
+    for (int i = 0; i < ADDR_REGION_MAX; i++) {
         void *base;
         size_t got = reserve(size, min, &base);
         if (!got)
@@ -155,38 +160,29 @@ boxmap_reserve(struct BoxMap *map, size_t size)
         totalgot += got;
         total = total - got;
         size = total;
-        if (!addregion(map, base, got))
+        if (!addregion(map, base, got)) {
+            munmap(base, got);
             return false;
-        if (totalgot >= i_size)
+        }
+        if (totalgot >= want)
             break;
     }
-    if (totalgot < i_size) {
-        return false;
-    }
-    return true;
+    return totalgot >= need;
 }
 
-static bool
-isfull(struct BoxMap *map)
-{
-    for (size_t i = 0; i < map->nregions; i++) {
-        if (!extalloc_is_full(map->regions[i].alloc))
-            return false;
-    }
-    return true;
-}
-
-// This function can only be called if the engine is not full.
 static uintptr_t
 allocslot(struct BoxMap *map, size_t size)
 {
     for (size_t i = 0; i < map->nregions; i++) {
-        if (!extalloc_is_full(map->regions[i].alloc)) {
+        // A region without enough contiguous free space is skipped in favor
+        // of the next one.
+        uintptr_t p = extalloc_alloc(map->regions[i].alloc, size);
+        if (p != 0) {
             map->regions[i].active++;
-            return extalloc_alloc(map->regions[i].alloc, size);
+            return p;
         }
     }
-    __builtin_unreachable();
+    return 0;
 }
 
 static void
@@ -204,10 +200,6 @@ deleteslot(struct BoxMap *map, uintptr_t base, size_t size)
 uintptr_t
 boxmap_addspace(struct BoxMap *map, size_t size)
 {
-    if (isfull(map)) {
-        return 0;
-    }
-
     return allocslot(map, size);
 }
 

@@ -154,7 +154,7 @@ lfi_box_new(struct LFIEngine *engine)
         else
             LOG(engine, "could not allocate pkey: invalid argument");
         lfi_error = LFI_ERR_PKU;
-        goto err1;
+        goto err2;
     }
     assert(pkey != 0);
     int r = pkey_mprotect((void *) base, size, PROT_NONE, pkey);
@@ -179,6 +179,9 @@ lfi_box_new(struct LFIEngine *engine)
         engine->opts.pagesize);
     if (!box->mm) {
         lfi_error = LFI_ERR_MMAP;
+#ifdef HAVE_PKU
+        pkey_free(pkey);
+#endif
         goto err2;
     }
     if (!engine->opts.no_aslr)
