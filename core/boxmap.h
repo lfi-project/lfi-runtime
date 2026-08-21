@@ -67,6 +67,10 @@ struct AddrRegion {
     size_t size;
     size_t active;
     struct ExtAlloc *alloc;
+
+    // The full span originally reserved for this region.
+    void *mapbase;
+    size_t mapsize;
 };
 
 struct BoxMap {
