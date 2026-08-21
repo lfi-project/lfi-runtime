@@ -48,7 +48,7 @@ void
 boxmap_delete(struct BoxMap *map)
 {
     for (size_t i = 0; i < map->nregions; i++) {
-        munmap(map->regions[i].base, map->regions[i].size);
+        munmap(map->regions[i].mapbase, map->regions[i].mapsize);
         extalloc_delete(map->regions[i].alloc);
     }
 
@@ -164,6 +164,8 @@ addregion(struct BoxMap *map, void *base, size_t size)
         .base = (void *) alignbase,
         .size = alignsize,
         .alloc = alloc,
+        .mapbase = base,
+        .mapsize = size,
     };
 
     return true;
