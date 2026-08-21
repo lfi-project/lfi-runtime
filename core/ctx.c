@@ -42,6 +42,7 @@ lfi_ctx_data(struct LFIContext *ctx)
 EXPORT int
 lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
 {
+    lfi_init_sigaltstack(ctx->box->engine);
     // Save the ctx in invoke info so it can be retrieved via lfi_cur_ctx.
     lfi_invoke_info.ctx = &ctx;
 #ifdef SEGUE_CACHE_GS

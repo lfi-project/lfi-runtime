@@ -1,7 +1,6 @@
 #include "sys/sys.h"
 #include "trampoline.h"
 
-#include <signal.h>
 #include <stdatomic.h>
 
 static bool
@@ -48,30 +47,11 @@ threadspawn(void *arg)
 #error "invalid arch"
 #endif
 
-    stack_t ss;
-    ss.ss_sp = malloc(SIGSTKSZ);
-    if (!ss.ss_sp) {
-        LOG(t->proc->engine, "failed to allocate signal stack");
-        goto end;
-    }
-    ss.ss_size = SIGSTKSZ;
-    ss.ss_flags = 0;
-
-    // Register an alternate stack, so that a host signal arriving while this
-    // thread is executing sandbox code does not run its handler on the sandbox
-    // stack, where other sandbox threads could manipulate it.
-    if (sigaltstack(&ss, NULL) == -1) {
-        LOG(t->proc->engine, "failed to register signal stack");
-        goto end;
-    }
-
     lfi_ctx_run(t->ctx, entry);
 
-end:;
     struct LFILinuxProc *proc = t->proc;
     int tid = t->tid;
     lfi_thread_free(t);
-    free(ss.ss_sp);
     lock(&proc->lk_threads);
     proc->active_threads--;
     pthread_cond_signal(&proc->cond_threads);

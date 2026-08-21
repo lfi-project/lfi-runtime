@@ -8,7 +8,6 @@
 #include "log.h"
 #include "mmap/mmap_c.h"
 
-#include <signal.h>
 #if defined(__APPLE__)
 #ifndef thread_local
 #define thread_local _Thread_local
@@ -26,8 +25,6 @@ struct LFIEngine {
 
     void (*sys_handler)(struct LFIContext *ctx);
     struct LFIContext *(*clone_cb)(struct LFIBox *box);
-
-    stack_t altstack;
 };
 
 struct LFIBox {
@@ -103,6 +100,8 @@ extern thread_local int lfi_error;
 extern thread_local char *lfi_error_desc;
 
 void lfi_box_cb_free(struct LFIBox *box);
+
+void lfi_init_sigaltstack(struct LFIEngine *engine);
 
 static inline size_t
 kb(size_t x)
