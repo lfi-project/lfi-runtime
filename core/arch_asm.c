@@ -41,6 +41,16 @@ _Static_assert(offsetof(struct LFIContext, abort_callback) == CTX_ABORT_CALLBACK
 _Static_assert(offsetof(struct LFIContext, abort_status) == CTX_ABORT_STATUS,
     "incorrect abort_status offset");
 
+#ifdef CTXREG
+// The CTXREG get_ctx macro recovers the context pointer as x25 - CTX_CTXREG.
+_Static_assert(offsetof(struct LFIContext, ctxreg) == CTX_CTXREG,
+    "incorrect ctxreg offset");
+#endif
+
+// The trampoline loads the entry springboard's address from the box.
+_Static_assert(offsetof(struct LFIBox, springboard) == BOX_SPRINGBOARD,
+    "incorrect springboard offset");
+
 #elif defined(LFI_ARCH_X64)
 
 _Static_assert(offsetof(struct LFIRegs, pkey) == REGS_PKEY,

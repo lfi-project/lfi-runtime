@@ -563,21 +563,32 @@ lfi_box_p2l(struct LFIBox *box, uintptr_t p)
 
 #if defined(LFI_ARCH_ARM64)
 
-static uint8_t ret[] = {
+// Offset of the entry springboard within the stub page.
+#define STUB_SPRINGBOARD 16
+
+static uint8_t stubs[] = {
+    // return function
     0x7e, 0x03, 0x5e, 0xf8, // ldr x30, [x27, #-32]
     0xc0, 0x03, 0x3f, 0xd6, // blr x30
+    0x1f, 0x20, 0x03, 0xd5, // nop
+    0x1f, 0x20, 0x03, 0xd5, // nop
+    // entry springboard (offset STUB_SPRINGBOARD)
+    0x7c, 0x43, 0x2a, 0x8b, // add x28, x27, w10, uxtw
+    0x80, 0x03, 0x3f, 0xd6, // blr x28
+    0x7e, 0x03, 0x5e, 0xf8, // ldr x30, [x27, #-32]
+    0xc0, 0x03, 0x1f, 0xd6, // br x30
 };
 
 #elif defined(LFI_ARCH_X64)
 
-static uint8_t ret[] = {
+static uint8_t stubs[] = {
     0x4c, 0x8d, 0x1d, 0x04, 0x00, 0x00, 0x00, // lea 0x4(%rip), %r11
     0x41, 0xff, 0x66, 0xe0,                   // jmp *-0x20(%r14)
 };
 
 #elif defined(LFI_ARCH_RISCV64)
 
-static uint8_t ret[] = {
+static uint8_t stubs[] = {
     0x83, 0xb0, 0x0a, 0xfe, // la ra, -32(x21)
     0xe7, 0x80, 0x00, 0x00, // jalr ra
 };
@@ -588,9 +599,13 @@ static uint8_t ret[] = {
 
 #endif
 
-EXPORT void
-lfi_box_init_ret(struct LFIBox *box)
+// Map the page holding the stubs into the sandbox.
+static lfiptr
+stubpage(struct LFIBox *box)
 {
+    if (box->stub_page)
+        return box->stub_page;
+
     size_t pagesize = box->engine->opts.pagesize;
     lfiptr p = lfi_box_mapany(box, pagesize, LFI_PROT_READ | LFI_PROT_WRITE,
         LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
@@ -602,18 +617,32 @@ lfi_box_init_ret(struct LFIBox *box)
     memset((void *) lfi_box_l2p(box, p), 0xcc, pagesize);
 #endif
 
-    lfiptr p_ret = lfi_box_copyto(box, p, ret, sizeof(ret));
+    lfi_box_copyto(box, p, stubs, sizeof(stubs));
 
     int r = lfi_box_mprotect(box, p, pagesize, LFI_PROT_READ | LFI_PROT_EXEC);
     assert(r == 0);
 
-    box->retaddr = p_ret;
+    box->stub_page = p;
+#if defined(LFI_ARCH_ARM64)
+    box->springboard = p + STUB_SPRINGBOARD;
+#endif
+    return p;
+}
+
+EXPORT void
+lfi_box_init_ret(struct LFIBox *box)
+{
+    box->retaddr = stubpage(box);
 }
 
 EXPORT void
 lfi_box_register_ret(struct LFIBox *box, lfiptr retaddr)
 {
     assert(lfi_box_ptrvalid(box, retaddr));
+#if defined(LFI_ARCH_ARM64)
+    // The arm64 trampoline enters the sandbox through the springboard.
+    stubpage(box);
+#endif
     box->retaddr = retaddr;
 }
 
