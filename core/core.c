@@ -97,7 +97,7 @@ altstack_destructor(void *stack)
     // tears down a thread's context with a sandbox call). Handing the stack
     // back to the key asks for another round, which keeps it registered until
     // every destructor that does not do the same has finished.
-    if (++altstack_rounds < PTHREAD_DESTRUCTOR_ITERATIONS &&
+    if (++altstack_rounds < PTHREAD_DESTRUCTOR_ITERATIONS - 1 &&
         pthread_setspecific(altstack_key, stack) == 0)
         return;
     disable_sigaltstack();
