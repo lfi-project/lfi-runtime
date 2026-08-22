@@ -15,7 +15,7 @@ lfi_ctx_regs_init(struct LFIContext *ctx)
 # ifdef GS_CONTEXT
     // The %gs base points to the ctxreg array (set up in lfi_ctx_entry and the
     // trampolines); r15 is a free general-purpose register.
-    ctx->regs.r15 = 0;
+    ctx->regs.r15 = 0x00000000ffffffff;
 # else
     ctx->regs.r15 = (uint64_t) ctx->ctxreg;
 # endif
