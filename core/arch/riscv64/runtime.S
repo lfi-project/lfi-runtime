@@ -42,10 +42,12 @@ lfi_ctx_entry:
     // put entrypoint in ra
     mv ra, a2
 
+#ifndef CTXREG
     // set the sandbox thread control block
     get_ctx t0
     sd t0, REGS_HOST_TP(a0)
     write_ctx a0
+#endif
 
     // skip ra
     ld sp, REGS_SP(a0)
@@ -122,8 +124,10 @@ lfi_ctx_entry:
 lfi_ctx_end:
     // restore host sp and tp
     ld sp, REGS_HOST_SP(a0)
+#ifndef CTXREG
     ld t0, REGS_HOST_TP(a0)
     write_ctx t0
+#endif
 
     // put val in return register
     mv a0, a1
@@ -230,8 +234,10 @@ lfi_syscall_entry:
     fsd f30, REGS_F+8*30(REG_BASE)
     fsd f31, REGS_F+8*31(REG_BASE)
 
+#ifndef CTXREG
     ld t0, REGS_HOST_TP(REG_BASE)
     write_ctx t0
+#endif
 
     ld sp, REGS_HOST_SP(REG_BASE)
 
@@ -242,7 +248,9 @@ lfi_syscall_entry:
     ld a0, 0(sp)
     addi sp, sp, 8
 
+#ifndef CTXREG
     write_ctx a0
+#endif
 
     ld ra, REGS_RA(a0)
     ld sp, REGS_SP(a0)
@@ -316,19 +324,27 @@ lfi_syscall_entry:
 .global lfi_get_tp
 .p2align 4
 lfi_get_tp:
+#ifdef CTXREG
+    ebreak
+#else
     get_ctx t0
     ld a0, REGS_TP(t0)
     add.uw ra, ra, REG_BASE
     ret
+#endif
 
 .global lfi_set_tp
 .p2align 4
 lfi_set_tp:
+#ifdef CTXREG
+    ebreak
+#else
     get_ctx REG_BASE
     sd a0, REGS_TP(REG_BASE)
     ld REG_BASE, REGS_BASE(REG_BASE)
     add.uw ra, ra, REG_BASE
     ret
+#endif
 
 // Unsupported runtime call.
 .global lfi_rtcall_bad

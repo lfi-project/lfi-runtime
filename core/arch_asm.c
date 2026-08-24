@@ -171,6 +171,10 @@ _Static_assert(offsetof(struct LFIRegs, REG_BASE) == REGS_BASE,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, REG_ADDR) == REGS_ADDR,
     "incorrect REGS offset");
+#ifdef CTXREG
+_Static_assert(offsetof(struct LFIRegs, REG_CTX) == REGS_CTX,
+    "incorrect REGS offset");
+#endif
 
 #endif
 

@@ -229,10 +229,22 @@
 
 #define REGS_BASE REGS_S11
 #define REGS_ADDR REGS_S1
+#define REGS_CTX  REGS_S10
 #define REG_BASE  s11
 #define REG_ADDR  s1
+#define REG_CTX   s10
 // clang-format off
 #ifdef __ASSEMBLER__
+#ifdef CTXREG
+// With CTXREG, s10 points to the ctxreg array and ctxreg[0] holds the context pointer.
+.macro get_ctx reg
+    ld \reg, CTXREG_CTX_OFFSET(REG_CTX)
+.endm
+
+// With CTXREG, we never need to write the ctx.
+.macro write_ctx reg
+.endm
+#else
 .macro get_ctx reg
     ld \reg, (8*TLS_SLOT_LFI)(tp)
 .endm
@@ -240,6 +252,7 @@
 .macro write_ctx reg
     sd \reg, (8*TLS_SLOT_LFI)(tp)
 .endm
+#endif
 #endif
 // clang-format on
 
