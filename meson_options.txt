@@ -70,17 +70,12 @@ option('sys_minimal',
   value: false,
   description: 'enable the minimal runtime, which only supports syscalls for basic functionality and memory allocation')
 
-option('ctxreg',
-  type: 'boolean',
-  value: true,
-  description: 'enable context register (x25 on arm64, r15 on x64, s10 on riscv64) for storing runtime context')
-
 option('ctxreg_ctx_offset',
   type: 'integer',
   min: 0,
   max: 56,
   value: 8,
-  description: 'byte offset of the context pointer within the ctxreg array (must be a multiple of 8)')
+  description: 'byte offset of the context pointer within the ctxreg array (x25 on arm64, r15 on x64, s10 on riscv64; must be a multiple of 8)')
 
 option('ctxreg_tp_offset',
   type: 'integer',

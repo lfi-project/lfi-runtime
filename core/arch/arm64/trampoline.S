@@ -17,9 +17,6 @@
     mov x22, #0
     mov x23, #0
     mov x24, #0
-#ifndef CTXREG
-    mov x25, #0
-#endif
     mov x26, #0
     // skip x27 (base)
     // skip x28 (addr)
@@ -208,15 +205,6 @@ lfi_trampoline_direct:
     // load target into x10
     mov x10, x22
 
-#ifndef CTXREG
-    // set the sandbox thread control block by saving the old value of
-    // [tpidr_el0, TLS_SLOT_LFI] into the context and setting it to point to
-    // the context itself.
-    get_ctx x12
-    str x12, [x13, REGS_HOST_TP]
-    write_ctx x13, x12
-#endif
-
     // save user sp to stack
     ldr x12, [x13, REGS_SP]
     stp x12, xzr, [sp, #-16]!
@@ -234,9 +222,7 @@ lfi_trampoline_direct:
     // set address pointer to a valid value
     mov REG_ADDR, REG_BASE
 
-#ifdef CTXREG
     ldr x25, [x13, REGS_X(25)]
-#endif
 
 #ifndef STORES_ONLY
     // Zero non-argument registers for full LFI.
@@ -263,11 +249,6 @@ lfi_ret_end:
 lfi_ret:
     bti jc
     get_ctx REG_BASE
-#ifndef CTXREG
-    // restore host thread control block
-    ldr x19, [REG_BASE, REGS_HOST_TP]
-    write_ctx x19, x20
-#endif
 .lfi_ret_internal:
     // restore host stack
     ldr x19, [REG_BASE, REGS_HOST_SP]

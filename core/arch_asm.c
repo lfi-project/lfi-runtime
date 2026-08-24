@@ -11,10 +11,6 @@ _Static_assert(sizeof(void *) == sizeof(void (*)(void)),
 
 _Static_assert(offsetof(struct LFIRegs, host_sp) == REGS_HOST_SP,
     "incorrect REGS offset");
-_Static_assert(offsetof(struct LFIRegs, host_tp) == REGS_HOST_TP,
-    "incorrect REGS offset");
-_Static_assert(offsetof(struct LFIRegs, _tp) == REGS_TP,
-    "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, retaddr) == REGS_RETADDR,
     "incorrect REGS offset");
 
@@ -40,6 +36,8 @@ _Static_assert(offsetof(struct LFIContext, abort_callback) == CTX_ABORT_CALLBACK
     "incorrect abort_callback offset");
 _Static_assert(offsetof(struct LFIContext, abort_status) == CTX_ABORT_STATUS,
     "incorrect abort_status offset");
+_Static_assert(offsetof(struct LFIContext, ctxreg) == CTX_CTXREG,
+    "incorrect ctxreg offset");
 
 #elif defined(LFI_ARCH_X64)
 
@@ -171,10 +169,8 @@ _Static_assert(offsetof(struct LFIRegs, REG_BASE) == REGS_BASE,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, REG_ADDR) == REGS_ADDR,
     "incorrect REGS offset");
-#ifdef CTXREG
 _Static_assert(offsetof(struct LFIRegs, REG_CTX) == REGS_CTX,
     "incorrect REGS offset");
-#endif
 
 #endif
 

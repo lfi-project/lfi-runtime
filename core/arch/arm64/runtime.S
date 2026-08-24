@@ -29,15 +29,6 @@ lfi_ctx_entry:
     // put entrypoint in x30
     mov x30, x2
 
-#ifndef CTXREG
-    // set the sandbox thread control block by saving the old value of
-    // [tpidr_el0, TLS_SLOT_LFI] into the context and setting it to point to
-    // the context itself.
-    get_ctx x8
-    str x8, [x0, REGS_HOST_TP]
-    write_ctx x0, x8
-#endif
-
     // load all registers
     ldp x2, x3,   [x0, REGS_X(2)]
     ldp x4, x5,   [x0, REGS_X(4)]
@@ -105,11 +96,6 @@ lfi_ctx_end:
     // restore host_sp
     ldr x19, [x0, REGS_HOST_SP]
     mov sp, x19
-#ifndef CTXREG
-    // restore host_tp
-    ldr x19, [x0, REGS_HOST_TP]
-    write_ctx x19, x20
-#endif
     // put val into return register
     mov x0, x1
     ldp x29, x30, [sp], 16
@@ -164,12 +150,6 @@ lfi_syscall_entry:
     stp q28, q29, [REG_BASE, REGS_V(28)]
     stp q30, q31, [REG_BASE, REGS_V(30)]
 
-#ifndef CTXREG
-    // swap the thread control block back to the host one
-    ldr x0, [REG_BASE, REGS_HOST_TP]
-    write_ctx x0, x1
-#endif
-
     // restore host stack and call handler
     ldr x0, [REG_BASE, REGS_HOST_SP]
     mov sp, x0
@@ -177,11 +157,6 @@ lfi_syscall_entry:
     mov x0, REG_BASE
     bl lfi_syscall_handler
     ldr x0, [sp], 16 // pop
-
-#ifndef CTXREG
-    // swap thread control block back to context pointer
-    write_ctx x0, x1
-#endif
 
     // restore registers
     ldp x2, x3,   [x0, REGS_X(2)]
@@ -223,34 +198,12 @@ lfi_syscall_entry:
 .global lfi_get_tp
 .p2align 4
 lfi_get_tp:
-#ifdef CTXREG
     brk #0
-#else
-    bti jc
-    // reset REG_ADDR
-    mov REG_ADDR, REG_BASE
-    get_ctx x0
-    ldr x0, [x0, REGS_TP]
-    add x30, REG_BASE, w30, uxtw
-    ret
-#endif
 
 .global lfi_set_tp
 .p2align 4
 lfi_set_tp:
-#ifdef CTXREG
     brk #0
-#else
-    bti jc
-    // reset REG_ADDR
-    mov REG_ADDR, REG_BASE
-    get_ctx REG_BASE
-    str x0, [REG_BASE, REGS_TP]
-    // reload REG_BASE
-    ldr REG_BASE, [REG_BASE, REGS_BASE]
-    add x30, REG_BASE, w30, uxtw
-    ret
-#endif
 
 // Unsupported runtime call.
 .global lfi_rtcall_bad

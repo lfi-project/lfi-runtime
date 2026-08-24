@@ -1,7 +1,5 @@
-lfiv_opts = ['arch=' + archmap[cpu]]
-if get_option('ctxreg')
-  lfiv_opts += 'ctxreg_tp_offset=' + get_option('ctxreg_tp_offset').to_string()
-endif
+lfiv_opts = ['arch=' + archmap[cpu],
+  'ctxreg_tp_offset=' + get_option('ctxreg_tp_offset').to_string()]
 lfiv = subproject('lfi-verifier', default_options: lfiv_opts).get_variable('lfiv').as_link_whole()
 
 srcs = files(

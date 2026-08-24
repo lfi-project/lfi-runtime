@@ -50,10 +50,6 @@
     // Save current sandbox stack pointer.
     movq %r12, REGS_RSP(%r11)
 
-    // Restore host tp.
-    movq REGS_HOST_TP(%r11), %r12
-    write_ctx %r12
-
 .if \with_struct
     movq %rdi, REGS_RDI(%r11)
     movq %rsi, REGS_RSI(%r11)
@@ -90,8 +86,6 @@
     seg_gs_set %r11, %r10
 #endif
 
-    // Set the sandbox thread control block to the context pointer.
-    write_ctx %r11
     // Move current sandbox stack pointer to %r10
     movq REGS_RSP(%r11), %r10
     // Restore old sandbox stack pointer in the Regs struct.

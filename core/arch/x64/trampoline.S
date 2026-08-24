@@ -9,9 +9,6 @@
     xorq %r12, %r12
     xorq %r13, %r13
     // skip %r14 (base)
-#ifndef CTXREG
-    xorq %r15, %r15
-#endif
     xorps %xmm8, %xmm8
     xorps %xmm9, %xmm9
     xorps %xmm10, %xmm10
@@ -132,9 +129,6 @@ lfi_trampoline_struct:
 #endif
     movq INVOKE_CTX(%r13), %r13
     movq %r13, %r11
-#ifndef CTXREG
-    movq $0, %r15
-#endif
 
     lazy_ctx_clone
 
@@ -177,9 +171,6 @@ lfi_trampoline:
 #endif
     movq INVOKE_CTX(%r13), %r13
     movq %r13, %r11
-#ifndef CTXREG
-    movq $0, %r15
-#endif
 
     lazy_ctx_clone
 
@@ -254,17 +245,8 @@ lfi_trampoline_direct:
     addq %REG_BASE, %r11
 
     movq (%r13), %r13
-#ifndef CTXREG
-    // set the sandbox thread control block by saving the old value of
-    // %fs:TLS_SLOT_LFI into the context and setting it to point to the context
-    // itself
-    get_ctx %r12
-    movq %r12, REGS_HOST_TP(%r13)
-    write_ctx %r13
-#else
     // load ctxreg pointer for the sandbox
     movq REGS_R15(%r13), %r15
-#endif
 
 #ifndef STORES_ONLY
     fldcw REGS_FCW(%r13)
@@ -302,9 +284,6 @@ lfi_ret:
 lfi_ret_end:
     // restore host sp
     movq REGS_HOST_SP(%rdi), %rsp
-    // restore host tp
-    movq REGS_HOST_TP(%rdi), %rbp
-    write_ctx %rbp
     // save return registers
     movq %rax, REGS_RAX(%rdi)
     movq %rdx, REGS_RDX(%rdi)

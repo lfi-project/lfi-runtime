@@ -18,15 +18,6 @@ lfi_ctx_entry:
     // put entrypoint in %r11
     movq %rdx, %r11
 
-#ifndef CTXREG
-    // set the sandbox thread control block by saving the old value of
-    // %fs:TLS_SLOT_LFI into the context and setting it to point to the context
-    // itself.
-    get_ctx %rax
-    movq %rax, REGS_HOST_TP(%rdi)
-    write_ctx %rdi
-#endif
-
     // load all registers
     movq REGS_RSP(%rdi), %rsp
     movq REGS_RAX(%rdi), %rax
@@ -85,11 +76,6 @@ lfi_ctx_entry:
 lfi_ctx_end:
     // restore host_sp
     movq REGS_HOST_SP(%rdi), %rsp
-#ifndef CTXREG
-    // restore host_tp
-    movq REGS_HOST_TP(%rdi), %rbp
-    write_ctx %rbp
-#endif
     // put val in the return register
     movq %rsi, %rax
     cld
@@ -144,12 +130,6 @@ lfi_syscall_entry:
     movq %xmm14, REGS_XMM(14)(%rcx)
     movq %xmm15, REGS_XMM(15)(%rcx)
 
-#ifndef CTXREG
-    // swap the thread control block back to the host one
-    movq REGS_HOST_TP(%rcx), %rdi
-    write_ctx %rdi
-#endif
-
     // restore host stack and call handler
     movq REGS_HOST_SP(%rcx), %rsp
     cld
@@ -157,11 +137,6 @@ lfi_syscall_entry:
     movq %rcx, %rdi
     callq lfi_syscall_handler
     popq %rcx
-
-#ifndef CTXREG
-    // swap thread control block back to context pointer
-    write_ctx %rcx
-#endif
 
 #ifdef ENABLE_SEGUE
     seg_gs_set %rcx, %rax
@@ -208,52 +183,19 @@ lfi_syscall_entry:
     movq $0, %rcx // clobbered
     jmpq *%r11
 
+// The sandbox reads and writes its thread pointer through the ctxreg array
+// directly, so these runtime calls are never made.
 .global lfi_get_tp
 .p2align 4
 lfi_get_tp:
-#if defined(HAVE_PKU) && !defined(STORES_ONLY)
-    pushq %rdx
-    pushq %rcx
-    pku_all_access
-
-    get_ctx %rax
-    pushq REGS_TP(%rax)
-
-    movq REGS_PKEY(%rax), %rcx
-    pku_box_access %rcx
-    popq %rax
-    popq %rcx
-    popq %rdx
-#else
-    get_ctx %rax
-    movq REGS_TP(%rax), %rax
-#endif
-    jmpq *%r11
+    endbr64
+    ud2
 
 .global lfi_set_tp
 .p2align 4
 lfi_set_tp:
-#ifdef HAVE_PKU
-    pushq %rdx
-    pushq %rcx
-    pushq %rax
-    pku_all_access
-    popq %rax
-
-    get_ctx %REG_BASE
-    movq %rax, REGS_TP(%REG_BASE)
-    movq REGS_PKEY(%REG_BASE), %rcx
-    movq REGS_BASE(%REG_BASE), %REG_BASE
-    pku_box_access %rcx
-
-    popq %rcx
-    popq %rdx
-#else
-    get_ctx %REG_BASE
-    movq %rax, REGS_TP(%REG_BASE)
-    movq REGS_BASE(%REG_BASE), %REG_BASE
-#endif
-    jmpq *%r11
+    endbr64
+    ud2
 
 // Unsupported runtime call.
 .global lfi_rtcall_bad

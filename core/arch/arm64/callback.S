@@ -62,12 +62,6 @@
     mov REG_ADDR, REG_BASE
     get_ctx x9
 
-#ifndef CTXREG
-    // Save and replace tpidr_el0 with host value.
-    ldr x12, [x9, REGS_HOST_TP]
-    write_ctx x12, x11
-#endif
-
 .if \with_struct
     str x0, [x9, #REGS_X(0)]
     str x1, [x9, #REGS_X(1)]
@@ -146,9 +140,6 @@
     str x11, [x9, REGS_HOST_SP]
     // Restore sp to current sandbox sp.
     mov sp, x12
-
-    // Restore sandbox thread control block to point to context.
-    write_ctx x9, x10
 
 #ifndef STORES_ONLY
     zero_caller_regs
