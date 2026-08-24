@@ -6,7 +6,6 @@
 #include "log.h"
 #include "proc.h"
 
-#include <assert.h>
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdlib.h>
@@ -17,32 +16,13 @@
             ERROR("%s:%d: ensure failed: " #expr, __FILE__, __LINE__); \
     } while (0)
 
-// One AttachedCtx per (host thread, proc) attachment. A host thread's TLS
-// slot for thread_key holds the head of a singly-linked list of these,
-// containing all of that thread's lazy attachments across all procs. Using a
-// single process-wide pthread_key (rather than one per proc) avoids running
-// into PTHREAD_KEYS_MAX when a process has many sandboxes.
 struct AttachedCtx {
     struct LFILinuxProc *proc;
     struct LFIContext *ctx;
     struct AttachedCtx *next;
 };
 
-// Process-wide pthread_key. Its TLS value is a (struct AttachedCtx *) list
-// head.
-static pthread_key_t thread_key;
-static pthread_once_t thread_key_once = PTHREAD_ONCE_INIT;
-static atomic_bool thread_key_ready;
-
 static void thread_destructor(void *p);
-
-static void
-init_thread_key(void)
-{
-    int r = pthread_key_create(&thread_key, thread_destructor);
-    assert(r == 0);
-    atomic_store_explicit(&thread_key_ready, true, memory_order_release);
-}
 
 static bool
 attach_ctx(struct LFILinuxProc *proc, struct LFIContext *ctx)
@@ -54,17 +34,17 @@ attach_ctx(struct LFILinuxProc *proc, struct LFIContext *ctx)
     }
     node->proc = proc;
     node->ctx = ctx;
-    node->next = pthread_getspecific(thread_key);
-    if (pthread_setspecific(thread_key, node) != 0) {
-        ERROR("%s:%d: pthread_setspecific failed", __FILE__, __LINE__);
+    node->next = lfi_thread_cleanup_data();
+    if (!lfi_set_thread_cleanup(thread_destructor, node)) {
+        ERROR("%s:%d: failed to register thread cleanup", __FILE__, __LINE__);
         free(node);
         return false;
     }
     return true;
 }
 
-// Tear down a single (proc, ctx) attachment. Used by both the pthread
-// destructor (on host thread exit) and by lfi_linux_detach_thread.
+// Tear down a single (proc, ctx) attachment. Used by both thread_destructor
+// (on host thread exit) and by lfi_linux_detach_thread.
 //
 // If this detach takes attached_threads to zero and lfi_proc_free has
 // already been called (pending_free), finish the deferred free here. While
@@ -224,10 +204,6 @@ lfi_linux_clone_cb(struct LFIBox *box)
 EXPORT void
 lfi_linux_init_clone(struct LFILinuxThread *main)
 {
-    // Initialize the process-wide pthread key the first time any proc reaches
-    // this point.
-    pthread_once(&thread_key_once, init_thread_key);
-
 #ifdef SYS_MINIMAL
     // Simple clone callback - just allocates stack, no pthread/TLS.
     lfi_set_clone_cb(lfi_box_engine(main->proc->box), lfi_linux_clone_cb_minimal);
@@ -252,15 +228,13 @@ lfi_linux_init_clone(struct LFILinuxThread *main)
 EXPORT void
 lfi_linux_detach_thread(struct LFILinuxProc *proc)
 {
-    if (!atomic_load_explicit(&thread_key_ready, memory_order_acquire))
-        return;
-    struct AttachedCtx *head = pthread_getspecific(thread_key);
+    struct AttachedCtx *head = lfi_thread_cleanup_data();
     struct AttachedCtx **link = &head;
     while (*link) {
         if ((*link)->proc == proc) {
             struct AttachedCtx *node = *link;
             *link = node->next;
-            pthread_setspecific(thread_key, head);
+            lfi_set_thread_cleanup(thread_destructor, head);
             struct LFIContext *ctx = node->ctx;
             free(node);
             detach_ctx(proc, ctx);

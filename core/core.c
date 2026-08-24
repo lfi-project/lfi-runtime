@@ -1,7 +1,6 @@
 #include "core.h"
 
 #include <assert.h>
-#include <limits.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -77,39 +76,78 @@ disable_sigaltstack(void)
     sigaltstack(&(stack_t) { .ss_flags = SS_DISABLE }, NULL);
 }
 
-// Holds the stack a thread installed for itself so that the destructor can
-// free it when that thread exits.
-static pthread_key_t altstack_key;
-static pthread_once_t altstack_key_once = PTHREAD_ONCE_INIT;
-static bool altstack_key_ready;
+// Everything a thread that has entered a sandbox has to release when it exits.
+// The state lives in TLS and the key exists only so that the destructor runs.
+struct ThreadState {
+    void *altstack;
+    void (*cleanup)(void *data);
+    void *cleanup_data;
+};
+
+static thread_local struct ThreadState tstate;
+static thread_local bool tstate_armed;
+
+static pthread_key_t tstate_key;
+static pthread_once_t tstate_key_once = PTHREAD_ONCE_INIT;
+static bool tstate_key_ready;
+
+static void
+tstate_destructor(void *p)
+{
+    struct ThreadState *st = p;
+
+    // Must come before freeing the sigaltstack since the cleanup may run code
+    // in the sandbox.
+    if (st->cleanup) {
+        void (*cleanup)(void *) = st->cleanup;
+        st->cleanup = NULL;
+        cleanup(st->cleanup_data);
+    }
+
+    if (st->altstack) {
+        disable_sigaltstack();
+        free(st->altstack);
+        st->altstack = NULL;
+    }
+}
+
+static void
+init_tstate_key(void)
+{
+    tstate_key_ready = pthread_key_create(&tstate_key, tstate_destructor) == 0;
+}
+
+// Arranges for this thread's state to be torn down when it exits.
+static bool
+arm_tstate(void)
+{
+    if (tstate_armed)
+        return true;
+    pthread_once(&tstate_key_once, init_tstate_key);
+    if (!tstate_key_ready || pthread_setspecific(tstate_key, &tstate) != 0)
+        return false;
+    tstate_armed = true;
+    return true;
+}
+
+EXPORT bool
+lfi_set_thread_cleanup(void (*cleanup)(void *data), void *data)
+{
+    if (!arm_tstate())
+        return false;
+    tstate.cleanup = cleanup;
+    tstate.cleanup_data = data;
+    return true;
+}
+
+EXPORT void *
+lfi_thread_cleanup_data(void)
+{
+    return tstate.cleanup_data;
+}
 
 // Set once this thread has been through lfi_init_sigaltstack.
 static thread_local bool altstack_done;
-
-// Number of destructor rounds this thread has been through.
-static thread_local int altstack_rounds;
-
-static void
-altstack_destructor(void *stack)
-{
-    // Destructors run in rounds, in an unspecified order within a round, and
-    // some of them re-enter the sandbox on this thread (the Linux runtime
-    // tears down a thread's context with a sandbox call). Handing the stack
-    // back to the key asks for another round, which keeps it registered until
-    // every destructor that does not do the same has finished.
-    if (++altstack_rounds < PTHREAD_DESTRUCTOR_ITERATIONS - 1 &&
-        pthread_setspecific(altstack_key, stack) == 0)
-        return;
-    disable_sigaltstack();
-    free(stack);
-}
-
-static void
-init_altstack_key(void)
-{
-    altstack_key_ready = pthread_key_create(&altstack_key,
-        altstack_destructor) == 0;
-}
 
 void
 lfi_init_sigaltstack(struct LFIEngine *engine)
@@ -123,10 +161,9 @@ lfi_init_sigaltstack(struct LFIEngine *engine)
         return;
     }
 
-    pthread_once(&altstack_key_once, init_altstack_key);
-    if (!altstack_key_ready) {
+    if (!arm_tstate()) {
         lfi_error = LFI_ERR_SIGALTSTACK;
-        ERROR("warning: failed to create signal stack key");
+        ERROR("warning: failed to register thread state destructor");
         return;
     }
 
@@ -146,13 +183,7 @@ lfi_init_sigaltstack(struct LFIEngine *engine)
         ERROR("warning: failed to register signal stack");
         return;
     }
-
-    if (pthread_setspecific(altstack_key, ss.ss_sp) != 0) {
-        disable_sigaltstack();
-        free(ss.ss_sp);
-        lfi_error = LFI_ERR_SIGALTSTACK;
-        ERROR("warning: failed to register signal stack destructor");
-    }
+    tstate.altstack = ss.ss_sp;
 }
 
 EXPORT struct LFIEngine *

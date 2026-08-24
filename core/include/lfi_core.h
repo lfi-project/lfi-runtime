@@ -354,6 +354,19 @@ void
 lfi_set_clone_cb(struct LFIEngine *engine,
     struct LFIContext *(*clone_cb)(struct LFIBox *) );
 
+// Registers a cleanup callback for the calling thread. The callback runs when
+// the thread exits, before the runtime releases the thread's own per-thread
+// state (such as its alternate signal stack), so it is still allowed to enter
+// the sandbox.
+// Returns false if the callback could not be registered.
+bool
+lfi_set_thread_cleanup(void (*cleanup)(void *data), void *data);
+
+// Returns the data most recently passed to lfi_set_thread_cleanup on this
+// thread, or NULL if there is none.
+void *
+lfi_thread_cleanup_data(void);
+
 // Return the currently active sandbox context.
 struct LFIContext *
 lfi_cur_ctx(void);
