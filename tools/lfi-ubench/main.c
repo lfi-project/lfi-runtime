@@ -155,7 +155,8 @@ main(int argc, const char **argv)
     bool ok = lfi_proc_load(proc, prog.data, prog.size, library);
     assert(ok);
 
-    lfi_box_init_ret(lfi_proc_box(proc));
+    bool ret_ok = lfi_box_init_ret(lfi_proc_box(proc));
+    assert(ret_ok);
 
     const char *box_argv[] = {
         library,

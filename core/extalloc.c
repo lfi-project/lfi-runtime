@@ -78,6 +78,16 @@ bitvec_set(uint8_t *bitvec, size_t start, size_t length, int val)
     }
 }
 
+// Ceiling division of a byte count into chunks. Rounding up (rather than the
+// truncation an assert would otherwise "guarantee" away) ensures a request
+// that is not a whole number of chunks reserves enough chunks to cover it, so
+// two allocations can never overlap even under NDEBUG.
+static size_t
+chunks_ceil(size_t n, size_t chunksize)
+{
+    return (n + chunksize - 1) / chunksize;
+}
+
 bool
 extalloc_is_full(struct ExtAlloc *a)
 {
@@ -92,7 +102,7 @@ uintptr_t
 extalloc_alloc(struct ExtAlloc *a, size_t n)
 {
     assert(n % a->chunksize == 0);
-    n /= a->chunksize;
+    n = chunks_ceil(n, a->chunksize);
     ssize_t idx = bitvec_find_zeroes(a->bitvec, a->size, n);
     if (idx == -1)
         return 0;
@@ -106,7 +116,7 @@ extalloc_allocat(struct ExtAlloc *a, uintptr_t at, size_t n)
     assert(at % a->chunksize == 0);
     assert(n % a->chunksize == 0);
     at /= a->chunksize;
-    n /= a->chunksize;
+    n = chunks_ceil(n, a->chunksize);
     bitvec_set(a->bitvec, at - a->base, n, 1);
 }
 
@@ -116,7 +126,7 @@ extalloc_free(struct ExtAlloc *a, uintptr_t at, size_t n)
     assert(at % a->chunksize == 0);
     assert(n % a->chunksize == 0);
     at /= a->chunksize;
-    n /= a->chunksize;
+    n = chunks_ceil(n, a->chunksize);
     bitvec_set(a->bitvec, at - a->base, n, 0);
 }
 

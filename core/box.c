@@ -62,8 +62,8 @@ protectmem(void *start, size_t size, int prot, int pkey)
 }
 
 // Initialize the sys page (at the beginning of the sandbox) to contain the
-// runtime call entrypoints.
-static void
+// runtime call entrypoints. Returns false if the syspage could not be mapped.
+static bool
 syssetup(struct LFIBox *box)
 {
     // The sys page exists at the page before the start of the sandbox. Only
@@ -76,7 +76,12 @@ syssetup(struct LFIBox *box)
     size_t pagesize = box->engine->opts.pagesize;
     box->sys_page = mmap((void *) (box->base - pagesize), pagesize,
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
-    assert(box->sys_page == (void *) (box->base - pagesize));
+    if (box->sys_page != (void *) (box->base - pagesize)) {
+        if (box->sys_page != MAP_FAILED)
+            munmap(box->sys_page, pagesize);
+        box->sys_page = NULL;
+        return false;
+    }
 
     box->sys = (struct Sys *) ((char *) box->sys_page + pagesize -
         sizeof(struct Sys));
@@ -94,7 +99,12 @@ syssetup(struct LFIBox *box)
     // Map read-only.
     int r = protectmem(box->sys_page, box->engine->opts.pagesize, PROT_READ,
         box->pkey);
-    assert(r == 0);
+    if (r != 0) {
+        munmap(box->sys_page, pagesize);
+        box->sys_page = NULL;
+        return false;
+    }
+    return true;
 }
 
 // Generate a random seed for address space layout randomization.
@@ -173,7 +183,13 @@ lfi_box_new(struct LFIEngine *engine)
         .max = base + size - BOX_INTERNAL_GUARD,
         .max_exec = base + size - BOX_INTERNAL_GUARD,
     };
-    syssetup(box);
+    if (!syssetup(box)) {
+        lfi_error = LFI_ERR_MMAP;
+#ifdef HAVE_PKU
+        pkey_free(pkey);
+#endif
+        goto err2;
+    }
 
     box->mm = mmap_create(box->min, box->max - box->min,
         engine->opts.pagesize);
@@ -588,14 +604,14 @@ static uint8_t ret[] = {
 
 #endif
 
-EXPORT void
+EXPORT bool
 lfi_box_init_ret(struct LFIBox *box)
 {
     size_t pagesize = box->engine->opts.pagesize;
     lfiptr p = lfi_box_mapany(box, pagesize, LFI_PROT_READ | LFI_PROT_WRITE,
         LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
-    assert(p != (lfiptr) -1);
-    assert(lfi_box_ptrvalid(box, p));
+    if (p == (lfiptr) -1 || !lfi_box_ptrvalid(box, p))
+        return false;
 
 #if defined(LFI_ARCH_X64)
     // Set all bytes to trap instructions, since 0 does not pass verification.
@@ -605,9 +621,11 @@ lfi_box_init_ret(struct LFIBox *box)
     lfiptr p_ret = lfi_box_copyto(box, p, ret, sizeof(ret));
 
     int r = lfi_box_mprotect(box, p, pagesize, LFI_PROT_READ | LFI_PROT_EXEC);
-    assert(r == 0);
+    if (r != 0)
+        return false;
 
     box->retaddr = p_ret;
+    return true;
 }
 
 EXPORT void

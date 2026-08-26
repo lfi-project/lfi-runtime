@@ -335,8 +335,9 @@ lfi_ctx_box(struct LFIContext *ctx);
 // Initialize the sandbox's return function. This will create a function inside
 // the sandbox that calls lfi_ret, and will be used as the return address for
 // LFI_INVOKE calls into the sandbox. The new memory allocated in the sandbox
-// will be marked as PROT_EXEC.
-void
+// will be marked as PROT_EXEC. Returns false if the return function could not
+// be created.
+bool
 lfi_box_init_ret(struct LFIBox *box);
 
 // Register the sandbox's return function as retaddr. This is similar to
