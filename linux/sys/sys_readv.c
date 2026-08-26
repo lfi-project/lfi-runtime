@@ -1,5 +1,7 @@
 #include "sys/sys.h"
 
+#define IOV_MAX_LFI 1024
+
 struct IOVec {
     lfiptr base;
     size_t len;
@@ -8,6 +10,10 @@ struct IOVec {
 ssize_t
 sys_readv(struct LFILinuxThread *t, int fd, lfiptr iovp, size_t iovcnt)
 {
+    if (iovcnt > IOV_MAX_LFI)
+        return -LINUX_EINVAL;
+    if (iovcnt == 0)
+        return 0;
     if (!bufcheck(t, iovp, iovcnt * sizeof(struct IOVec),
             alignof(struct IOVec)))
         return -LINUX_EINVAL;
