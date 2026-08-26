@@ -128,6 +128,7 @@ err2:
     lfi_box_munmap(box, codemap, size);
 err1:
     munmap(aliasmap, size / 2);
+    box->cbinfo.dataentries_alias = NULL;
 err:
     close(fd);
     return false;

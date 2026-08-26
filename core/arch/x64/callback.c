@@ -93,6 +93,7 @@ init_cb(struct LFIBox *box)
     return true;
 err1:
     munmap(aliasmap, size);
+    box->cbinfo.cbentries_alias = NULL;
 err:
     close(fd);
     return false;
