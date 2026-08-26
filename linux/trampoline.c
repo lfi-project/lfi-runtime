@@ -291,10 +291,14 @@ lfi_lib_calloc(struct LFIBox *box, struct LFIContext **ctxp, size_t count,
     struct LFILinuxProc *proc = lfi_box_data(box);
     ensure(proc->libsyms.calloc);
 
+    size_t total;
+    if (__builtin_mul_overflow(count, size, &total))
+        return NULL;
+
     lfiptr p = LFI_INVOKE(proc->box, ctxp, proc->libsyms.calloc, lfiptr,
         (size_t, size_t), count, size);
-    if (!bufcheck(proc->box, p, size, 16)) {
-        LOG(proc->engine, "sandbox malloc returned invalid pointer: %lx", p);
+    if (!bufcheck(proc->box, p, total, 16)) {
+        LOG(proc->engine, "sandbox calloc returned invalid pointer: %lx", p);
         return NULL;
     }
     return (void *) lfi_box_l2p(proc->box, p);
