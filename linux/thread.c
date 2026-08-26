@@ -100,7 +100,9 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
         if (!argv[i])
             break;
         size_t len = strnlen(argv[i], ARGV_MAXLEN);
-        assert(argv[i][len] == '\0');
+        if (argv[i][len] != '\0')
+            LOG(t->proc->engine,
+                "warning: truncating argv[%d] to %d bytes", i, ARGV_MAXLEN);
         strs_len += len + 1;
         nargv++;
     }
@@ -109,7 +111,9 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
         if (!envp[i])
             break;
         size_t len = strnlen(envp[i], ENVP_MAXLEN);
-        assert(envp[i][len] == '\0');
+        if (envp[i][len] != '\0')
+            LOG(t->proc->engine,
+                "warning: truncating envp[%d] to %d bytes", i, ENVP_MAXLEN);
         strs_len += len + 1;
         nenvp++;
     }
@@ -136,16 +140,20 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
     lfiptr strs_start = truncp(stack_top - strs_len, 16);
     size_t count = 0;
     struct LFIBox *box = t->proc->box;
-    // Copy the argv and envp strings into the sandbox.
+    // Copy the argv and envp strings into the sandbox, truncating if
+    // necessary.
+    const char nul = '\0';
     for (size_t i = 0; i < nargv; i++) {
-        size_t len = strnlen(argv[i], ARGV_MAXLEN) + 1;
+        size_t len = strnlen(argv[i], ARGV_MAXLEN);
         box_argv[i] = lfi_box_copyto(box, strs_start + count, argv[i], len);
-        count += len;
+        lfi_box_copyto(box, strs_start + count + len, &nul, 1);
+        count += len + 1;
     }
     for (size_t i = 0; i < nenvp; i++) {
-        size_t len = strnlen(envp[i], ARGV_MAXLEN) + 1;
+        size_t len = strnlen(envp[i], ENVP_MAXLEN);
         box_envp[i] = lfi_box_copyto(box, strs_start + count, envp[i], len);
-        count += len;
+        lfi_box_copyto(box, strs_start + count + len, &nul, 1);
+        count += len + 1;
     }
 
     // Create 16 random bytes for AT_RANDOM.
