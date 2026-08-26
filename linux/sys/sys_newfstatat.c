@@ -18,8 +18,8 @@ sys_newfstatat(struct LFILinuxThread *t, int dirfd, lfiptr pathp,
             return -LINUX_EBADF;
         return host_fstatat(AT_FDCWD, host_path, stat_, flags);
     }
-    int kfd = fdget(&t->proc->fdtable, dirfd);
-    if (kfd == -1)
+    FD_ACQUIRE(f, &t->proc->fdtable, dirfd, NULL, NULL);
+    if (f.kfd == -1)
         return -LINUX_EBADF;
-    return host_fstatat(kfd, "", stat_, LINUX_AT_EMPTY_PATH);
+    return host_fstatat(f.kfd, "", stat_, LINUX_AT_EMPTY_PATH);
 }

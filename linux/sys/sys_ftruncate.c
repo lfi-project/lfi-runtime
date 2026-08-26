@@ -5,8 +5,8 @@
 int
 sys_ftruncate(struct LFILinuxThread *t, int fd, off_t length)
 {
-    int kfd = fdget(&t->proc->fdtable, fd);
-    if (kfd == -1)
+    FD_ACQUIRE(f, &t->proc->fdtable, fd, NULL, NULL);
+    if (f.kfd == -1)
         return -LINUX_EBADF;
-    return HOST_ERR(int, ftruncate(kfd, length));
+    return HOST_ERR(int, ftruncate(f.kfd, length));
 }

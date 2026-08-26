@@ -23,36 +23,34 @@ fdassign(struct FDTable *t, int fd, int host_fd, char *dir, int flags)
 }
 
 int
-fdget(struct FDTable *t, int fd)
+fdacquire(struct FDTable *t, int fd, int *o_flags, bool *o_isdir)
 {
+    if (o_flags)
+        *o_flags = 0;
+    if (o_isdir)
+        *o_isdir = false;
     if (t->passthrough)
         return fd;
     if (fd < 0 || fd >= LINUX_NOFILE)
         return -1;
     LOCK_WITH_DEFER(&t->lk, lk);
-    return t->fds[fd];
+    if (t->fds[fd] == -1)
+        return -1;
+    if (o_flags)
+        *o_flags = t->flags[fd];
+    if (o_isdir)
+        *o_isdir = t->dirs[fd] != NULL;
+    // Return a private duplicate rather than the raw host fd.
+    return dup(t->fds[fd]);
 }
 
-int
-fdgetflags(struct FDTable *t, int fd)
+void
+fdrelease(struct FDTable *t, int hostfd)
 {
     if (t->passthrough)
-        return 0;
-    if (fd < 0 || fd >= LINUX_NOFILE)
-        return 0;
-    LOCK_WITH_DEFER(&t->lk, lk);
-    return t->flags[fd];
-}
-
-bool
-fdisdir(struct FDTable *t, int fd)
-{
-    if (t->passthrough)
-        return false;
-    if (fd < 0 || fd >= LINUX_NOFILE)
-        return false;
-    LOCK_WITH_DEFER(&t->lk, lk);
-    return t->dirs[fd] != NULL;
+        return;
+    if (hostfd >= 0)
+        close(hostfd);
 }
 
 int

@@ -5,8 +5,8 @@
 int
 sys_fchmod(struct LFILinuxThread *t, int fd, linux_mode_t mode)
 {
-    int kfd = fdget(&t->proc->fdtable, fd);
-    if (kfd == -1)
+    FD_ACQUIRE(f, &t->proc->fdtable, fd, NULL, NULL);
+    if (f.kfd == -1)
         return -LINUX_EBADF;
-    return HOST_ERR(int, fchmod(kfd, mode));
+    return HOST_ERR(int, fchmod(f.kfd, mode));
 }

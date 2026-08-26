@@ -311,14 +311,11 @@ int
 proc_mapany(struct LFILinuxProc *p, size_t size, int prot, int flags, int fd,
     off_t offset, lfiptr *o_mapstart)
 {
-    int kfd = -1;
-    if (fd >= 0) {
-        kfd = fdget(&p->fdtable, fd);
-        if (kfd == -1)
-            return -LINUX_EBADF;
-    }
+    FD_ACQUIRE(f, &p->fdtable, fd, NULL, NULL);
+    if (fd >= 0 && f.kfd == -1)
+        return -LINUX_EBADF;
     LOCK_WITH_DEFER(&p->lk_box, lk_box);
-    lfiptr addr = lfi_box_mapany(p->box, size, prot, flags, kfd, offset);
+    lfiptr addr = lfi_box_mapany(p->box, size, prot, flags, f.kfd, offset);
     if (addr == (lfiptr) -1)
         return -LINUX_EINVAL;
     *o_mapstart = (uintptr_t) addr;
@@ -329,14 +326,11 @@ int
 proc_mapat(struct LFILinuxProc *p, lfiptr start, size_t size, int prot,
     int flags, int fd, off_t offset)
 {
-    int kfd = -1;
-    if (fd >= 0) {
-        kfd = fdget(&p->fdtable, fd);
-        if (kfd == -1)
-            return LINUX_EBADF;
-    }
+    FD_ACQUIRE(f, &p->fdtable, fd, NULL, NULL);
+    if (fd >= 0 && f.kfd == -1)
+        return -LINUX_EBADF;
     LOCK_WITH_DEFER(&p->lk_box, lk_box);
-    lfiptr addr = lfi_box_mapat(p->box, start, size, prot, flags, kfd, offset);
+    lfiptr addr = lfi_box_mapat(p->box, start, size, prot, flags, f.kfd, offset);
     if (addr == (lfiptr) -1)
         return -LINUX_EINVAL;
     return 0;

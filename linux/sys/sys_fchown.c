@@ -6,8 +6,8 @@ int
 sys_fchown(struct LFILinuxThread *t, int fd, linux_uid_t owner,
     linux_gid_t group)
 {
-    int kfd = fdget(&t->proc->fdtable, fd);
-    if (kfd == -1)
+    FD_ACQUIRE(f, &t->proc->fdtable, fd, NULL, NULL);
+    if (f.kfd == -1)
         return -LINUX_EBADF;
-    return HOST_ERR(int, fchown(kfd, owner, group));
+    return HOST_ERR(int, fchown(f.kfd, owner, group));
 }

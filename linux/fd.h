@@ -12,17 +12,32 @@
 bool
 fdassign(struct FDTable *t, int fd, int host_fd, char *dir, int flags);
 
-// Returns the host file descriptor associated with fd.
+// Borrow the host file descriptor for `fd` for the duration of a single
+// operation. Every successful acquire must be paired with an fdrelease.
 int
-fdget(struct FDTable *t, int fd);
+fdacquire(struct FDTable *t, int fd, int *o_flags, bool *o_isdir);
 
-// Returns the open flags associated with fd.
-int
-fdgetflags(struct FDTable *t, int fd);
+// Release a host file descriptor borrowed with fdacquire.
+void
+fdrelease(struct FDTable *t, int hostfd);
 
-// Returns true if fd is a directory.
-bool
-fdisdir(struct FDTable *t, int fd);
+// Scoped wrapper for fdacquire/fdrelease.
+struct FDRef {
+    struct FDTable *t;
+    int kfd;
+};
+
+static inline void
+fd_unref(struct FDRef *r)
+{
+    fdrelease(r->t, r->kfd);
+}
+
+#define FD_ACQUIRE(name, table, fd, o_flags, o_isdir)              \
+    struct FDRef name __attribute__((cleanup(fd_unref))) = {       \
+        (table),                                                   \
+        fdacquire((table), (fd), (o_flags), (o_isdir)),            \
+    }
 
 // Adjust newfd so that it now points to oldfd. If newfd is -1, allocates a new
 // file descriptor for newfd automatically (same behavior as dup).
