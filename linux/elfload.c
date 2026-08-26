@@ -10,6 +10,7 @@
 #include "log.h"
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -105,7 +106,7 @@ elf_interp(const uint8_t *prog_data, size_t prog_size)
     if (n != sizeof(ehdr))
         return NULL;
 
-    if (ehdr.e_phnum > PHNUM_MAX)
+    if (ehdr.e_phnum == 0 || ehdr.e_phnum > PHNUM_MAX)
         return NULL;
     if (ehdr.e_phoff >= prog_size)
         return NULL;
@@ -121,7 +122,7 @@ elf_interp(const uint8_t *prog_data, size_t prog_size)
         if (phdr[x].p_type == PT_INTERP) {
             if (phdr[x].p_filesz >= INTERP_MAX)
                 return NULL;
-            char *interp = malloc(phdr[x].p_filesz);
+            char *interp = malloc(phdr[x].p_filesz + 1);
             if (!interp)
                 return NULL;
             size_t n = buf_read(prog, interp, phdr[x].p_filesz,
@@ -130,6 +131,8 @@ elf_interp(const uint8_t *prog_data, size_t prog_size)
                 free(interp);
                 return NULL;
             }
+            // Null-terminate.
+            interp[phdr[x].p_filesz] = 0;
             return interp;
         }
     }
@@ -343,10 +346,17 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
         if (p->p_memsz == 0)
             continue;
 
-        if (p->p_align % pagesize != 0) {
+        if (p->p_align == 0 || (p->p_align & (p->p_align - 1)) != 0 ||
+            p->p_align % pagesize != 0) {
             ERROR(
-                "elf_load error: invalid p_align (%ld) not a multiple of pagesize (%ld)",
+                "elf_load error: invalid p_align (%ld) not a power of two multiple of pagesize (%ld)",
                 (long) p->p_align, pagesize);
+            goto err1;
+        }
+        if (p->p_memsz > UINTPTR_MAX - p->p_vaddr) {
+            ERROR(
+                "elf_load error: p_vaddr (0x%lx) + p_memsz (0x%lx) overflows",
+                (unsigned long) p->p_vaddr, (unsigned long) p->p_memsz);
             goto err1;
         }
 
