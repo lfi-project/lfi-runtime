@@ -179,34 +179,57 @@ host_getdents64(int fd, void *dirp, size_t count)
 #else
 
 #include <dirent.h>
+#include <stddef.h>
 #include <string.h>
 
 ssize_t
 host_getdents64(int fd, void *dirp, size_t count)
 {
-    DIR *dir = fdopendir(fd);
-    if (!dir)
+    int dfd = dup(fd);
+    if (dfd < 0)
         return host_err(errno);
+    DIR *dir = fdopendir(dfd);
+    if (!dir) {
+        close(dfd);
+        return host_err(errno);
+    }
+
+    const size_t namemax = sizeof(((struct Dirent *) 0)->d_name) - 1;
+
+    uint8_t *out = dirp;
     size_t written = 0;
-    while (written < count) {
+    ssize_t ret = 0;
+    for (;;) {
+        errno = 0;
         struct dirent *ent = readdir(dir);
-        if (!ent)
+        if (!ent) {
+            ret = (errno != 0 && written == 0) ? host_err(errno)
+                                               : (ssize_t) written;
             break;
-        struct Dirent *dent = (struct Dirent *) &dirp[written];
-        memset(dent, 0, sizeof(struct Dirent));
+        }
+
+        size_t namelen = strnlen(ent->d_name, namemax);
+        size_t reclen = ceilp(offsetof(struct Dirent, d_name) + namelen + 1, 8);
+
+        if (reclen > count - written) {
+            ret = (written == 0) ? host_err(EINVAL) : (ssize_t) written;
+            break;
+        }
+
+        struct Dirent *dent = (struct Dirent *) (out + written);
+        memset(dent, 0, reclen);
         dent->d_ino = ent->d_ino;
         dent->d_off = -1;
         // TODO: convert d_type properly
-        size_t len = strlen(ent->d_name);
-        len = len >= sizeof(dent->d_name) ? sizeof(dent->d_name) - 1 : len;
         dent->d_type = ent->d_type;
-        dent->d_reclen = ceilp(8 + 8 + 2 + 1 + len + 1, 8);
-        strncpy(dent->d_name, ent->d_name, len);
-        written += dent->d_reclen;
+        dent->d_reclen = (unsigned short) reclen;
+        memcpy(dent->d_name, ent->d_name, namelen);
+        // d_name[namelen] is already NUL from the memset above.
+        written += reclen;
     }
-    if (errno < 0)
-        return host_err(errno);
-    return written;
+
+    closedir(dir);
+    return ret;
 }
 
 #endif
