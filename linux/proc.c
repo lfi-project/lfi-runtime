@@ -373,11 +373,11 @@ proc_chdir(struct LFILinuxProc *p, const char *path)
         memcpy(&p->cwd.path[0], path, len);
         p->cwd.path[len] = 0;
     } else {
+        LOCK_WITH_DEFER(&p->cwd.lk, lk_cwd);
         if (p->cwd.path[0] == 0)
             return -LINUX_ENOENT;
 
         char joined[FILENAME_MAX];
-        LOCK_WITH_DEFER(&p->cwd.lk, lk_cwd);
         cwk_path_join(p->cwd.path, path, joined, sizeof(joined));
         if ((r = chdircheck(p, joined)) < 0)
             return r;
