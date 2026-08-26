@@ -92,9 +92,9 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
 
     if (!ptrcheck(p, stack))
         return -LINUX_EFAULT;
-    if (!ptrcheck(p, ctidp))
+    if (!bufcheck(p, ctidp, sizeof(int), alignof(int)))
         return -LINUX_EFAULT;
-    if (!ptrcheck(p, ptidp))
+    if (!bufcheck(p, ptidp, sizeof(int), alignof(int)))
         return -LINUX_EFAULT;
 
     _Atomic(int) *ctid = (_Atomic(int) *) ptrhost(p, ctidp);
@@ -157,6 +157,10 @@ spawn(struct LFILinuxThread *p, uint64_t flags, uint64_t stack, uint64_t ptidp,
         new_ctx = p2->ctx;
     } else {
         pthread_t *thread = malloc(sizeof(pthread_t));
+        if (!thread) {
+            lfi_thread_free(p2);
+            return -LINUX_EAGAIN;
+        }
         pthread_attr_t attr;
         pthread_attr_init(&attr);
         pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
