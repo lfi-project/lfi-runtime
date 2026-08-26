@@ -6,7 +6,7 @@ pr_set_name(struct LFILinuxThread *t, lfiptr namep)
     char *name = (char *) bufhost(t, namep, 16, 1);
     if (!name)
         return -LINUX_EINVAL;
-    LOG(t->proc->engine, "pr_set_name: %s\n", name);
+    LOG(t->proc->engine, "pr_set_name: %.16s\n", name);
     return 0;
 }
 
