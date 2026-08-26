@@ -66,7 +66,7 @@ fddup2(struct FDTable *t, int oldfd, int newfd)
     if (t->dirs[oldfd]) {
         dir = malloc(FILENAME_MAX);
         if (!dir)
-            return false;
+            return -LINUX_ENOMEM;
     }
     int knewfd;
     if (newfd == -1) {
@@ -99,6 +99,7 @@ fddup2(struct FDTable *t, int oldfd, int newfd)
         assert(t->dirs[newfd] == NULL && dir != NULL);
         t->dirs[newfd] = dir;
         strncpy(t->dirs[newfd], t->dirs[oldfd], FILENAME_MAX - 1);
+        t->dirs[newfd][FILENAME_MAX - 1] = 0;
     }
     t->flags[newfd] = t->flags[oldfd];
     return newfd;

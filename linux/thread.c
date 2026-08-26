@@ -93,6 +93,11 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
 {
     argc = MIN(argc, ARGV_MAX);
 
+    const size_t fixed = sizeof(struct AuxvList) + 16 + sizeof(uint64_t) +
+        2 * sizeof(lfiptr) + STACK_RND_RANGE + 32;
+    size_t budget = t->stack_size > fixed ? t->stack_size - fixed : 0;
+    size_t used = 0;
+
     // Calculate how many bytes we will need to copy from argv and envp.
     size_t strs_len = 0;
     size_t nargv = 0;
@@ -103,6 +108,14 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
         if (argv[i][len] != '\0')
             LOG(t->proc->engine,
                 "warning: truncating argv[%d] to %d bytes", i, ARGV_MAXLEN);
+        // Each entry costs its string plus a slot in the pointer array.
+        if (used + len + 1 + sizeof(lfiptr) > budget) {
+            LOG(t->proc->engine,
+                "warning: dropping argv[%d] and later: does not fit in stack",
+                i);
+            break;
+        }
+        used += len + 1 + sizeof(lfiptr);
         strs_len += len + 1;
         nargv++;
     }
@@ -114,6 +127,13 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
         if (envp[i][len] != '\0')
             LOG(t->proc->engine,
                 "warning: truncating envp[%d] to %d bytes", i, ENVP_MAXLEN);
+        if (used + len + 1 + sizeof(lfiptr) > budget) {
+            LOG(t->proc->engine,
+                "warning: dropping envp[%d] and later: does not fit in stack",
+                i);
+            break;
+        }
+        used += len + 1 + sizeof(lfiptr);
         strs_len += len + 1;
         nenvp++;
     }

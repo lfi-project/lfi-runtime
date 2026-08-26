@@ -8,6 +8,8 @@ sys_mmap(struct LFILinuxThread *t, lfiptr addrp, size_t length, int prot,
     if (length == 0)
         return -LINUX_EINVAL;
     size_t pagesize = lfi_opts(t->proc->engine->engine).pagesize;
+    if (length > SIZE_MAX - (pagesize - 1))
+        return -LINUX_EINVAL;
     length = ceilp(length, pagesize);
 
     // Any mmap flag outside this list is rejected.

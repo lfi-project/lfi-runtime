@@ -28,9 +28,7 @@ ptrcheck(struct LFILinuxThread *t, lfiptr p)
 static inline bool
 bufcheck(struct LFILinuxThread *t, lfiptr p, size_t size, size_t align)
 {
-    if (!ptrcheck(t, p))
-        return false;
-    if (!ptrcheck(t, p + size - 1))
+    if (!lfi_box_bufvalid(t->proc->box, p, size))
         return false;
     if (p % align != 0)
         return false;
