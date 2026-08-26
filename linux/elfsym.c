@@ -4,19 +4,38 @@
 #include "elfdefs.h"
 #include "proc.h"
 
+#include <stdalign.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
+static bool
+region_ok(uint64_t off, uint64_t len, uint64_t size)
+{
+    return off <= size && len <= size - off;
+}
+
+static bool
+str_in_bounds(const char *strtab, uint64_t strsize, uint64_t off)
+{
+    if (off >= strsize)
+        return false;
+    return memchr(strtab + off, '\0', strsize - off) != NULL;
+}
 
 EXPORT uint64_t
 lfi_proc_sym(struct LFILinuxProc *proc, const char *symname)
 {
     Elf64_Sym *symbols = (Elf64_Sym *) (proc->dynsym.data);
     const char *strtab = (const char *) (proc->dynstr.data);
+    size_t strsize = proc->dynstr.size;
     size_t count = proc->dynsym.size / sizeof(Elf64_Sym);
 
     for (size_t i = 0; i < count; i++) {
-        const char *name = strtab + symbols[i].st_name;
-        if (strcmp(name, symname) == 0) {
+        uint32_t off = symbols[i].st_name;
+        if (!str_in_bounds(strtab, strsize, off))
+            continue;
+        if (strcmp(strtab + off, symname) == 0) {
             return proc->elfinfo.elfbase + symbols[i].st_value;
         }
     }
@@ -62,56 +81,77 @@ load_libsyms(struct LFILinuxProc *proc)
 }
 
 static bool
-load_dynshs(const uint8_t *elfdat, size_t elfsize, Elf64_Shdr **o_dynsym_sh,
-    Elf64_Shdr **o_dynstr_sh)
+read_shdr(struct Buf buf, const Elf64_Ehdr *ehdr, uint64_t idx,
+    Elf64_Shdr *out)
 {
-    Elf64_Ehdr *ehdr = (Elf64_Ehdr *) elfdat;
+    uint64_t off = ehdr->e_shoff + idx * sizeof(Elf64_Shdr);
+    return buf_read(buf, out, sizeof(*out), off) == sizeof(*out);
+}
 
-    if (elfsize < sizeof(Elf64_Ehdr) ||
-        memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0) {
-        return false;
-    }
+static bool
+load_dynshs(const uint8_t *elfdat, size_t elfsize, Elf64_Shdr *o_dynsym,
+    Elf64_Shdr *o_dynstr)
+{
+    struct Buf buf = (struct Buf) {
+        .fd = -1,
+        .data = elfdat,
+        .size = elfsize,
+    };
 
-    if (ehdr->e_shoff == 0 || ehdr->e_shentsize != sizeof(Elf64_Shdr))
+    // Copy the ELF header into an aligned local.
+    Elf64_Ehdr ehdr;
+    if (buf_read(buf, &ehdr, sizeof(ehdr), 0) != sizeof(ehdr))
         return false;
-    if ((ehdr->e_shoff + (ehdr->e_shnum * sizeof(Elf64_Shdr))) > elfsize)
+    if (memcmp(ehdr.e_ident, ELFMAG, SELFMAG) != 0)
+        return false;
+    if (ehdr.e_shoff == 0 || ehdr.e_shentsize != sizeof(Elf64_Shdr))
+        return false;
+    if (ehdr.e_shnum == 0)
         return false;
 
-    Elf64_Shdr *sh_table = (Elf64_Shdr *) (elfdat + ehdr->e_shoff);
+    uint64_t shtab_bytes = (uint64_t) ehdr.e_shnum * sizeof(Elf64_Shdr);
+    if (!region_ok(ehdr.e_shoff, shtab_bytes, elfsize))
+        return false;
+    if (ehdr.e_shstrndx >= ehdr.e_shnum)
+        return false;
 
-    // Get section header string table.
-    if (ehdr->e_shstrndx >= ehdr->e_shnum)
+    // Section header string table.
+    Elf64_Shdr shstr;
+    if (!read_shdr(buf, &ehdr, ehdr.e_shstrndx, &shstr))
         return false;
-    Elf64_Shdr *shstr_sh = &sh_table[ehdr->e_shstrndx];
-    if (shstr_sh->sh_offset + shstr_sh->sh_size > elfsize)
+    if (!region_ok(shstr.sh_offset, shstr.sh_size, elfsize))
         return false;
-    const char *shstrtab = (const char *) (elfdat + shstr_sh->sh_offset);
+    const char *shstrtab = (const char *) &elfdat[shstr.sh_offset];
+    uint64_t shstrsize = shstr.sh_size;
 
     // Locate .dynsym and its associated .dynstr.
-    Elf64_Shdr *dynsym_sh = NULL;
-    Elf64_Shdr *dynstr_sh = NULL;
+    for (uint64_t i = 0; i < ehdr.e_shnum; i++) {
+        Elf64_Shdr sh;
+        if (!read_shdr(buf, &ehdr, i, &sh))
+            return false;
+        if (!str_in_bounds(shstrtab, shstrsize, sh.sh_name))
+            continue;
+        if (strcmp(shstrtab + sh.sh_name, ".dynsym") != 0)
+            continue;
 
-    for (int i = 0; i < ehdr->e_shnum; ++i) {
-        const char *name = shstrtab + sh_table[i].sh_name;
-        if (strcmp(name, ".dynsym") == 0) {
-            dynsym_sh = &sh_table[i];
-            if (dynsym_sh->sh_link < ehdr->e_shnum) {
-                dynstr_sh = &sh_table[dynsym_sh->sh_link];
-            }
-            break;
-        }
+        if (sh.sh_link >= ehdr.e_shnum)
+            return false;
+        Elf64_Shdr link;
+        if (!read_shdr(buf, &ehdr, sh.sh_link, &link))
+            return false;
+        *o_dynsym = sh;
+        *o_dynstr = link;
+        return true;
     }
 
-    *o_dynsym_sh = dynsym_sh;
-    *o_dynstr_sh = dynstr_sh;
-
-    return true;
+    return false;
 }
 
 bool
 elf_dynamic(const uint8_t *elfdat, size_t elfsize, uintptr_t *o_dynamic)
 {
     struct Buf prog = (struct Buf) {
+        .fd = -1,
         .data = elfdat,
         .size = elfsize,
     };
@@ -119,16 +159,16 @@ elf_dynamic(const uint8_t *elfdat, size_t elfsize, uintptr_t *o_dynamic)
     Elf64_Ehdr ehdr;
     size_t n = buf_read(prog, &ehdr, sizeof(ehdr), 0);
     if (n != sizeof(ehdr))
-        return NULL;
+        return false;
 
-    Elf64_Phdr phdr[ehdr.e_phnum];
-    n = buf_read(prog, phdr, sizeof(Elf64_Phdr) * ehdr.e_phnum, ehdr.e_phoff);
-    if (n != sizeof(Elf64_Phdr) * ehdr.e_phnum)
-        return NULL;
-
-    for (int x = 0; x < ehdr.e_phnum; x++) {
-        if (phdr[x].p_type == PT_DYNAMIC) {
-            *o_dynamic = phdr[x].p_vaddr;
+    for (uint64_t x = 0; x < ehdr.e_phnum; x++) {
+        Elf64_Phdr phdr;
+        n = buf_read(prog, &phdr, sizeof(phdr),
+            ehdr.e_phoff + x * sizeof(Elf64_Phdr));
+        if (n != sizeof(phdr))
+            return false;
+        if (phdr.p_type == PT_DYNAMIC) {
+            *o_dynamic = phdr.p_vaddr;
             return true;
         }
     }
@@ -138,30 +178,28 @@ elf_dynamic(const uint8_t *elfdat, size_t elfsize, uintptr_t *o_dynamic)
 bool
 elf_loadsyms(struct LFILinuxProc *proc, const uint8_t *elfdat, size_t elfsize)
 {
-    Elf64_Shdr *dynsym_sh;
-    Elf64_Shdr *dynstr_sh;
+    Elf64_Shdr dynsym_sh;
+    Elf64_Shdr dynstr_sh;
 
     bool ok = load_dynshs(elfdat, elfsize, &dynsym_sh, &dynstr_sh);
     if (!ok)
         return false;
 
-    if (!dynsym_sh || !dynstr_sh)
-        return false;
-    if (dynsym_sh->sh_offset + dynsym_sh->sh_size > elfsize ||
-        dynstr_sh->sh_offset + dynstr_sh->sh_size > elfsize)
+    if (!region_ok(dynsym_sh.sh_offset, dynsym_sh.sh_size, elfsize) ||
+        !region_ok(dynstr_sh.sh_offset, dynstr_sh.sh_size, elfsize))
         return false;
 
-    proc->dynsym.size = dynsym_sh->sh_size;
-    proc->dynsym.data = malloc(proc->dynsym.size);
+    proc->dynsym.size = dynsym_sh.sh_size;
+    proc->dynsym.data = malloc(proc->dynsym.size ? proc->dynsym.size : 1);
     if (!proc->dynsym.data)
         return false;
-    memcpy(proc->dynsym.data, &elfdat[dynsym_sh->sh_offset], proc->dynsym.size);
+    memcpy(proc->dynsym.data, &elfdat[dynsym_sh.sh_offset], proc->dynsym.size);
 
-    proc->dynstr.size = dynstr_sh->sh_size;
-    proc->dynstr.data = malloc(proc->dynstr.size);
+    proc->dynstr.size = dynstr_sh.sh_size;
+    proc->dynstr.data = malloc(proc->dynstr.size ? proc->dynstr.size : 1);
     if (!proc->dynstr.data)
         goto err1;
-    memcpy(proc->dynstr.data, &elfdat[dynstr_sh->sh_offset], proc->dynstr.size);
+    memcpy(proc->dynstr.data, &elfdat[dynstr_sh.sh_offset], proc->dynstr.size);
 
     if (!load_libsyms(proc))
         goto err2;
