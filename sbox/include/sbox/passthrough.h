@@ -229,7 +229,10 @@ public:
     // address space and directly dereferenceable.
     template<typename T>
     sbox_safe<T*> alloc(size_t count = 1) {
-        return sbox_safe<T*>(static_cast<T*>(std::malloc(sizeof(T) * count)));
+        size_t bytes;
+        if (!detail::checked_mul(count, sizeof(T), &bytes))
+            return {};
+        return sbox_safe<T*>(static_cast<T*>(std::malloc(bytes)));
     }
 
     template<typename T>
@@ -239,8 +242,11 @@ public:
 
     template<typename T>
     sbox_safe<T*> realloc(sbox_safe<T*> ptr, size_t count) {
+        size_t bytes;
+        if (!detail::checked_mul(count, sizeof(T), &bytes))
+            return {};
         return sbox_safe<T*>(
-            static_cast<T*>(std::realloc(ptr.data(), sizeof(T) * count)));
+            static_cast<T*>(std::realloc(ptr.data(), bytes)));
     }
 
     void free(void* ptr) {
@@ -286,8 +292,11 @@ public:
 
     template<typename T>
     T* idmem_alloc(size_t count = 1) {
+        size_t bytes;
+        if (!detail::checked_mul(count, sizeof(T), &bytes))
+            return nullptr;
         return static_cast<T*>(
-            detail::get_thread_arena().alloc(sizeof(T) * count, alignof(T)));
+            detail::get_thread_arena().alloc(bytes, alignof(T)));
     }
 
     void idmem_reset() {
@@ -359,10 +368,11 @@ public:
         static_assert(std::is_trivially_copyable_v<T>,
                       "read_buffer requires a trivially-copyable element");
         T* raw = ptr.unsafe_unverified();
-        if (!raw)
+        size_t bytes;
+        if (!raw || !detail::checked_mul(count, sizeof(T), &bytes))
             return {};
         std::vector<T> out(count);
-        std::memcpy(out.data(), raw, sizeof(T) * count);
+        std::memcpy(out.data(), raw, bytes);
         return out;
     }
 

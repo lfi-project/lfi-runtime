@@ -321,8 +321,11 @@ public:
 
     template<typename T>
     sbox_safe<T*> alloc(size_t count = 1) {
+        size_t bytes;
+        if (!detail::checked_mul(count, sizeof(T), &bytes))
+            return {};
         return sbox_safe<T*>(static_cast<T*>(
-            lfi_lib_malloc(box_, get_thread_ctx(), sizeof(T) * count)));
+            lfi_lib_malloc(box_, get_thread_ctx(), bytes)));
     }
 
     template<typename T>
@@ -333,8 +336,11 @@ public:
 
     template<typename T>
     sbox_safe<T*> realloc(sbox_safe<T*> ptr, size_t count) {
+        size_t bytes;
+        if (!detail::checked_mul(count, sizeof(T), &bytes))
+            return {};
         return sbox_safe<T*>(static_cast<T*>(
-            lfi_lib_realloc(box_, get_thread_ctx(), ptr.data(), sizeof(T) * count)));
+            lfi_lib_realloc(box_, get_thread_ctx(), ptr.data(), bytes)));
     }
 
     void free(void* ptr) {
@@ -353,7 +359,12 @@ public:
 
     template<typename T>
     T* idmem_alloc(size_t count = 1) {
-        void* p = lfi_lib_malloc(box_, get_thread_ctx(), sizeof(T) * count);
+        size_t bytes;
+        if (!detail::checked_mul(count, sizeof(T), &bytes))
+            return nullptr;
+        void* p = lfi_lib_malloc(box_, get_thread_ctx(), bytes);
+        if (!p)
+            return nullptr;
         std::lock_guard<std::mutex> lock(idmem_mutex_);
         idmem_allocations_.push_back(p);
         return static_cast<T*>(p);
@@ -366,8 +377,10 @@ public:
     template<typename T>
     sbox_safe<T*> verify(sbox<T*> ptr, size_t count) {
         T* raw = ptr.unsafe_unverified();
-        if (raw && !lfi_box_bufvalid(box_, reinterpret_cast<lfiptr>(raw),
-                                      sizeof(T) * count)) {
+        size_t bytes;
+        if (raw && (!detail::checked_mul(count, sizeof(T), &bytes) ||
+                    !lfi_box_bufvalid(box_, reinterpret_cast<lfiptr>(raw),
+                                      bytes))) {
             fprintf(stderr,
                     "sbox: verify failed: pointer %p not in sandbox\n",
                     static_cast<void*>(raw));
@@ -378,13 +391,26 @@ public:
 
     // Data transfer.
 
+    void check_range(const void* p, size_t n, const char* what) {
+        if (!lfi_box_bufvalid(box_, reinterpret_cast<lfiptr>(p), n)) {
+            fprintf(stderr,
+                    "sbox: %s failed: [%p, +%zu) not in sandbox\n",
+                    what, p, n);
+            abort();
+        }
+    }
+
+    // Raw copy where the caller has ensured that the destination is a valid
+    // address.
     void copy_to(void* sandbox_dest, const void* host_src, size_t n) {
         std::memcpy(sandbox_dest, host_src, n);
     }
 
     template<typename T>
     void copy_to(sbox<T*> sandbox_dest, const void* host_src, size_t n) {
-        std::memcpy(sandbox_dest.unsafe_unverified(), host_src, n);
+        void* dest = sandbox_dest.unsafe_unverified();
+        check_range(dest, n, "copy_to");
+        std::memcpy(dest, host_src, n);
     }
 
     template<typename T>
@@ -398,7 +424,9 @@ public:
 
     template<typename T>
     void copy_from(void* host_dest, sbox<T*> sandbox_src, size_t n) {
-        std::memcpy(host_dest, sandbox_src.unsafe_unverified(), n);
+        const void* src = sandbox_src.unsafe_unverified();
+        check_range(src, n, "copy_from");
+        std::memcpy(host_dest, src, n);
     }
 
     template<typename T>
@@ -432,12 +460,13 @@ public:
         static_assert(std::is_trivially_copyable_v<T>,
                       "read_buffer requires a trivially-copyable element");
         T* raw = ptr.unsafe_unverified();
-        if (!raw || !lfi_box_bufvalid(box_, reinterpret_cast<lfiptr>(raw),
-                                       sizeof(T) * count)) {
+        size_t bytes;
+        if (!raw || !detail::checked_mul(count, sizeof(T), &bytes) ||
+            !lfi_box_bufvalid(box_, reinterpret_cast<lfiptr>(raw), bytes)) {
             return {};
         }
         std::vector<T> out(count);
-        std::memcpy(out.data(), raw, sizeof(T) * count);
+        std::memcpy(out.data(), raw, bytes);
         return out;
     }
 

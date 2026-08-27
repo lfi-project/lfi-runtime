@@ -86,6 +86,10 @@ template<typename T>
 using sbox_inner_type_t =
     typename sbox_inner_type<std::remove_cv_t<std::remove_reference_t<T>>>::type;
 
+inline bool checked_mul(size_t count, size_t size, size_t* out) {
+    return !__builtin_mul_overflow(count, size, out);
+}
+
 // Check that pointer parameters use sbox types with matching inner types.
 template<typename Param, typename Arg>
 constexpr bool check_sbox_ptr_arg() {
