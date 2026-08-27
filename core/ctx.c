@@ -1,4 +1,5 @@
 #include "core.h"
+#include "ctxreg.h"
 #include "lfi_core.h"
 
 #include <stdlib.h>

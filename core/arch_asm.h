@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ctxreg.h"
+
 // Offsets for the LFIRegs struct. These are statically asserted to be correct
 // in arch_asm.c and used in hand-written assembly for accessing offsets of the
 // LFIRegs struct.
@@ -25,7 +27,8 @@
 
 // clang-format off
 #ifdef __ASSEMBLER__
-// x25 points to the ctxreg array and ctxreg[0] holds the context pointer.
+// x25 points to the ctxreg array, which holds the context pointer at
+// CTXREG_CTX_OFFSET.
 .macro get_ctx reg
     ldr \reg, [x25, CTXREG_CTX_OFFSET]
 .endm
@@ -68,7 +71,8 @@
 
 // clang-format off
 #ifdef __ASSEMBLER__
-// r15 points to the ctxreg array and ctxreg[0] holds the context pointer.
+// r15 points to the ctxreg array, which holds the context pointer at
+// CTXREG_CTX_OFFSET.
 .macro get_ctx reg
     movq CTXREG_CTX_OFFSET(%r15), \reg
 .endm
@@ -176,7 +180,8 @@
 #define REG_CTX   s10
 // clang-format off
 #ifdef __ASSEMBLER__
-// s10 points to the ctxreg array and ctxreg[0] holds the context pointer.
+// s10 points to the ctxreg array, which holds the context pointer at
+// CTXREG_CTX_OFFSET.
 .macro get_ctx reg
     ld \reg, CTXREG_CTX_OFFSET(REG_CTX)
 .endm
