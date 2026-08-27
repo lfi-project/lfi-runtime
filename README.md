@@ -26,8 +26,7 @@ provided by `liblfi`.
 # Platform Support
 
 The runtime currently targets Linux for Arm64 and x86-64. There is also
-experimental support for macOS (futexes are not yet supported), and support for
-RISC-V is in-progress.
+experimental support for RISC-V that is in-progress.
 
 # Usage
 
@@ -46,3 +45,13 @@ Usage: lfi-run [OPTION...] INPUT...
   -r, --restricted          apply --dir and --wd flags (default is --dir /=/ --wd $PWD for testing)
   <input>                   input command
 ```
+
+# Threat Model
+
+LFI is currently being used for library isolation, where the library has been
+written by an honest party. In addition, LFI is only currently being used in
+`SYS_MINIMAL` mode, which vastly reduces the number of system calls available
+to sandboxed programs.
+
+Work to harden the runtime for non-`SYS_MINIMAL` usage and for arbitrarily
+malicious programs is ongoing.
