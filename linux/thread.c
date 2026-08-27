@@ -177,7 +177,7 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
     }
 
     // Create 16 random bytes for AT_RANDOM.
-    char random[16];
+    char random[16] = { 0 };
     ssize_t r = host_getrandom(&random[0], sizeof(random), 0);
     if (r != sizeof(random)) {
         LOG(t->proc->engine,
