@@ -55,3 +55,7 @@ to sandboxed programs.
 
 Work to harden the runtime for non-`SYS_MINIMAL` usage and for arbitrarily
 malicious programs is ongoing.
+
+Sandboxed programs are able to cause faults or cause the runtime to
+fault/abort. Work to allow the runtime to gracefully recover by handling the
+signal is ongoing.
