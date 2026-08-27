@@ -9,6 +9,17 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+static void *
+xrealloc(void *p, size_t size)
+{
+    void *q = realloc(p, size);
+    if (!q) {
+        fprintf(stderr, "out of memory\n");
+        exit(1);
+    }
+    return q;
+}
+
 static inline size_t
 gb(size_t x)
 {
@@ -127,12 +138,12 @@ main(int argc, char **argv)
             break;
         case 4:
             envs_count++;
-            envs = realloc(envs, sizeof(char *) * envs_count);
+            envs = xrealloc(envs, sizeof(char *) * envs_count);
             envs[envs_count - 1] = optarg;
             break;
         case 5:
             dirs_count++;
-            dirs = realloc(dirs, sizeof(char *) * dirs_count);
+            dirs = xrealloc(dirs, sizeof(char *) * dirs_count);
             dirs[dirs_count - 1] = optarg;
             break;
         case 6:
@@ -180,7 +191,7 @@ main(int argc, char **argv)
     };
 
     dirs_count++;
-    dirs = realloc(dirs, sizeof(char *) * dirs_count);
+    dirs = xrealloc(dirs, sizeof(char *) * dirs_count);
     dirs[dirs_count - 1] = NULL;
 
     struct LFILinuxEngine *linux_ = lfi_linux_new(engine,
@@ -224,7 +235,7 @@ main(int argc, char **argv)
     }
 
     envs_count++;
-    envs = realloc(envs, sizeof(char *) * envs_count);
+    envs = xrealloc(envs, sizeof(char *) * envs_count);
     envs[envs_count - 1] = NULL;
     struct LFILinuxThread *t = lfi_thread_new(proc, argc - optind,
         (const char **)&argv[optind], envs);
