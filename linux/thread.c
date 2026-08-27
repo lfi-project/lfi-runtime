@@ -351,9 +351,7 @@ lfi_thread_free(struct LFILinuxThread *t)
     // sandbox and not by us, so we don't have to free it.
     if (t->stack) {
         size_t stacksize = t->proc->engine->opts.stacksize;
-        lock(&t->proc->lk_box);
         lfi_box_munmap(t->proc->box, t->stack, stacksize);
-        unlock(&t->proc->lk_box);
     }
     // Free pthread object (if created).
     if (t->pthread)

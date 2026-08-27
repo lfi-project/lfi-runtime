@@ -119,11 +119,9 @@ lfi_linux_clone_cb_minimal(struct LFIBox *box)
 
     // Allocate stack in sandbox memory.
     size_t stacksize = proc->engine->opts.stacksize;
-    lock(&proc->lk_box);
     t->stack = lfi_box_mapany(box, stacksize,
         LFI_PROT_READ | LFI_PROT_WRITE,
         LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
-    unlock(&proc->lk_box);
     if (t->stack == (lfiptr) -1) {
         lfi_ctx_free(t->ctx);
         free(t);

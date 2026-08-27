@@ -8,6 +8,9 @@
 #include "log.h"
 #include "mmap/mmap_c.h"
 
+#include <assert.h>
+#include <pthread.h>
+
 #if defined(__APPLE__)
 #ifndef thread_local
 #define thread_local _Thread_local
@@ -56,7 +59,54 @@ struct LFIBox {
     struct LFIEngine *engine;
 
     void *userdata;
+
+    // Guards every mutation of box->mm and of the callback table.
+    pthread_mutex_t lk;
 };
+
+static inline struct LFIBox *
+box_lock(struct LFIBox *box)
+{
+    int r = pthread_mutex_lock(&box->lk);
+    assert(r == 0);
+    (void) r;
+    return box;
+}
+
+static inline void
+box_unlock(struct LFIBox *box)
+{
+    int r = pthread_mutex_unlock(&box->lk);
+    assert(r == 0);
+    (void) r;
+}
+
+static inline void
+box_unlock_deferred(struct LFIBox **box)
+{
+    box_unlock(*box);
+}
+
+// Acquire box->lk for the rest of the enclosing scope.
+#define BOX_LOCK(b, name)                                                \
+    struct LFIBox *name __attribute__((cleanup(box_unlock_deferred))) =  \
+        box_lock(b);                                                     \
+    (void) name;
+
+lfiptr
+box_mapany_locked(struct LFIBox *box, size_t size, int prot, int flags, int fd,
+    off_t off, bool no_verify);
+
+lfiptr
+box_mapat_locked(struct LFIBox *box, lfiptr addr, size_t size, int prot,
+    int flags, int fd, off_t off);
+
+int
+box_mprotect_locked(struct LFIBox *box, lfiptr addr, size_t size, int prot,
+    bool no_verify);
+
+int
+box_munmap_locked(struct LFIBox *box, lfiptr addr, size_t size);
 
 struct Sys {
     uintptr_t rtcalls[32];

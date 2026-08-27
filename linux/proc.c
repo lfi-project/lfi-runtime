@@ -35,7 +35,6 @@ lfi_proc_new(struct LFILinuxEngine *engine)
     pthread_mutex_init(&proc->lk_proc, NULL);
     pthread_mutex_init(&proc->lk_clone, NULL);
     pthread_mutex_init(&proc->lk_threads, NULL);
-    pthread_mutex_init(&proc->lk_box, NULL);
     pthread_mutex_init(&proc->lk_brk, NULL);
     pthread_mutex_init(&proc->cwd.lk, NULL);
     pthread_cond_init(&proc->cond_threads, NULL);
@@ -264,7 +263,6 @@ proc_destroy(struct LFILinuxProc *proc)
     pthread_mutex_destroy(&proc->fdtable.lk);
     pthread_mutex_destroy(&proc->cwd.lk);
     pthread_mutex_destroy(&proc->lk_brk);
-    pthread_mutex_destroy(&proc->lk_box);
     pthread_mutex_destroy(&proc->lk_clone);
     pthread_mutex_destroy(&proc->lk_threads);
     pthread_cond_destroy(&proc->cond_threads);
@@ -314,7 +312,6 @@ proc_mapany(struct LFILinuxProc *p, size_t size, int prot, int flags, int fd,
     FD_ACQUIRE(f, &p->fdtable, fd, NULL, NULL);
     if (fd >= 0 && f.kfd == -1)
         return -LINUX_EBADF;
-    LOCK_WITH_DEFER(&p->lk_box, lk_box);
     lfiptr addr = lfi_box_mapany(p->box, size, prot, flags, f.kfd, offset);
     if (addr == (lfiptr) -1)
         return -LINUX_EINVAL;
@@ -329,7 +326,6 @@ proc_mapat(struct LFILinuxProc *p, lfiptr start, size_t size, int prot,
     FD_ACQUIRE(f, &p->fdtable, fd, NULL, NULL);
     if (fd >= 0 && f.kfd == -1)
         return -LINUX_EBADF;
-    LOCK_WITH_DEFER(&p->lk_box, lk_box);
     lfiptr addr = lfi_box_mapat(p->box, start, size, prot, flags, f.kfd, offset);
     if (addr == (lfiptr) -1)
         return -LINUX_EINVAL;
@@ -339,7 +335,6 @@ proc_mapat(struct LFILinuxProc *p, lfiptr start, size_t size, int prot,
 int
 proc_unmap(struct LFILinuxProc *p, lfiptr start, size_t size)
 {
-    LOCK_WITH_DEFER(&p->lk_box, lk_box);
     return lfi_box_munmap(p->box, start, size);
 }
 

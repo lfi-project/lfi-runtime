@@ -66,7 +66,6 @@ struct LFILinuxProc {
     // Underlying sandbox information.
     struct LFIBox *box;
     struct LFIBoxInfo box_info;
-    pthread_mutex_t lk_box;
 
     // Information for managing sys_brk.
     lfiptr brkbase;

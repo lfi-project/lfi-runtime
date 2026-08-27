@@ -98,9 +98,9 @@ init_cb(struct LFIBox *box)
         goto err;
     box->cbinfo.dataentries_alias = (struct CallbackDataEntry *) aliasmap;
     // Map the code/data entry regions.
-    lfiptr codemap = lfi_box_mapany(box, size,
+    lfiptr codemap = box_mapany_locked(box, size,
         LFI_PROT_READ | LFI_PROT_WRITE, LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1,
-        0);
+        0, false);
     if (codemap == (lfiptr) -1)
         goto err1;
     // Fill in the code for each entry.
@@ -110,12 +110,12 @@ init_cb(struct LFIBox *box)
     }
     // Mark the code region as R/X. This is unverified because the code region
     // entries are manually constructed by the runtime.
-    r = lfi_box_mprotect_noverify(box, codemap, size / 2,
-        LFI_PROT_READ | LFI_PROT_EXEC);
+    r = box_mprotect_locked(box, codemap, size / 2,
+        LFI_PROT_READ | LFI_PROT_EXEC, true);
     if (r == -1)
         goto err2;
     // Map the data entries over the second half of the reservation.
-    lfiptr boxmap = lfi_box_mapat(box, codemap + size / 2, size / 2,
+    lfiptr boxmap = box_mapat_locked(box, codemap + size / 2, size / 2,
         LFI_PROT_READ, LFI_MAP_SHARED, fd, 0);
     if (boxmap == (lfiptr) -1)
         goto err2;
@@ -125,7 +125,7 @@ init_cb(struct LFIBox *box)
     close(fd);
     return true;
 err2:
-    lfi_box_munmap(box, codemap, size);
+    box_munmap_locked(box, codemap, size);
 err1:
     munmap(aliasmap, size / 2);
     box->cbinfo.dataentries_alias = NULL;
@@ -170,18 +170,21 @@ register_cb(struct LFIBox *box, void *fn, uint64_t lfi_callback_fn)
 EXPORT void *
 lfi_box_register_cb_struct(struct LFIBox *box, void *fn)
 {
+    BOX_LOCK(box, lk);
     return register_cb(box, fn, (uint64_t) lfi_callback_struct);
 }
 
 EXPORT void *
 lfi_box_register_cb(struct LFIBox *box, void *fn)
 {
+    BOX_LOCK(box, lk);
     return register_cb(box, fn, (uint64_t) lfi_callback);
 }
 
 EXPORT void
 lfi_box_unregister_cb(struct LFIBox *box, void *fn)
 {
+    BOX_LOCK(box, lk);
     ssize_t slot = cbfind(box, fn);
     if (slot == -1)
         return;

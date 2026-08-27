@@ -153,6 +153,13 @@ lfi_box_data(struct LFIBox *box);
 struct LFIBoxInfo
 lfi_box_info(struct LFIBox *box);
 
+// Each of these is internally synchronized on a per-box lock, so concurrent
+// calls on the same box from different threads are safe.
+//
+// lfi_box_free is teardown and is not safe to call concurrently with anything
+// else on the same box. The pure accessors (l2p, p2l, info, ptrvalid,
+// bufvalid) take no lock since they only read immutable box bounds.
+
 // Creates a new memory mapping in the sandbox at 'addr'. Returns -1 on
 // failure. May run the verifier for executable pages. Disallows shared
 // mappings to prevent double mapping pages as W and X.

@@ -37,7 +37,6 @@ sys_brk(struct LFILinuxThread *t, lfiptr addr)
         lfiptr next = ceilp(p->brkbase + p->brksize, pagesize);
         lfiptr new_end = ceilp(p->brkbase + newsize, pagesize);
         if (new_end > next) {
-            LOCK_WITH_DEFER(&p->lk_box, lk_box);
             lfiptr map = lfi_box_mapat(p->box, next, new_end - next, MAP_PROT,
                 MAP_FLAGS, -1, 0);
             if (map == (lfiptr) -1)
