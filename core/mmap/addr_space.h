@@ -63,9 +63,10 @@ private:
   bool is_valid(uint64_t start, uint64_t len) const {
     if (start < base_)
       return false;
-    if (len > base_ + len_ - start)
+    uint64_t off = start - base_;
+    if (off > len_)
       return false;
-    return true;
+    return len <= len_ - off;
   }
 
   uint64_t base_;
