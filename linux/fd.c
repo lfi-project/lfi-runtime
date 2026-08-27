@@ -62,6 +62,8 @@ fddup2(struct FDTable *t, int oldfd, int newfd)
     int koldfd = t->fds[oldfd];
     if (koldfd == -1)
         return -LINUX_EBADF;
+    if (oldfd == newfd)
+        return newfd;
     char *dir = NULL;
     if (t->dirs[oldfd]) {
         dir = malloc(FILENAME_MAX);
