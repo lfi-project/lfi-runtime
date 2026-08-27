@@ -52,6 +52,7 @@ check_pku(void)
     if (!tunables || strstr(tunables, "pthread.rseq=0") == NULL) {
         ERROR(
             "error: missing GLIBC_TUNABLES=glibc.pthread.rseq=0 environment variable");
+        lfi_error = LFI_ERR_PKU;
         return false;
     }
 #endif
