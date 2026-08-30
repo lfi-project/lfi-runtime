@@ -62,10 +62,10 @@ option('large_sandbox',
 
 option('large_sandbox_bits',
   type: 'integer',
-  min: 32,
+  min: 16,
   max: 40,
   value: 32,
-  description: 'size of the sandbox (arm64 only)')
+  description: 'log2 of the sandbox size (arm64 only)')
 
 option('enable_pku',
   type: 'boolean',

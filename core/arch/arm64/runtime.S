@@ -94,8 +94,8 @@ lfi_ctx_entry:
     msr fpsr, xzr
     // NOTE: x28 and x30 must contain a valid sandbox address
     // Entry with ret is not compatible with restorer, DO NOT overwrite x30
-    add x30, REG_BASE, w30, uxtw
-    add x28, REG_BASE, w28, uxtw
+    guard_addr x30, w30
+    guard_addr x28, w28
     br x28
 
 // lfi_ctx_end(struct LFIContext *ctx, int val)
@@ -225,7 +225,7 @@ lfi_syscall_entry:
     // zero integer and fp flags
     ands xzr, xzr, xzr
     msr fpsr, xzr
-    add x30, REG_BASE, w30, uxtw
+    guard_addr x30, w30
     ret
 
 .global lfi_get_tp
@@ -239,7 +239,7 @@ lfi_get_tp:
     mov REG_ADDR, REG_BASE
     get_ctx x0
     ldr x0, [x0, REGS_TP]
-    add x30, REG_BASE, w30, uxtw
+    guard_addr x30, w30
     ret
 #endif
 
@@ -256,7 +256,7 @@ lfi_set_tp:
     str x0, [REG_BASE, REGS_TP]
     // reload REG_BASE
     ldr REG_BASE, [REG_BASE, REGS_BASE]
-    add x30, REG_BASE, w30, uxtw
+    guard_addr x30, w30
     ret
 #endif
 

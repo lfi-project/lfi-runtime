@@ -44,6 +44,7 @@
 #ifdef LARGE_SANDBOX
 #define REGS_OFFSET REGS_X(24) // x24
 #define REG_OFFSET x24
+#define LFI_SIZE_MASK ((1 << LARGE_SANDBOX_BITS) - 1)
 #endif
 
 // clang-format off
@@ -83,6 +84,15 @@
     str \reg, [\tmp, 8*TLS_SLOT_LFI]
 .endm
 # endif
+
+.macro guard_addr reg, wreg
+#ifdef LARGE_SANDBOX
+    and \reg, \reg, #LFI_SIZE_MASK
+    add \reg, REG_BASE, \reg
+#else
+    add \reg, REG_BASE, \wreg, uxtw
+#endif
+.endm
 #endif
 // clang-format on
 

@@ -162,7 +162,7 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
 
     size_t brkmaxsize = proc->engine->opts.brk_control ?
         proc->engine->opts.brk_size :
-        BRKMAXSIZE;
+        brk_max_size(proc->box_info.size);
 
     // Reserve the brk region.
     if (reload) {

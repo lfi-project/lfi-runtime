@@ -525,17 +525,27 @@ lfi_box_p2l(struct LFIBox *box, uintptr_t p)
 // Offset of the entry springboard within the stub page.
 #define STUB_SPRINGBOARD 16
 
-static uint8_t stubs[] = {
+#ifdef LARGE_SANDBOX
+#define AND_X24_X10_SIZEMASK \
+    (0x92400000u | ((LARGE_SANDBOX_BITS - 1) << 10) | (10 << 5) | 24)
+#endif
+
+static uint32_t stubs[] = {
     // return function
-    0x7e, 0x03, 0x5e, 0xf8, // ldr x30, [x27, #-32]
-    0xc0, 0x03, 0x3f, 0xd6, // blr x30
-    0x1f, 0x20, 0x03, 0xd5, // nop
-    0x1f, 0x20, 0x03, 0xd5, // nop
+    0xf85e037e, // ldr x30, [x27, #-32]
+    0xd63f03c0, // blr x30
+    0xd503201f, // nop
+    0xd503201f, // nop
     // entry springboard (offset STUB_SPRINGBOARD)
-    0x7c, 0x43, 0x2a, 0x8b, // add x28, x27, w10, uxtw
-    0x80, 0x03, 0x3f, 0xd6, // blr x28
-    0x7e, 0x03, 0x5e, 0xf8, // ldr x30, [x27, #-32]
-    0xc0, 0x03, 0x1f, 0xd6, // br x30
+#ifdef LARGE_SANDBOX
+    AND_X24_X10_SIZEMASK, // and x24, x10, #(2^LARGE_SANDBOX_BITS - 1)
+    0x8b38637c,           // add x28, x27, x24, uxtx
+#else
+    0x8b2a437c, // add x28, x27, w10, uxtw
+#endif
+    0xd63f0380, // blr x28
+    0xf85e037e, // ldr x30, [x27, #-32]
+    0xd61f03c0, // br x30
 };
 
 #elif defined(LFI_ARCH_X64)

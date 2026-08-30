@@ -12,7 +12,11 @@
 // Maximum number of file descriptors the LFI runtime process can have open.
 #define LINUX_NOFILE 1024
 // Maximum number of bytes that can be allocated via sys_brk.
-#define BRKMAXSIZE (512UL * 1024 * 1024)
+static inline size_t
+brk_max_size(size_t boxsize)
+{
+    return boxsize / 8;
+}
 
 struct FDTable {
     // File descriptor conversion table.

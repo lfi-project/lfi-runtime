@@ -157,7 +157,7 @@
     // Restore valid REG_ADDR
     mov REG_ADDR, REG_BASE
 
-    add x30, REG_BASE, w30, uxtw
+    guard_addr x30, w30
     ret
 .endm
 

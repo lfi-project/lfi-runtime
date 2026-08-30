@@ -16,7 +16,7 @@ sys_brk(struct LFILinuxThread *t, lfiptr addr)
     }
     size_t brkmaxsize = t->proc->engine->opts.brk_control ?
         t->proc->engine->opts.brk_size :
-        BRKMAXSIZE;
+        brk_max_size(t->proc->box_info.size);
 
     if (brkp < p->brkbase)
         brkp = p->brkbase;
