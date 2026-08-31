@@ -21,6 +21,9 @@ sys_mmap(struct LFILinuxThread *t, lfiptr addrp, size_t length, int prot,
         return -LINUX_EINVAL;
     }
 
+    if ((prot & LFI_PROT_EXEC) && !(flags & LINUX_MAP_ANONYMOUS))
+        return -LINUX_EACCES;
+
     lfiptr i_addrp = addrp;
 
     int r;
