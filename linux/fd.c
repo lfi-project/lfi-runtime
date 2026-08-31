@@ -72,10 +72,21 @@ fddup2(struct FDTable *t, int oldfd, int newfd)
     }
     int knewfd;
     if (newfd == -1) {
+        // Pick the lowest unoccupied sandbox fd.
+        for (int fd = 0; fd < LINUX_NOFILE; fd++) {
+            if (t->fds[fd] == -1) {
+                newfd = fd;
+                break;
+            }
+        }
+        if (newfd == -1) {
+            if (dir)
+                free(dir);
+            return -LINUX_EMFILE;
+        }
         knewfd = dup(koldfd);
         if (knewfd == -1)
             goto err;
-        newfd = knewfd;
         t->fds[newfd] = knewfd;
     } else {
         knewfd = t->fds[newfd];

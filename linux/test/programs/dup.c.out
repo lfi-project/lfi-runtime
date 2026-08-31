@@ -1,4 +1,4 @@
-dup: original fd=1, dup fd=6
+dup: original fd=1, dup fd=3
 dup3: original fd=1, target fd=10
 test
 test
