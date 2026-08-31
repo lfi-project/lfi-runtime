@@ -58,9 +58,15 @@
 .endm
 
 .macro lfi_callback_gen with_struct
+    // The callback entry loads the target into REG_BASE so a sandbox that
+    // branches past the load cannot control the trampoline's branch target.
+    // Recover the target into x16 and restore REG_BASE from the context before
+    // it is used for address masking.
+    get_ctx x9
+    mov x16, REG_BASE
+    ldr REG_BASE, [x9, REGS_BASE]
     // reset REG_ADDR
     mov REG_ADDR, REG_BASE
-    get_ctx x9
 
 .if \with_struct
     str x0, [x9, #REGS_X(0)]
