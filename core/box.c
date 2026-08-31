@@ -482,6 +482,9 @@ int
 box_mprotect_locked(struct LFIBox *box, lfiptr addr, size_t size, int prot,
     bool no_verify)
 {
+    size_t pagesize = box->engine->opts.pagesize;
+    if (size == 0 || addr % pagesize != 0 || size % pagesize != 0)
+        return -1;
     if (!lfi_box_bufvalid(box, addr, size))
         return -1;
 
