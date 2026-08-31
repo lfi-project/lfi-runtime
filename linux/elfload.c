@@ -219,7 +219,16 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
 #else
         size_t pagesize = getpagesize();
         assert((uintptr_t) buf.data % pagesize == 0);
-        void *old = (void *) (buf.data + truncp(p_offset, p_align));
+        size_t foff = truncp(p_offset, p_align);
+        size_t mapped = ceilp(buf.size, pagesize);
+        if (mapped < buf.size || foff > mapped ||
+            (size_t) (end - start) > mapped - foff) {
+            ERROR("elf_load error: REMAP segment out of bounds (offset 0x%zx, "
+                  "size 0x%zx, file size 0x%zx)",
+                foff, (size_t) (end - start), buf.size);
+            return false;
+        }
+        void *old = (void *) (buf.data + foff);
         void *rm = mremap(old, end - start, end - start, MREMAP_MAYMOVE | MREMAP_FIXED, (void *) start);
         if (rm == (void *) -1)
             return false;
