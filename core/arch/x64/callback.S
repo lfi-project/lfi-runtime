@@ -78,6 +78,11 @@
 
     movq $0, CTX_ABORT_CALLBACK(%r11)
     movq $1, CTX_ABORT_STATUS(%r11)
+    // Drop the two words this callback pushed (old sandbox %rsp and saved
+    // %r12) so %rsp is back at the host stack the trampoline saved, and record
+    // it in REGS_HOST_SP.
+    addq $16, %rsp
+    movq %rsp, REGS_HOST_SP(%r11)
     movq %r11, %rdi
     callq lfi_ret_end
 1:
