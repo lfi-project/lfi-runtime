@@ -329,7 +329,12 @@ cbunmap(uintptr_t start, size_t len, struct MMapInfo info, void *udata)
     (void) udata, (void) info;
     void *p = mmap((void *) start, len, PROT_NONE,
         MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-    assert(p == (void *) start);
+    if (p == (void *) start)
+        return;
+    if (mprotect((void *) start, len, PROT_NONE) != 0)
+        ERROR("failed to clear sandbox mapping %lx-%lx: %s",
+            (unsigned long) start, (unsigned long) (start + len),
+            strerror(errno));
 }
 
 static lfiptr
@@ -442,9 +447,21 @@ lfi_box_mquery(struct LFIBox *box, lfiptr addr, struct LFIMapInfo *info)
 EXPORT int
 lfi_box_munmap(struct LFIBox *box, lfiptr addr, size_t size)
 {
-    if (lfi_box_bufvalid(box, addr, size))
-        return mmap_unmap(box->mm, l2p(box, addr), size, cbunmap, NULL);
-    return -1;
+    size_t pagesize = box->engine->opts.pagesize;
+    if (!lfi_box_bufvalid(box, addr, size) || size == 0 ||
+        addr % pagesize != 0)
+        return -EINVAL;
+
+    uintptr_t p = l2p(box, addr);
+    size_t len = (size + pagesize - 1) & ~(pagesize - 1);
+    void *m = mmap((void *) p, len, PROT_NONE,
+        MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+    if (m != (void *) p)
+        return -ENOMEM;
+
+    if (mmap_unmap(box->mm, p, size, NULL, NULL) != MMAP_OK)
+        return -EINVAL;
+    return 0;
 }
 
 EXPORT void

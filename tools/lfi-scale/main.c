@@ -152,6 +152,21 @@ humansize(size_t bytes, char *buf, size_t n)
     return buf;
 }
 
+// lfi_errno() as of the end of setup. liblfi never clears its error state, so
+// a value unchanged since then is stale (e.g., left over from a failed
+// reservation probe) rather than the cause of a later failure.
+static int base_err;
+
+// Describes the current liblfi error, falling back to a generic message for
+// failures that do not set an error code (these log details to stderr).
+static const char *
+failmsg(void)
+{
+    if (lfi_errno() == 0 || lfi_errno() == base_err)
+        return "failed (see runtime log)";
+    return lfi_errmsg();
+}
+
 // Attempts to reserve virtual address space for n sandboxes and reports
 // whether the reservation succeeded.
 static bool
@@ -204,8 +219,8 @@ usage(const char *prog_name)
     printf("  -n, --nsandboxes=N   reserve space for exactly N sandboxes instead of probing\n");
     printf("  -s, --spawn          after reserving, spawn sandboxes until failure\n");
     printf("  -v, --verify         enable verification of loaded code\n");
-    printf("  --no-run             do not run sandbox initialization (only create and load)\n");
-    printf("  --no-load            do not load a program into sandboxes (only create; implies --no-run)\n");
+    printf("  --run                also run sandbox initialization in each spawned sandbox\n");
+    printf("  --no-load            do not load a program into sandboxes (only create)\n");
     printf("  --lib=<path>         sandbox library to load (default: %s)\n", library);
     printf("  --report=N           print progress every N sandboxes, 0 to disable (default: 256)\n");
 }
@@ -216,7 +231,7 @@ main(int argc, char **argv)
     bool verbose = false;
     bool do_spawn = false;
     bool do_load = true;
-    bool do_run = true;
+    bool do_run = false;
     bool verify = false;
     size_t nsandboxes = 0;
     size_t report = 256;
@@ -227,7 +242,7 @@ main(int argc, char **argv)
         { "nsandboxes", required_argument, 0, 'n' },
         { "spawn", no_argument, 0, 's' },
         { "verify", no_argument, 0, 'v' },
-        { "no-run", no_argument, 0, 1 },
+        { "run", no_argument, 0, 1 },
         { "no-load", no_argument, 0, 2 },
         { "lib", required_argument, 0, 3 },
         { "report", required_argument, 0, 4 },
@@ -257,11 +272,10 @@ main(int argc, char **argv)
             verify = true;
             break;
         case 1:
-            do_run = false;
+            do_run = true;
             break;
         case 2:
             do_load = false;
-            do_run = false;
             break;
         case 3:
             library = optarg;
@@ -275,8 +289,16 @@ main(int argc, char **argv)
         }
     }
 
+    // Running sandbox initialization requires a loaded program.
+    if (!do_load)
+        do_run = false;
+
     struct LFIOptions opts = (struct LFIOptions) {
+#ifdef LARGE_SANDBOX
+        .boxsize = 1UL << (LARGE_SANDBOX_BITS),
+#else
         .boxsize = 4UL * 1024 * 1024 * 1024,
+#endif
         .pagesize = getpagesize(),
         .no_verify = !verify,
         .verbose = verbose,
@@ -315,6 +337,7 @@ main(int argc, char **argv)
             nsandboxes, lfi_errmsg());
         return 1;
     }
+    base_err = lfi_errno();
     size_t reserved = vm_size() - vm_before;
     if (reserved > 0) {
         printf("reserved %s of virtual memory for %zu sandboxes (%s per sandbox)\n",
@@ -328,9 +351,15 @@ main(int argc, char **argv)
         return 0;
     }
 
+    // For small sandboxes, shrink the stack so that it (and the rest of the
+    // initial process image) still fits inside the box.
+    size_t stacksize = 2UL * 1024 * 1024;
+    if (stacksize > opts.boxsize / 4)
+        stacksize = opts.boxsize / 4;
+
     struct LFILinuxEngine *linux_ = lfi_linux_new(engine,
         (struct LFILinuxOptions) {
-            .stacksize = 2UL * 1024 * 1024,
+            .stacksize = stacksize,
             .exit_unknown_syscalls = true,
             .verbose = verbose,
         });
@@ -396,28 +425,20 @@ main(int argc, char **argv)
             if (!lfi_proc_load(proc, prog.data, prog.size, library)) {
                 fail_errno = errno;
                 snprintf(failbuf, sizeof(failbuf), "lfi_proc_load: %s",
-                    lfi_errmsg());
+                    failmsg());
                 fail = failbuf;
                 lfi_proc_free(proc);
                 break;
             }
         }
         if (do_run) {
-            errno = 0;
-            if (!lfi_box_init_ret(lfi_proc_box(proc))) {
-                fail_errno = errno;
-                snprintf(failbuf, sizeof(failbuf), "lfi_box_init_ret: %s",
-                    lfi_errmsg());
-                fail = failbuf;
-                lfi_proc_free(proc);
-                break;
-            }
+            lfi_box_init_ret(lfi_proc_box(proc));
             errno = 0;
             t = lfi_thread_new(proc, 1, &box_argv[0], &box_envp[0]);
             if (!t) {
                 fail_errno = errno;
                 snprintf(failbuf, sizeof(failbuf), "lfi_thread_new: %s",
-                    lfi_errmsg());
+                    failmsg());
                 fail = failbuf;
                 lfi_proc_free(proc);
                 break;

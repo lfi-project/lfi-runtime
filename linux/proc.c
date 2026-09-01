@@ -24,10 +24,14 @@ EXPORT struct LFILinuxProc *
 lfi_proc_new(struct LFILinuxEngine *engine)
 {
     struct LFIBox *box = lfi_box_new(engine->engine);
+    if (!box)
+        return NULL;
 
     struct LFILinuxProc *proc = calloc(sizeof(struct LFILinuxProc), 1);
-    if (!proc)
+    if (!proc) {
+        lfi_box_free(box);
         return NULL;
+    }
     proc->engine = engine;
     proc->box = box;
     proc->box_info = lfi_box_info(box);
