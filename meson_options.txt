@@ -63,7 +63,7 @@ option('enable_pku',
 option('static_lfi_run',
   type: 'boolean',
   value: false,
-  description: 'statically link lfi-run')
+  description: 'statically link lfi-run and lfi-scale')
 
 option('sys_minimal',
   type: 'boolean',
