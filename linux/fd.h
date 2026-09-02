@@ -8,9 +8,11 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
-// Assign the host file descriptor to fd.
-bool
-fdassign(struct FDTable *t, int fd, int host_fd, char *dir, int flags);
+// Assign host_fd to the lowest-numbered free sandbox descriptor and return
+// that descriptor. Takes ownership of dir: it is stored in the table on
+// success and freed otherwise.
+int
+fdalloc(struct FDTable *t, int host_fd, char *dir, int flags);
 
 // Borrow the host file descriptor for `fd` for the duration of a single
 // operation. Every successful acquire must be paired with an fdrelease.

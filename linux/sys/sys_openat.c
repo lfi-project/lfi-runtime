@@ -2,6 +2,7 @@
 #include "sys/sys.h"
 
 #include <fcntl.h>
+#include <unistd.h>
 
 static int
 openflags(int flags)
@@ -32,9 +33,15 @@ sys_openat(struct LFILinuxThread *t, int dirfd, lfiptr pathp, int flags,
         return host_err(errno);
     }
     bool isdir = host_checkdir(host_path) == 0;
-    fdassign(&t->proc->fdtable, kfd, kfd, isdir ? path : NULL, flags);
-    LOG(t->proc->engine, "sys_open(\"%s\") = %d", path, kfd);
+    // Directories keep their resolved path for fchdir.
+    char *dir = isdir ? path : NULL;
     if (!isdir)
         free(path);
-    return kfd;
+    int fd = fdalloc(&t->proc->fdtable, kfd, dir, flags);
+    if (fd < 0) {
+        close(kfd);
+        return fd;
+    }
+    LOG(t->proc->engine, "sys_open(\"%s\") = %d", host_path, fd);
+    return fd;
 }

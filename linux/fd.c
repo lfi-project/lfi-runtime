@@ -7,19 +7,25 @@
 #include <string.h>
 #include <unistd.h>
 
-bool
-fdassign(struct FDTable *t, int fd, int host_fd, char *dir, int flags)
+int
+fdalloc(struct FDTable *t, int host_fd, char *dir, int flags)
 {
-    if (t->passthrough)
-        return true;
-    if (fd < 0 || fd >= LINUX_NOFILE)
-        return false;
+    if (t->passthrough) {
+        free(dir);
+        return host_fd;
+    }
     LOCK_WITH_DEFER(&t->lk, t_lk);
-    assert(t->fds[fd] == -1);
-    t->fds[fd] = host_fd;
-    t->dirs[fd] = dir;
-    t->flags[fd] = flags;
-    return true;
+    // Pick the lowest-numbered free slot, independent of the host fd number.
+    for (int fd = 0; fd < LINUX_NOFILE; fd++) {
+        if (t->fds[fd] == -1) {
+            t->fds[fd] = host_fd;
+            t->dirs[fd] = dir;
+            t->flags[fd] = flags;
+            return fd;
+        }
+    }
+    free(dir);
+    return -LINUX_EMFILE;
 }
 
 int
