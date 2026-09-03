@@ -178,8 +178,7 @@ sanitize(void *p, size_t sz, int prot)
 static bool
 buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
     uintptr_t end, size_t p_offset, size_t filesz, size_t memsz, int prot,
-    struct Buf buf, size_t pagesize, size_t p_align, int map_op,
-    bool reload)
+    struct Buf buf, size_t pagesize, size_t p_align, int map_op)
 {
     // Only use mremap for executable segments.
     if (map_op == ELF_REMAP && (prot & LFI_PROT_EXEC) == 0) {
@@ -188,12 +187,7 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
 
     struct LFIBox *box = proc->box;
     lfiptr p;
-    if (reload && map_op == ELF_MAP) {
-        // The mapping already exists and is writable, we just need to reset
-        // it to 0.
-        memset((void *) start, 0, end - start);
-        p = start;
-    } else if (map_op == ELF_MAP && buf.fd != -1) {
+    if (map_op == ELF_MAP && buf.fd != -1) {
         p = lfi_box_mapat(box, p2l(box, start), end - start, prot,
             LFI_MAP_PRIVATE, buf.fd, truncp(p_offset, p_align));
         if (p == (lfiptr) -1)
@@ -270,9 +264,8 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
     if (n != (ssize_t) filesz) {
         return false;
     }
-    if (!reload &&
-        lfi_box_mprotect(box, p2l(box, start), p2l(box, end - start), prot) <
-            0) {
+    if (lfi_box_mprotect(box, p2l(box, start), p2l(box, end - start), prot) <
+        0) {
         return false;
     }
 
@@ -282,8 +275,8 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
 // Load a single in-memory ELF image into the address space.
 static bool
 elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
-    size_t pagesize, int map_op, bool reload, uintptr_t *p_first,
-    uintptr_t *p_last, uintptr_t *p_entry, Elf64_Ehdr *ehdr)
+    size_t pagesize, int map_op, uintptr_t *p_first, uintptr_t *p_last,
+    uintptr_t *p_entry, Elf64_Ehdr *ehdr)
 {
     size_t n = buf_read(elf, ehdr, sizeof(*ehdr), 0);
     if (n != sizeof(*ehdr)) {
@@ -396,15 +389,11 @@ elf_load_one(struct LFILinuxProc *proc, struct Buf elf, lfiptr base,
         LOG(proc->engine, "elf_load [0x%lx, 0x%lx] (P: %d)", base + start,
             base + end, pflags(p->p_flags, bti));
 
-        // Load the segment if we are doing a normal load (not reload) or if we
-        // are doing a reload and the segment is writable.
-        if (!reload || (reload && ((p->p_flags & PF_W) != 0))) {
-            if (!buf_read_elfseg(proc, base + start, offset, base + end,
-                    p->p_offset, p->p_filesz, p->p_memsz, pflags(p->p_flags, bti),
-                    elf, pagesize, p->p_align, map_op, reload)) {
-                ERROR("elf_load error: reading elf segment failed");
-                goto err1;
-            }
+        if (!buf_read_elfseg(proc, base + start, offset, base + end,
+                p->p_offset, p->p_filesz, p->p_memsz, pflags(p->p_flags, bti),
+                elf, pagesize, p->p_align, map_op)) {
+            ERROR("elf_load error: reading elf segment failed");
+            goto err1;
         }
 
         if (base == 0)
@@ -429,8 +418,8 @@ err1:
 bool
 elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
     const uint8_t *prog_data, size_t prog_size, const char *interp_path,
-    int interp_fd, const uint8_t *interp_data, size_t interp_size,
-    int map_op, bool reload, struct ELFLoadInfo *info)
+    int interp_fd, const uint8_t *interp_data, size_t interp_size, int map_op,
+    struct ELFLoadInfo *info)
 {
     struct Buf prog = (struct Buf) {
         .fd = prog_fd,
@@ -450,12 +439,12 @@ elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
     size_t pagesize = lfi_opts(proc->engine->engine).pagesize;
     Elf64_Ehdr p_ehdr, i_ehdr;
 
-    if (!elf_load_one(proc, prog, base, pagesize, map_op, reload, &p_first,
-            &p_last, &p_entry, &p_ehdr))
+    if (!elf_load_one(proc, prog, base, pagesize, map_op, &p_first, &p_last,
+            &p_entry, &p_ehdr))
         goto err;
     if (has_interp) {
-        if (!elf_load_one(proc, interp, p_last, pagesize, map_op, reload,
-                &i_first, &i_last, &i_entry, &i_ehdr))
+        if (!elf_load_one(proc, interp, p_last, pagesize, map_op, &i_first,
+                &i_last, &i_entry, &i_ehdr))
             goto err;
     }
 

@@ -16,7 +16,6 @@ struct MMapInfo {
   int flags;
   int fd;
   int64_t offset;
-  bool original;
 };
 
 enum MMapError {
@@ -49,10 +48,6 @@ bool mmap_query_page(const struct MMapAddrSpace *mm, uintptr_t addr,
 enum MMapError mmap_protect(struct MMapAddrSpace *mm, uintptr_t addr,
                             size_t len, int prot, MMapUpdateFn ufn,
                             void *udata);
-
-void mmap_mark_original(struct MMapAddrSpace *mm);
-void mmap_unmap_non_original(struct MMapAddrSpace *mm, MMapUpdateFn ufn,
-                             void *udata);
 
 #ifdef __cplusplus
 }

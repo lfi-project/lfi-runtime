@@ -95,7 +95,7 @@ uintptr_t AddrSpace::map_any(uintptr_t hint, size_t len, int prot, int flags,
     if (is_valid(start, pages) &&
         !regions_.overlaps(start, start + pages)) {
       regions_.insert(start, start + pages,
-                      MapInfo{prot, flags, fd, offset, false});
+                      MapInfo{prot, flags, fd, offset});
       check_in_region(to_addr(start), len);
       return to_addr(start);
     }
@@ -104,7 +104,7 @@ uintptr_t AddrSpace::map_any(uintptr_t hint, size_t len, int prot, int flags,
   if (!find_free(pages, &start))
     return (uintptr_t)-1;
   regions_.insert(start, start + pages,
-                  MapInfo{prot, flags, fd, offset, false});
+                  MapInfo{prot, flags, fd, offset});
   check_in_region(to_addr(start), len);
   return to_addr(start);
 }
@@ -125,7 +125,7 @@ uintptr_t AddrSpace::map_at(uintptr_t addr, size_t len, int prot, int flags,
 
   unmap(addr, len, ufn);
   regions_.insert(start, start + pages,
-                  MapInfo{prot, flags, fd, offset, false});
+                  MapInfo{prot, flags, fd, offset});
   check_in_region(addr, len);
   return addr;
 }
@@ -191,18 +191,6 @@ Error AddrSpace::protect(uintptr_t addr, size_t len, int prot, UpdateFn ufn) {
     regions_.insert(cs, ce, new_info);
   }
   return Error::kOk;
-}
-
-void AddrSpace::mark_original() {
-  regions_.update_all([](MapInfo &info) { info.original = true; });
-}
-
-void AddrSpace::unmap_non_original(UpdateFn ufn) {
-  auto all = regions_.get_overlapping(base_, base_ + len_);
-  for (auto &e : all) {
-    if (!e.val.original)
-      unmap(to_addr(e.start), to_addr(e.end) - to_addr(e.start), ufn);
-  }
 }
 
 } // namespace mmap

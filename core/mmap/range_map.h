@@ -2,7 +2,6 @@
 #define LIBMMAP_RANGE_MAP_H
 
 #include <cstddef>
-#include <functional>
 #include <map>
 #include <optional>
 #include <vector>
@@ -133,12 +132,6 @@ public:
     if (cursor < end)
       result.push_back({cursor, end});
     return result;
-  }
-
-  // Apply a function to every value in the map.
-  void update_all(std::function<void(V &)> fn) {
-    for (auto &entry : Map_)
-      fn(entry.second.second);
   }
 
 private:

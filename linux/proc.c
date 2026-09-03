@@ -72,7 +72,7 @@ lfi_proc_box(struct LFILinuxProc *proc)
 
 static bool
 proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
-    size_t prog_size, const char *prog_path, int map_op, bool reload)
+    size_t prog_size, const char *prog_path, int map_op)
 {
     struct Buf interp = (struct Buf) { 0 };
 
@@ -82,7 +82,7 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
         free(interp_path);
         interp_path = NULL;
     }
-    if (interp_path && !reload) {
+    if (interp_path) {
 #ifdef CONFIG_ENABLE_DYLD
         if (cwk_path_is_absolute(interp_path)) {
             char interp_host[FILENAME_MAX];
@@ -141,7 +141,7 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
 
     struct ELFLoadInfo info;
     if (!elf_load(proc, proc->prog_path, prog_fd, prog, prog_size, interp_path,
-            interp.fd, interp.data, interp.size, map_op, reload, &info))
+            interp.fd, interp.data, interp.size, map_op, &info))
         return false;
 
     lfiptr entry = info.elfentry;
@@ -150,12 +150,10 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
     proc->entry = entry;
     proc->elfinfo = info;
 
-    if (!reload) {
-        bool ok = elf_loadsyms(proc, prog, prog_size);
-        if (!ok)
-            LOG(proc->engine,
-                "could not find .dynsym/.dynstr: dynamic symbol lookup will be unavailable");
-    }
+    bool ok = elf_loadsyms(proc, prog, prog_size);
+    if (!ok)
+        LOG(proc->engine,
+            "could not find .dynsym/.dynstr: dynamic symbol lookup will be unavailable");
 
     proc->brkbase = info.lastva;
     proc->brksize = 0;
@@ -165,9 +163,7 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
         BRKMAXSIZE;
 
     // Reserve the brk region.
-    if (reload) {
-        memset((void *) lfi_box_l2p(proc->box, proc->brkbase), 0, brkmaxsize);
-    } else if (brkmaxsize > 0) {
+    if (brkmaxsize > 0) {
         lfiptr brkregion = lfi_box_mapat(proc->box, proc->brkbase, brkmaxsize,
             LFI_PROT_NONE, LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
         if (brkregion == (lfiptr) -1)
@@ -184,13 +180,13 @@ EXPORT bool
 lfi_proc_load(struct LFILinuxProc *proc, const uint8_t *prog, size_t prog_size,
     const char *prog_path)
 {
-    return proc_load(proc, -1, prog, prog_size, prog_path, ELF_MAP, false);
+    return proc_load(proc, -1, prog, prog_size, prog_path, ELF_MAP);
 }
 
 EXPORT bool
 lfi_proc_load_remap(struct LFILinuxProc *proc, const uint8_t *prog, size_t prog_size, const char *prog_path)
 {
-    return proc_load(proc, -1, prog, prog_size, prog_path, ELF_REMAP, false);
+    return proc_load(proc, -1, prog, prog_size, prog_path, ELF_REMAP);
 }
 
 EXPORT bool
@@ -207,7 +203,7 @@ lfi_proc_load_fd(struct LFILinuxProc *proc, int fd, const char *prog_path)
     if (prog_data == (void *) -1)
         return false;
 
-    bool ok = proc_load(proc, fd, prog_data, prog_size, prog_path, ELF_MAP, false);
+    bool ok = proc_load(proc, fd, prog_data, prog_size, prog_path, ELF_MAP);
     munmap(prog_data, prog_size);
     return ok;
 }
@@ -223,19 +219,6 @@ lfi_proc_load_file(struct LFILinuxProc *proc, const char *prog_path)
     bool ok = lfi_proc_load_fd(proc, fileno(f), prog_path);
     fclose(f);
     return ok;
-}
-
-EXPORT bool
-lfi_proc_reload(struct LFILinuxProc *proc, const uint8_t *prog,
-    size_t prog_size)
-{
-    // Process must have no active threads in order to be reloaded.
-    assert(proc->active_threads == 0);
-    lfi_box_unmap_non_original(proc->box);
-    fdfree(&proc->fdtable);
-    free(proc->interp_path);
-    free(proc->prog_path);
-    return proc_load(proc, -1, prog, prog_size, NULL, ELF_MAP, true);
 }
 
 void

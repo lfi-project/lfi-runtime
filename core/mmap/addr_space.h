@@ -14,11 +14,10 @@ struct MapInfo {
   int flags;
   int fd;
   int64_t offset;
-  bool original;
 
   bool operator==(const MapInfo &other) const {
     return prot == other.prot && flags == other.flags && fd == other.fd &&
-           offset == other.offset && original == other.original;
+           offset == other.offset;
   }
 };
 
@@ -42,9 +41,6 @@ struct AddrSpace {
   Error unmap(uintptr_t addr, size_t len, UpdateFn ufn = nullptr);
   bool query_page(uintptr_t addr, MapInfo *info) const;
   Error protect(uintptr_t addr, size_t len, int prot, UpdateFn ufn = nullptr);
-
-  void mark_original();
-  void unmap_non_original(UpdateFn ufn = nullptr);
 
 private:
   uint64_t to_page(uint64_t addr) const { return addr >> p2pagesize_; }

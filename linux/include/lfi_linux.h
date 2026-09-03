@@ -112,12 +112,6 @@ lfi_proc_load_remap(struct LFILinuxProc *proc, const uint8_t *prog,
 bool
 lfi_proc_load_file(struct LFILinuxProc *proc, const char *prog_path);
 
-// Reload the same ELF file that this proc was initially loaded with. The
-// reload will reset all LFI process state to its initial values.
-bool
-lfi_proc_reload(struct LFILinuxProc *proc, const uint8_t *prog,
-    size_t prog_size);
-
 // Look up the address of the given symbol name. Must be called after an ELF
 // image has been loaded in proc. Returns 0 if not found.
 uint64_t
@@ -139,11 +133,6 @@ lfi_proc_free(struct LFILinuxProc *proc);
 // Creates a new LFILinuxThread from an ELF file and a command-line.
 struct LFILinuxThread *
 lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
-    const char **envp);
-
-// Reload a LFILinuxThread by resetting it back to an initial state.
-void
-lfi_thread_reload(struct LFILinuxThread *t, int argc, const char **argv,
     const char **envp);
 
 // Begins executed an LFILinuxThread.

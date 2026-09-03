@@ -65,12 +65,6 @@ test_run = executable(
   dependencies: [lfi_linux],
 )
 
-test_reload = executable(
-  'test_reload.elf',
-  'test_reload.c',
-  dependencies: [lfi_linux],
-)
-
 test_argv_mismatch = executable(
   'test_argv_mismatch.elf',
   'test_argv_mismatch.c',

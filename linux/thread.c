@@ -245,19 +245,6 @@ sp_init(struct LFILinuxThread *t, lfiptr sp)
 #endif
 }
 
-EXPORT void
-lfi_thread_reload(struct LFILinuxThread *t, int argc, const char **argv,
-    const char **envp)
-{
-    memset((void *) lfi_box_l2p(t->proc->box, t->stack), 0, t->stack_size);
-    lfiptr sp = stack_init(t, argc, argv, envp);
-    *lfi_ctx_regs(t->ctx) = (struct LFIRegs) { 0 };
-    lfi_ctx_regs_init(t->ctx);
-    sp_init(t, sp);
-    t->paused = false;
-    atomic_store_explicit(&t->exited, false, memory_order_relaxed);
-}
-
 struct LFILinuxThread *
 thread_alloc(struct LFILinuxProc *proc, enum LFIThreadOwner owner)
 {
@@ -302,8 +289,6 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
 
     lfiptr sp = stack_init(t, argc, argv, envp);
     sp_init(t, sp);
-
-    lfi_box_mark_original(t->proc->box);
 
     return t;
 err3:

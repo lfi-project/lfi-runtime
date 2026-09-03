@@ -8,7 +8,7 @@ struct MMapAddrSpace {
 };
 
 static struct MMapInfo to_c(mmap::MapInfo info) {
-  return {info.prot, info.flags, info.fd, info.offset, info.original};
+  return {info.prot, info.flags, info.fd, info.offset};
 }
 
 static mmap::UpdateFn wrap_cb(MMapUpdateFn ufn, void *udata) {
@@ -81,11 +81,4 @@ enum MMapError mmap_protect(struct MMapAddrSpace *mm, uintptr_t addr,
                             size_t len, int prot, MMapUpdateFn ufn,
                             void *udata) {
   return to_c_error(mm->impl.protect(addr, len, prot, wrap_cb(ufn, udata)));
-}
-
-void mmap_mark_original(struct MMapAddrSpace *mm) { mm->impl.mark_original(); }
-
-void mmap_unmap_non_original(struct MMapAddrSpace *mm, MMapUpdateFn ufn,
-                             void *udata) {
-  mm->impl.unmap_non_original(wrap_cb(ufn, udata));
 }
