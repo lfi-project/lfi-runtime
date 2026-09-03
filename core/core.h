@@ -195,10 +195,12 @@ gb(size_t x)
 #define BOX_EXTERNAL_GUARD 0
 #define REGION_GUARD       0
 #else
-// TODO: verify that we can safely reduce BOX_EXTERNAL_GUARD if Segue is
-// enabled.
-#define BOX_EXTERNAL_GUARD gb(40)
-#define REGION_GUARD       gb(40)
+// The verifier enforces a scale of no more than 1, so a guard region of 4GiB
+// is possible in both Segue and non-Segue configurations. Segue further allows
+// arbitrary scales with a 4GiB guard region, but the verifier doesn't
+// currently allow it.
+#define BOX_EXTERNAL_GUARD gb(4)
+#define REGION_GUARD       gb(4)
 #endif
 
 #elif defined(LFI_ARCH_RISCV64)
