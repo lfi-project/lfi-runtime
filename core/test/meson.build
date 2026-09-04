@@ -12,7 +12,7 @@ if cpu != 'riscv64'
 endif
 
 # Segue (and thus segue_cache_gs) is x86-64 only.
-if cpu == 'x86_64'
+if cpu == 'x86_64' and get_option('enable_segue')
   tests += ['test_segue_multibox.c']
 endif
 
