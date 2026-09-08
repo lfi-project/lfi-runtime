@@ -1,5 +1,8 @@
 #include <stdio.h>
-#include <threads.h>
+
+#ifndef thread_local
+#define thread_local _Thread_local
+#endif
 
 thread_local int i;
 

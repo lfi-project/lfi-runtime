@@ -1,6 +1,9 @@
 #include <stddef.h>
-#include <threads.h>
 #include <unistd.h>
+
+#ifndef thread_local
+#define thread_local _Thread_local
+#endif
 
 // volatile so that the read cannot be hoisted out of the loop: each iteration
 // performs a real thread-local access.
