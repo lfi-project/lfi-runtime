@@ -105,8 +105,23 @@ int
 box_munmap_locked(struct LFIBox *box, lfiptr addr, size_t size);
 
 struct Sys {
+    struct LFIContext *ctx;
     uintptr_t rtcalls[32];
 };
+
+void
+sys_init(struct Sys *sys, struct LFIContext *ctx);
+
+bool
+sys_page_init(void *page, size_t pagesize, int pkey, struct LFIContext *ctx);
+
+#define CTXREG_SLOTS 8
+
+#define CTX_BLOCK_CTXREG_OFF(pagesize) (pagesize)
+#define CTX_BLOCK_SIZE(pagesize)       (2 * (pagesize))
+
+bool
+ctx_block_init(void *block, size_t pagesize, int pkey, struct LFIContext *ctx);
 
 struct LFIContext {
     // Registers of sandbox and associated host thread (stack, thread pointer)
@@ -123,10 +138,15 @@ struct LFIContext {
     uintptr_t *gs_cache;
 #endif
 
-    // Context register storage. The first slot holds a pointer to this
-    // LFIContext, and remaining slots are available for thread-local data
-    // (e.g., thread pointer).
-    uint64_t ctxreg[8];
+    // Context register storage, available for thread-local data. The array is
+    // page-aligned and lives in the context's block, directly after the
+    // read-only runtime call page whose struct Sys points back at this
+    // LFIContext.
+    uint64_t *ctxreg;
+
+    // Start of the two-page block that holds the runtime call page and the
+    // ctxreg array.
+    void *block;
 
     // User-provided data pointer -- tracks per-sandbox context for Linux
     // runtime.

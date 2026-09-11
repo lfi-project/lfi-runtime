@@ -3,6 +3,7 @@
 #include "lfi_core.h"
 
 #include <stdlib.h>
+#include <sys/mman.h>
 
 extern int
 lfi_ctx_entry(struct LFIContext *ctx, uintptr_t *host_sp_ptr,
@@ -20,7 +21,28 @@ lfi_ctx_new(struct LFIBox *box, void *userdata)
         return NULL;
     }
 
+    // The ctxreg array lives in a two-page block: a read-only runtime call
+    // page followed by the read-write ctxreg page holding the array.
+    size_t pagesize = box->engine->opts.pagesize;
+    void *block = mmap(NULL, CTX_BLOCK_SIZE(pagesize), PROT_READ | PROT_WRITE,
+        MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (block == MAP_FAILED) {
+        free(ctx);
+        lfi_error = LFI_ERR_ALLOC;
+        return NULL;
+    }
+
+    if (!ctx_block_init(block, pagesize, box->pkey, ctx)) {
+        munmap(block, CTX_BLOCK_SIZE(pagesize));
+        free(ctx);
+        lfi_error = LFI_ERR_MMAP;
+        return NULL;
+    }
+
     *ctx = (struct LFIContext) {
+        .ctxreg = (uint64_t *) ((char *) block +
+            CTX_BLOCK_CTXREG_OFF(pagesize)),
+        .block = block,
         .userdata = userdata,
         .box = box,
     };
@@ -61,6 +83,9 @@ lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
 EXPORT void
 lfi_ctx_free(struct LFIContext *ctx)
 {
+    if (!ctx)
+        return;
+    munmap(ctx->block, CTX_BLOCK_SIZE(ctx->box->engine->opts.pagesize));
     free(ctx);
 }
 

@@ -137,7 +137,6 @@ endif
 if get_option('sys_minimal')
   defines += '-DSYS_MINIMAL'
 endif
-defines += '-DCTXREG_CTX_OFFSET=@0@'.format(get_option('ctxreg_ctx_offset'))
 defines += '-DCTXREG_TP_OFFSET=@0@'.format(get_option('ctxreg_tp_offset'))
 
 if not meson.is_subproject()

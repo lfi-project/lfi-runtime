@@ -195,16 +195,6 @@ lfi_syscall_entry:
     add x30, REG_BASE, w30, uxtw
     ret
 
-.global lfi_get_tp
-.p2align 4
-lfi_get_tp:
-    brk #0
-
-.global lfi_set_tp
-.p2align 4
-lfi_set_tp:
-    brk #0
-
 // Unsupported runtime call.
 .global lfi_rtcall_bad
 .p2align 4

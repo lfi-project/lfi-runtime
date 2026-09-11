@@ -40,12 +40,6 @@ p2l(struct LFIBox *box, uintptr_t p)
 // Runtime call entrypoints. These are defined in runtime.S.
 extern void
 lfi_syscall_entry(void) __asm__("lfi_syscall_entry");
-#ifndef SYS_MINIMAL
-extern void
-lfi_get_tp(void) __asm__("lfi_get_tp");
-extern void
-lfi_set_tp(void) __asm__("lfi_set_tp");
-#endif
 extern void
 lfi_ret(void) __asm__("lfi_ret");
 extern void
@@ -59,6 +53,40 @@ protectmem(void *start, size_t size, int prot, int pkey)
 #else
     return mprotect(start, size, prot);
 #endif
+}
+
+void
+sys_init(struct Sys *sys, struct LFIContext *ctx)
+{
+    sys->ctx = ctx;
+    size_t n = sizeof(sys->rtcalls) / sizeof(sys->rtcalls[0]);
+    for (size_t i = 0; i < n; i++)
+        sys->rtcalls[i] = (uintptr_t) &lfi_rtcall_bad;
+    sys->rtcalls[n - 1] = (uintptr_t) &lfi_syscall_entry;
+    sys->rtcalls[n - 4] = (uintptr_t) &lfi_ret;
+}
+
+// Sets up a read-only runtime call page at 'page'. Returns false if the page
+// could not be made read-only.
+bool
+sys_page_init(void *page, size_t pagesize, int pkey, struct LFIContext *ctx)
+{
+    struct Sys *sys = (struct Sys *) ((char *) page + pagesize -
+        sizeof(struct Sys));
+    sys_init(sys, ctx);
+    return protectmem(page, pagesize, PROT_READ, pkey) == 0;
+}
+
+// Sets up a context block at 'block': a read-only runtime call page followed
+// by a read-write ctxreg page. Returns false if either page could not be
+// protected.
+bool
+ctx_block_init(void *block, size_t pagesize, int pkey, struct LFIContext *ctx)
+{
+    if (!sys_page_init(block, pagesize, pkey, ctx))
+        return false;
+    return protectmem((char *) block + CTX_BLOCK_CTXREG_OFF(pagesize),
+               pagesize, PROT_READ | PROT_WRITE, pkey) == 0;
 }
 
 // Initialize the sys page (at the beginning of the sandbox) to contain the
@@ -86,20 +114,7 @@ syssetup(struct LFIBox *box)
     box->sys = (struct Sys *) ((char *) box->sys_page + pagesize -
         sizeof(struct Sys));
 
-    size_t n = sizeof(box->sys->rtcalls) / sizeof(box->sys->rtcalls[0]);
-    for (size_t i = 0; i < n; i++)
-        box->sys->rtcalls[i] = (uintptr_t) &lfi_rtcall_bad;
-    box->sys->rtcalls[n - 1] = (uintptr_t) &lfi_syscall_entry;
-#ifndef SYS_MINIMAL
-    box->sys->rtcalls[n - 2] = (uintptr_t) &lfi_get_tp;
-    box->sys->rtcalls[n - 3] = (uintptr_t) &lfi_set_tp;
-#endif
-    box->sys->rtcalls[n - 4] = (uintptr_t) &lfi_ret;
-
-    // Map read-only.
-    int r = protectmem(box->sys_page, box->engine->opts.pagesize, PROT_READ,
-        box->pkey);
-    if (r != 0) {
+    if (!sys_page_init(box->sys_page, pagesize, box->pkey, NULL)) {
         munmap(box->sys_page, pagesize);
         box->sys_page = NULL;
         return false;

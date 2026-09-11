@@ -183,20 +183,6 @@ lfi_syscall_entry:
     movq $0, %rcx // clobbered
     jmpq *%r11
 
-// The sandbox reads and writes its thread pointer through the ctxreg array
-// directly, so these runtime calls are never made.
-.global lfi_get_tp
-.p2align 4
-lfi_get_tp:
-    endbr64
-    ud2
-
-.global lfi_set_tp
-.p2align 4
-lfi_set_tp:
-    endbr64
-    ud2
-
 // Unsupported runtime call.
 .global lfi_rtcall_bad
 .p2align 4

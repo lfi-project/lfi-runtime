@@ -301,16 +301,6 @@ lfi_syscall_entry:
     add.uw ra, ra, REG_BASE
     ret
 
-.global lfi_get_tp
-.p2align 4
-lfi_get_tp:
-    ebreak
-
-.global lfi_set_tp
-.p2align 4
-lfi_set_tp:
-    ebreak
-
 // Unsupported runtime call.
 .global lfi_rtcall_bad
 .p2align 4

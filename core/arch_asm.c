@@ -9,13 +9,16 @@
 _Static_assert(sizeof(void *) == sizeof(void (*)(void)),
     "data pointer and function pointer differ in size");
 
-_Static_assert(CTXREG_CTX_OFFSET % 8 == 0 && CTXREG_TP_OFFSET % 8 == 0,
+_Static_assert(CTXREG_TP_OFFSET % 8 == 0,
     "ctxreg offsets must be multiples of 8");
-_Static_assert(CTXREG_CTX_OFFSET != CTXREG_TP_OFFSET,
-    "ctxreg context and thread pointer offsets overlap");
-_Static_assert(CTXREG_CTX_OFFSET < sizeof(((struct LFIContext *) 0)->ctxreg) &&
-        CTXREG_TP_OFFSET < sizeof(((struct LFIContext *) 0)->ctxreg),
+_Static_assert(CTXREG_TP_OFFSET < CTXREG_SLOTS * 8,
     "ctxreg offsets must be within the ctxreg array");
+
+_Static_assert(sizeof(struct Sys) == SYS_SIZE, "incorrect struct Sys size");
+_Static_assert(offsetof(struct Sys, ctx) == 0,
+    "context pointer must be the first field of struct Sys");
+_Static_assert(offsetof(struct Sys, rtcalls) == 8,
+    "incorrect rtcalls offset");
 
 _Static_assert(offsetof(struct LFIRegs, host_sp) == REGS_HOST_SP,
     "incorrect REGS offset");

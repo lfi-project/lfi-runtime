@@ -8,6 +8,10 @@
 #define REGS_HOST_SP 0
 #define REGS_RETADDR 8
 
+// Offsets for Sys page location.
+#define SYS_SIZE       (8 + 32 * 8)
+#define SYS_CTX_OFFSET (-SYS_SIZE)
+
 #if defined(__aarch64__) || defined(_M_ARM64)
 
 #define REGS_X0   16
@@ -27,10 +31,11 @@
 
 // clang-format off
 #ifdef __ASSEMBLER__
-// x25 points to the ctxreg array, which holds the context pointer at
-// CTXREG_CTX_OFFSET.
+// x25 points to the ctxreg array and the read-only struct Sys directly below
+// it holds the context pointer at SYS_CTX_OFFSET.
 .macro get_ctx reg
-    ldr \reg, [x25, CTXREG_CTX_OFFSET]
+    sub \reg, x25, #-SYS_CTX_OFFSET
+    ldr \reg, [\reg]
 .endm
 #endif
 // clang-format on
@@ -71,10 +76,10 @@
 
 // clang-format off
 #ifdef __ASSEMBLER__
-// r15 points to the ctxreg array, which holds the context pointer at
-// CTXREG_CTX_OFFSET.
+// r15 points to the ctxreg array and the read-only struct Sys directly below
+// it holds the context pointer at SYS_CTX_OFFSET.
 .macro get_ctx reg
-    movq CTXREG_CTX_OFFSET(%r15), \reg
+    movq SYS_CTX_OFFSET(%r15), \reg
 .endm
 
 // Load the sandbox base (%REG_BASE) into the %gs base register for Segue.
@@ -180,10 +185,10 @@
 #define REG_CTX   s10
 // clang-format off
 #ifdef __ASSEMBLER__
-// s10 points to the ctxreg array, which holds the context pointer at
-// CTXREG_CTX_OFFSET.
+// s10 points to the ctxreg array; the read-only struct Sys directly below it
+// holds the context pointer at SYS_CTX_OFFSET.
 .macro get_ctx reg
-    ld \reg, CTXREG_CTX_OFFSET(REG_CTX)
+    ld \reg, SYS_CTX_OFFSET(REG_CTX)
 .endm
 #endif
 // clang-format on
