@@ -160,6 +160,15 @@ struct LFIContext {
     bool in_ctx_run;
 };
 
+// Gives the calling host thread access to every protection key.
+static inline void
+pku_host_access(void)
+{
+#if defined(HAVE_PKU) && defined(__x86_64__)
+    __asm__ volatile("wrpkru" : : "a"(0), "c"(0), "d"(0) : "memory");
+#endif
+}
+
 extern thread_local int lfi_error;
 extern thread_local char *lfi_error_desc;
 

@@ -117,8 +117,11 @@
 #ifdef HAVE_PKU
     movq REGS_PKEY(%r11), %rcx
     movq %rax, %r11
+    // Preserve rdx across the PKRU switch.
+    movq %rdx, %r10
     pku_box_access %rcx
     movq %r11, %rax
+    movq %r10, %rdx
 #endif
 
 #ifndef STORES_ONLY

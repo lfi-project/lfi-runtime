@@ -184,6 +184,7 @@ lfi_box_new(struct LFIEngine *engine)
     assert(pkey != 0);
     int r = pkey_mprotect((void *) base, size, PROT_NONE, pkey);
     assert(r == 0);
+    pku_host_access();
 #endif
 
     size_t min_off = BOX_INTERNAL_GUARD > engine->opts.pagesize

@@ -15,6 +15,8 @@ lfi_ctx_end(struct LFIContext *ctx, int val) __asm__("lfi_ctx_end");
 EXPORT struct LFIContext *
 lfi_ctx_new(struct LFIBox *box, void *userdata)
 {
+    pku_host_access();
+
     struct LFIContext *ctx = malloc(sizeof(struct LFIContext));
     if (!ctx) {
         lfi_error = LFI_ERR_ALLOC;

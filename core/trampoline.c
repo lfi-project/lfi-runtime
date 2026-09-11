@@ -33,6 +33,8 @@ lfi_clone(struct LFIBox *box, struct LFIContext **ctxp)
             "error: performing automatic clone during trampoline, but clone_cb is NULL");
         abort();
     }
+    // This host thread is attaching to the sandbox for the first time.
+    pku_host_access();
     struct LFIContext *ctx = box->engine->clone_cb(box);
     if (!ctx) {
         LOG_("error: clone callback did not produce a context");

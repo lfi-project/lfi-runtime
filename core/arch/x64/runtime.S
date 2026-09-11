@@ -92,11 +92,11 @@ lfi_ctx_end:
 .p2align 4
 lfi_syscall_entry:
 #ifdef HAVE_PKU
-    pushq %rax
-    pushq %rdx
+    movq %rax, CTXREG_SCRATCH0_OFFSET(%r15)
+    movq %rdx, CTXREG_SCRATCH1_OFFSET(%r15)
     pku_all_access
-    popq %rdx
-    popq %rax
+    movq CTXREG_SCRATCH0_OFFSET(%r15), %rax
+    movq CTXREG_SCRATCH1_OFFSET(%r15), %rdx
 #endif
     get_ctx %rcx
     // save registers
@@ -174,11 +174,11 @@ lfi_syscall_entry:
     fldcw REGS_FCW(%rcx)
     ldmxcsr REGS_MXCSR(%rcx)
 #ifdef HAVE_PKU
-    pushq %rax
-    pushq %rdx
+    movq %rax, CTXREG_SCRATCH0_OFFSET(%r15)
+    movq %rdx, CTXREG_SCRATCH1_OFFSET(%r15)
     pku_box_access REGS_PKEY(%rcx)
-    popq %rdx
-    popq %rax
+    movq CTXREG_SCRATCH0_OFFSET(%r15), %rax
+    movq CTXREG_SCRATCH1_OFFSET(%r15), %rdx
 #endif
     movq $0, %rcx // clobbered
     jmpq *%r11

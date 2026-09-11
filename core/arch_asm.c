@@ -13,6 +13,11 @@ _Static_assert(CTXREG_TP_OFFSET % 8 == 0,
     "ctxreg offsets must be multiples of 8");
 _Static_assert(CTXREG_TP_OFFSET < CTXREG_SLOTS * 8,
     "ctxreg offsets must be within the ctxreg array");
+_Static_assert(CTXREG_SCRATCH0_OFFSET >= CTXREG_SLOTS * 8 &&
+        CTXREG_SCRATCH1_OFFSET >= CTXREG_SLOTS * 8 &&
+        CTXREG_SCRATCH0_OFFSET != CTXREG_SCRATCH1_OFFSET &&
+        CTXREG_SCRATCH1_OFFSET + 8 <= 4096,
+    "ctxreg scratch slots must lie past the ctxreg array within the page");
 
 _Static_assert(sizeof(struct Sys) == SYS_SIZE, "incorrect struct Sys size");
 _Static_assert(offsetof(struct Sys, ctx) == 0,

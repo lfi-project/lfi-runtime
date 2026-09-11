@@ -235,14 +235,6 @@ lfi_trampoline_direct:
     movq REGS_RETADDR(%r11), %r11
     // align stack
     andq $0xfffffffffffffff0, %rsp
-    // push this as the return address onto the sandbox stack
-    pushq %r11
-
-    // load address of the target function
-    movq %r12, %r11
-    // apply mask just to be safe
-    andl $0xffffffe0, %r11d
-    addq %REG_BASE, %r11
 
     movq (%r13), %r13
     // load ctxreg pointer for the sandbox
@@ -261,6 +253,15 @@ lfi_trampoline_direct:
     movq %rbx, %rcx
 #endif
 
+    // Push the return address onto the sandbox stack.
+    pushq %r11
+
+    // load address of the target function
+    movq %r12, %r11
+    // apply mask just to be safe
+    andl $0xffffffe0, %r11d
+    addq %REG_BASE, %r11
+
 #ifndef STORES_ONLY
     // Zero non-argument registers for full LFI.
     zero_regs
@@ -275,9 +276,12 @@ lfi_trampoline_direct:
 .global lfi_ret
 lfi_ret:
 #ifdef HAVE_PKU
+    // Preserve both integer return registers across the PKRU switch.
     movq %rax, %rdi
+    movq %rdx, %rsi
     pku_all_access
     movq %rdi, %rax
+    movq %rsi, %rdx
 #endif
     get_ctx %rdi
 .global lfi_ret_end

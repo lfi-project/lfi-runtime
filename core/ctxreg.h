@@ -7,3 +7,7 @@
 #ifndef CTXREG_TP_OFFSET
 #define CTXREG_TP_OFFSET 16
 #endif
+
+// Offsets of scratch slots.
+#define CTXREG_SCRATCH0_OFFSET 64
+#define CTXREG_SCRATCH1_OFFSET 72
