@@ -51,8 +51,9 @@ threadspawn(void *arg)
 
     struct LFILinuxProc *proc = t->proc;
     int tid = t->tid;
-    lfi_thread_free(t);
     lock(&proc->lk_threads);
+    list_remove(&proc->threads, &t->threads_elem);
+    lfi_thread_free(t);
     proc->active_threads--;
     pthread_cond_signal(&proc->cond_threads);
     LOG(proc->engine, "thread %d exited", tid);
