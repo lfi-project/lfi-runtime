@@ -4,13 +4,9 @@ jobs:
   test:
     strategy:
       matrix:
-        go-version: ['1.22']
         os: [ubuntu-24.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/setup-go@v6
-      with:
-        go-version: ${{ matrix.go-version }}
     - uses: actions/checkout@v3
 
     - name: Install Dependencies
@@ -45,11 +41,6 @@ jobs:
         meson setup build-clang
         ninja -C build-clang test
 
-    - name: Build & Test (sys_minimal, asan+ubsan)
-      run: |
-        meson setup build-min -Db_sanitize=address,undefined -Dsys_minimal=true
-        ninja -C build-min test
-
   test-macos:
     strategy:
       matrix:
@@ -64,7 +55,7 @@ jobs:
     - name: Install LFI AArch64 Compiler
       run: wget -q https://github.com/lfi-project/lfi/releases/download/v0.12/aarch64-lfi-clang-macos.tar.gz && tar -xf aarch64-lfi-clang-macos.tar.gz && echo "$PWD/aarch64-lfi-clang/lfi-clang" >> $GITHUB_PATH
 
-    - name: Build & Test (sys_minimal)
+    - name: Build & Test
       run: |
-        meson setup build-min -Dsys_minimal=true
-        ninja -C build-min test
+        meson setup build
+        ninja -C build test

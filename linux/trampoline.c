@@ -1,7 +1,6 @@
-#include "trampoline.h"
-
 #include "lfi_arch.h"
 #include "lfi_core.h"
+#include "linux.h"
 #include "lock.h"
 #include "log.h"
 #include "proc.h"
@@ -46,6 +45,9 @@ attach_ctx(struct LFILinuxProc *proc, struct LFIContext *ctx)
 // Tear down a single (proc, ctx) attachment. Used by both thread_destructor
 // (on host thread exit) and by lfi_linux_detach_thread.
 //
+// The runtime built the context entirely host-side, so lfi_thread_free is the
+// whole teardown.
+//
 // If this detach takes attached_threads to zero and lfi_proc_free has
 // already been called (pending_free), finish the deferred free here. While
 // attached_threads is non-zero, lfi_proc_free is required to defer the
@@ -55,18 +57,6 @@ detach_ctx(struct LFILinuxProc *proc, struct LFIContext *ctx)
 {
     struct LFILinuxThread *thread = lfi_ctx_data(ctx);
 
-#ifndef SYS_MINIMAL
-    // The sandbox allocated this thread's stack and libc state inside
-    // _lfi_thread_create, so it has to tear them down itself. In sys_minimal
-    // mode the runtime built the context entirely host-side, so
-    // lfi_thread_free below is the whole teardown.
-    ensure(proc->libsyms.thread_destroy);
-
-    // The thread_destroy arg is currently unused.
-    LFI_INVOKE(proc->box, &ctx, proc->libsyms.thread_destroy, void, (lfiptr),
-        (lfiptr) 0);
-#endif
-
     lfi_thread_free(thread);
 
     lock(&proc->lk_proc);
@@ -75,13 +65,8 @@ detach_ctx(struct LFILinuxProc *proc, struct LFIContext *ctx)
     bool do_destroy = (remaining == 0 && proc->pending_free);
     unlock(&proc->lk_proc);
 
-    if (do_destroy) {
-        lock(&proc->lk_threads);
-        while (proc->active_threads != 0)
-            pthread_cond_wait(&proc->cond_threads, &proc->lk_threads);
-        unlock(&proc->lk_threads);
+    if (do_destroy)
         proc_destroy(proc);
-    }
 }
 
 static void
@@ -96,11 +81,11 @@ thread_destructor(void *p)
     }
 }
 
-#ifdef SYS_MINIMAL
-// Simplified clone callback for sys_minimal mode.
-// Just allocates a stack and creates a context, no pthread involvement.
+// Clone callback: allocates a stack and creates a context for a host thread
+// that is entering the sandbox for the first time. No pthread or TLS
+// involvement.
 static struct LFIContext *
-lfi_linux_clone_cb_minimal(struct LFIBox *box)
+lfi_linux_clone_cb(struct LFIBox *box)
 {
     struct LFILinuxProc *proc = lfi_box_data(box);
 
@@ -130,13 +115,15 @@ lfi_linux_clone_cb_minimal(struct LFIBox *box)
     t->stack_size = stacksize;
 
     // Set stack pointer to top of stack (stack grows down).
-# if defined(__aarch64__) || defined(_riscv)
+#if defined(LFI_ARCH_ARM64) || defined(LFI_ARCH_RISCV64)
     lfi_ctx_regs(t->ctx)->sp = t->stack + stacksize;
-# elif defined(__x86_64__)
+#elif defined(LFI_ARCH_X64)
     lfi_ctx_regs(t->ctx)->rsp = t->stack + stacksize;
-# endif
+#else
+#error "invalid arch"
+#endif
 
-    // Set tp to 0 (no TLS support in sys_minimal mode).
+    // Set tp to 0 (no TLS support).
     lfi_ctx_set_tp(t->ctx, 0);
 
     // Hand ownership of the thread to the host thread that is attaching, so
@@ -154,73 +141,11 @@ lfi_linux_clone_cb_minimal(struct LFIBox *box)
 
     return t->ctx;
 }
-#endif
-
-#ifndef SYS_MINIMAL
-// This is where sys_clone places new contexts that are created via clone.
-thread_local struct LFIContext *new_ctx;
-
-static struct LFIContext *
-lfi_linux_clone_cb(struct LFIBox *box)
-{
-    struct LFILinuxProc *proc = lfi_box_data(box);
-    ensure(proc->libsyms.thread_create);
-
-    atomic_fetch_add_explicit(&proc->attached_threads, 1,
-        memory_order_relaxed);
-
-    // Reset new_ctx.
-    new_ctx = NULL;
-
-    {
-        LOCK_WITH_DEFER(&proc->lk_clone, lk_clone);
-        (void) LFI_INVOKE(box, &proc->clone_ctx, proc->libsyms.thread_create,
-            lfiptr, (void) );
-    }
-
-    // Cloning failed for some reason, detach and return failure.
-    if (!new_ctx) {
-        atomic_fetch_sub_explicit(&proc->attached_threads, 1,
-            memory_order_relaxed);
-        return NULL;
-    }
-
-    // sys_clone already marked this LFI_THREAD_HOST on the way through.
-    if (!attach_ctx(proc, new_ctx)) {
-        // The sandbox-side thread created above is left behind: lfi_clone
-        // aborts on a NULL return, so there is no point running the
-        // thread_destroy invoke on the way out.
-        atomic_fetch_sub_explicit(&proc->attached_threads, 1,
-            memory_order_relaxed);
-        return NULL;
-    }
-
-    return new_ctx;
-}
-#endif
 
 EXPORT void
 lfi_linux_init_clone(struct LFILinuxThread *main)
 {
-#ifdef SYS_MINIMAL
-    // Simple clone callback - just allocates stack, no pthread/TLS.
-    lfi_set_clone_cb(lfi_box_engine(main->proc->box), lfi_linux_clone_cb_minimal);
-#else
-    // Make sure the _lfi_thread_create symbol exists.
-    ensure(main->proc->libsyms.thread_create);
-
-    // Set clone_ctx to main's ctx to indicate that we are fake-cloning from
-    // main.
-    main->proc->clone_ctx = main->ctx;
-    // Invoke thread_create in main_thread.
-    LFI_INVOKE(main->proc->box, &main->ctx, main->proc->libsyms.thread_create,
-        void *, (void) );
-    // Store the resulting new_ctx in clone_ctx to use for future clones.
-    main->proc->clone_ctx = new_ctx;
-
-    // Register lfi_linux_clone_cb as the clone_cb.
     lfi_set_clone_cb(lfi_box_engine(main->proc->box), lfi_linux_clone_cb);
-#endif
 }
 
 EXPORT void

@@ -1,6 +1,5 @@
 #include "lfi_linux.h"
 
-#include <assert.h>
 #include <errno.h>
 #include <getopt.h>
 #include <stdio.h>
@@ -66,13 +65,9 @@ usage(const char *prog_name)
     printf("  --perf                 enable perf support\n");
     printf("  -v, --verify           enable verification\n");
     printf("  --no-debug             disable debugging support\n");
-    printf("  -p, --sys-passthrough  pass most system calls directly to the host\n");
     printf("  --no-aslr              disable address space layout randomization\n");
     printf("  --pagesize=<int>       system page size\n");
     printf("  --env=<var=val>        set environment variable\n");
-    printf("  --dir=<box=host>       map sandbox path to host directory\n");
-    printf("  --wd=<dir>             working directory within sandbox\n");
-    printf("  -r, --restricted       apply --dir and --wd flags (default is --dir /=/ --wd $PWD for testing)\n");
     printf("  <input>                input command\n");
 }
 
@@ -84,15 +79,10 @@ main(int argc, char **argv)
     bool perf = false;
     bool verify = false;
     bool no_debug = false;
-    bool sys_passthrough = false;
     int pagesize = 0;
     bool no_aslr = false;
     const char **envs = NULL;
     int envs_count = 0;
-    const char **dirs = NULL;
-    int dirs_count = 0;
-    const char *wd = NULL;
-    bool restricted = false;
 
     static struct option long_options[] = {
         { "help", no_argument, 0, 'h' },
@@ -100,19 +90,15 @@ main(int argc, char **argv)
         { "perf", no_argument, 0, 1 },
         { "verify", no_argument, 0, 'v' },
         { "no-debug", no_argument, 0, 2 },
-        { "sys-passthrough", no_argument, 0, 'p' },
         { "pagesize", required_argument, 0, 3 },
         { "env", required_argument, 0, 4 },
-        { "dir", required_argument, 0, 5 },
-        { "wd", required_argument, 0, 6 },
         { "no-aslr", no_argument, 0, 7 },
-        { "restricted", no_argument, 0, 'r' },
         { 0, 0, 0, 0 }
     };
 
     int opt;
     int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "hVvp:r", long_options,
+    while ((opt = getopt_long(argc, argv, "hVv", long_options,
                 &option_index)) != -1) {
         switch (opt) {
         case 'h':
@@ -130,9 +116,6 @@ main(int argc, char **argv)
         case 2:
             no_debug = true;
             break;
-        case 'p':
-            sys_passthrough = true;
-            break;
         case 3:
             pagesize = atoi(optarg);
             break;
@@ -141,19 +124,8 @@ main(int argc, char **argv)
             envs = xrealloc(envs, sizeof(char *) * envs_count);
             envs[envs_count - 1] = optarg;
             break;
-        case 5:
-            dirs_count++;
-            dirs = xrealloc(dirs, sizeof(char *) * dirs_count);
-            dirs[dirs_count - 1] = optarg;
-            break;
-        case 6:
-            wd = optarg;
-            break;
         case 7:
             no_aslr = true;
-            break;
-        case 'r':
-            restricted = true;
             break;
         case '?':
             return 1;
@@ -181,27 +153,11 @@ main(int argc, char **argv)
         exit(1);
     }
 
-    char cwd[FILENAME_MAX];
-    char *p = getcwd(cwd, sizeof(cwd));
-    assert(p == cwd);
-
-    const char *all[] = {
-        "/=/",
-        NULL,
-    };
-
-    dirs_count++;
-    dirs = xrealloc(dirs, sizeof(char *) * dirs_count);
-    dirs[dirs_count - 1] = NULL;
-
     struct LFILinuxEngine *linux_ = lfi_linux_new(engine,
         (struct LFILinuxOptions) {
             .stacksize = mb(2),
             .verbose = verbose,
             .exit_unknown_syscalls = true,
-            .dir_maps = restricted ? dirs : all,
-            .wd = restricted ? wd : cwd,
-            .sys_passthrough = sys_passthrough,
             .perf = perf,
             .debug = !no_debug,
         });
@@ -247,9 +203,7 @@ main(int argc, char **argv)
     int result = lfi_thread_run(t);
 
     free(envs);
-    free(dirs);
 
-    // Wait for the sandbox's other threads before tearing anything down.
     lfi_thread_free(t);
 
     lfi_proc_free(proc);

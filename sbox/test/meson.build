@@ -94,12 +94,10 @@ lficc_name = cpu + '_lfi-linux-musl-clang'
 lficc = find_program(lficc_name, required: false)
 
 if lficc.found()
-  # Use minialloc for allocator in sys_minimal mode
-  testlib_extra_srcs = []
-  if get_option('sys_minimal')
-    minialloc = subproject('minialloc')
-    testlib_extra_srcs = minialloc.get_variable('minialloc_srcs')
-  endif
+  # The runtime provides no mmap, so the sandboxed test libraries use
+  # minialloc, a brk-based allocator, in place of the libc allocator.
+  minialloc = subproject('minialloc')
+  testlib_extra_srcs = minialloc.get_variable('minialloc_srcs')
 
   testlib_lfi = custom_target('testlib.lfi',
     input: ['testlib.c'] + testlib_extra_srcs,

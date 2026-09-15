@@ -1,22 +1,17 @@
 #include "proc.h"
 
-#include "buf.h"
-#include "config.h"
-#include "cwalk.h"
 #include "elfload.h"
 #include "elfsym.h"
-#include "fd.h"
-#include "futex.h"
-#include "host.h"
 #include "lfi_core.h"
 #include "linux.h"
 #include "lock.h"
-#include "path.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <stdatomic.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -37,29 +32,9 @@ lfi_proc_new(struct LFILinuxEngine *engine)
     proc->box_info = lfi_box_info(box);
 
     pthread_mutex_init(&proc->lk_proc, NULL);
-    pthread_mutex_init(&proc->lk_clone, NULL);
-    pthread_mutex_init(&proc->lk_threads, NULL);
     pthread_mutex_init(&proc->lk_brk, NULL);
-    pthread_mutex_init(&proc->cwd.lk, NULL);
-    pthread_cond_init(&proc->cond_threads, NULL);
-
-    if (engine->opts.wd) {
-        int r = proc_chdir(proc, engine->opts.wd);
-        if (r != 0) {
-            LOG(engine, "error setting working directory to %s",
-                engine->opts.wd);
-            free(proc);
-            return NULL;
-        }
-    }
 
     lfi_box_setdata(box, proc);
-
-    fdinit(engine, &proc->fdtable);
-
-#ifndef SYS_MINIMAL
-    proc->futexes = futexes_new();
-#endif
 
     return proc;
 }
@@ -74,80 +49,26 @@ static bool
 proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
     size_t prog_size, const char *prog_path, int map_op)
 {
-    struct Buf interp = (struct Buf) { 0 };
-
-    char *interp_path = elf_interp(prog, prog_size);
-    if (interp_path && strcmp(interp_path, "lfi") == 0) {
-        LOG(proc->engine, "interpreter=lfi: assuming static-pie linked");
-        free(interp_path);
-        interp_path = NULL;
-    }
-    if (interp_path) {
-#ifdef CONFIG_ENABLE_DYLD
-        if (cwk_path_is_absolute(interp_path)) {
-            char interp_host[FILENAME_MAX];
-            if (!path_resolve(proc, interp_path, interp_host,
-                    sizeof(interp_host))) {
-                LOG(proc->engine,
-                    "error opening dynamic linker %s: host path resolution failed",
-                    interp_path);
-                free(interp_path);
-                return false;
-            }
-            interp = buf_read_file(proc->engine, interp_host);
-            if (!interp.data) {
-                LOG(proc->engine, "error opening dynamic linker %s: %s",
-                    interp_path, strerror(errno));
-                free(interp_path);
-                return false;
-            }
-            // If we are loading the main program via an in-memory buffer, we
-            // should do the same thing with the interpreter, even if we could
-            // load it directly from the file.
-            if (prog_fd == -1) {
-                close(interp.fd);
-                interp.fd = -1;
-            }
-            LOG(proc->engine, "using sandbox dynamic linker: %s", interp_path);
-        } else {
-            LOG(proc->engine,
-                "dynamic linker ignored because it is relative path: %s",
-                interp_path);
-            free(interp_path);
-            interp_path = NULL;
-        }
-#else
-        LOG(proc->engine,
-            "warning: found dynamic interpreter, but CONFIG_ENABLE_DYLD is false");
-#endif
-    }
-
-    proc->interp_path = interp_path;
-
     bool debug = proc->engine->opts.debug;
     // Make the program path absolute if necessary.
-    if (debug && prog_path && !cwk_path_is_absolute(prog_path)) {
-        proc->prog_path = malloc(FILENAME_MAX);
-        if (proc->prog_path) {
-            char buf[FILENAME_MAX];
-            char *cwd = getcwd(buf, sizeof(buf));
-            if (cwd == buf)
-                cwk_path_get_absolute(cwd, prog_path, proc->prog_path,
-                    FILENAME_MAX);
+    if (debug && prog_path && prog_path[0] != '/') {
+        char cwd[FILENAME_MAX];
+        if (getcwd(cwd, sizeof(cwd)) == cwd) {
+            size_t len = strlen(cwd) + 1 + strlen(prog_path) + 1;
+            proc->prog_path = malloc(len);
+            if (proc->prog_path)
+                snprintf(proc->prog_path, len, "%s/%s", cwd, prog_path);
         }
     } else if (debug && prog_path) {
         proc->prog_path = strndup(prog_path, FILENAME_MAX);
     }
 
     struct ELFLoadInfo info;
-    if (!elf_load(proc, proc->prog_path, prog_fd, prog, prog_size, interp_path,
-            interp.fd, interp.data, interp.size, map_op, &info))
+    if (!elf_load(proc, proc->prog_path, prog_fd, prog, prog_size, map_op,
+            &info))
         return false;
 
-    lfiptr entry = info.elfentry;
-    if (interp.data != NULL)
-        entry = info.ldentry;
-    proc->entry = entry;
+    proc->entry = info.elfentry;
     proc->elfinfo = info;
 
     bool ok = elf_loadsyms(proc, prog, prog_size);
@@ -169,9 +90,6 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
         if (brkregion == (lfiptr) -1)
             return false;
     }
-
-    if (interp.data != NULL)
-        buf_close(&interp);
 
     return true;
 }
@@ -224,35 +142,11 @@ lfi_proc_load_file(struct LFILinuxProc *proc, const char *prog_path)
 void
 proc_destroy(struct LFILinuxProc *proc)
 {
-    // Free any remaining threads on the proc's threads list.
-    struct List *e = list_first(proc->threads);
-    while (e) {
-        struct List *next = list_next(proc->threads, e);
-        struct LFILinuxThread *t =
-            LIST_CONTAINER(struct LFILinuxThread, threads_elem, e);
-        lfi_thread_free(t);
-        e = next;
-    }
-    if (proc->clone_ctx) {
-        struct LFILinuxThread *clone_thread = lfi_ctx_data(proc->clone_ctx);
-        if (clone_thread)
-            lfi_thread_free(clone_thread);
-    }
     free(proc->dynsym.data);
     free(proc->dynstr.data);
-#ifndef SYS_MINIMAL
-    futexes_free(proc->futexes);
-#endif
     lfi_box_free(proc->box);
-    free(proc->interp_path);
     free(proc->prog_path);
-    fdfree(&proc->fdtable);
-    pthread_mutex_destroy(&proc->fdtable.lk);
-    pthread_mutex_destroy(&proc->cwd.lk);
     pthread_mutex_destroy(&proc->lk_brk);
-    pthread_mutex_destroy(&proc->lk_clone);
-    pthread_mutex_destroy(&proc->lk_threads);
-    pthread_cond_destroy(&proc->cond_threads);
     pthread_mutex_destroy(&proc->lk_proc);
     free(proc);
 }
@@ -270,17 +164,10 @@ lfi_proc_exited(struct LFILinuxProc *proc, int *code)
 EXPORT void
 lfi_proc_free(struct LFILinuxProc *proc)
 {
-    lock(&proc->lk_proc);
-    lock(&proc->lk_threads);
-    while (proc->active_threads != 0) {
-        pthread_cond_wait(&proc->cond_threads, &proc->lk_threads);
-    }
-    assert(proc->active_threads == 0);
-    unlock(&proc->lk_threads);
-
     // If any host threads are still lazily attached, defer the actual free
     // until the last detach happens. The detach path observes pending_free
     // under lk_proc and calls proc_destroy itself.
+    lock(&proc->lk_proc);
     if (atomic_load_explicit(&proc->attached_threads,
             memory_order_relaxed) > 0) {
         proc->pending_free = true;
@@ -290,75 +177,4 @@ lfi_proc_free(struct LFILinuxProc *proc)
     unlock(&proc->lk_proc);
 
     proc_destroy(proc);
-}
-
-int
-proc_mapany(struct LFILinuxProc *p, size_t size, int prot, int flags, int fd,
-    off_t offset, lfiptr *o_mapstart)
-{
-    FD_ACQUIRE(f, &p->fdtable, fd, NULL, NULL);
-    if (fd >= 0 && f.kfd == -1)
-        return -LINUX_EBADF;
-    lfiptr addr = lfi_box_mapany(p->box, size, prot, flags, f.kfd, offset);
-    if (addr == (lfiptr) -1)
-        return -LINUX_EINVAL;
-    *o_mapstart = (uintptr_t) addr;
-    return 0;
-}
-
-int
-proc_mapat(struct LFILinuxProc *p, lfiptr start, size_t size, int prot,
-    int flags, int fd, off_t offset)
-{
-    FD_ACQUIRE(f, &p->fdtable, fd, NULL, NULL);
-    if (fd >= 0 && f.kfd == -1)
-        return -LINUX_EBADF;
-    lfiptr addr = lfi_box_mapat(p->box, start, size, prot, flags, f.kfd, offset);
-    if (addr == (lfiptr) -1)
-        return -LINUX_EINVAL;
-    return 0;
-}
-
-int
-proc_unmap(struct LFILinuxProc *p, lfiptr start, size_t size)
-{
-    return lfi_box_munmap(p->box, start, size);
-}
-
-// Resolves a sandbox path to a host path and makes sure the host path exists
-// and is a directory.
-static int
-chdircheck(struct LFILinuxProc *p, const char *path)
-{
-    char resolved[FILENAME_MAX];
-    if (!path_resolve(p, path, resolved, sizeof(resolved)))
-        return -LINUX_ENOENT;
-    return host_checkdir(resolved);
-}
-
-// Change the proc's cwd to the given sandbox path.
-int
-proc_chdir(struct LFILinuxProc *p, const char *path)
-{
-    int r;
-    if (cwk_path_is_absolute(path)) {
-        LOCK_WITH_DEFER(&p->cwd.lk, lk_cwd);
-        if ((r = chdircheck(p, path)) < 0)
-            return r;
-        size_t len = strnlen(path, sizeof(p->cwd.path) - 1);
-        memcpy(&p->cwd.path[0], path, len);
-        p->cwd.path[len] = 0;
-    } else {
-        LOCK_WITH_DEFER(&p->cwd.lk, lk_cwd);
-        if (p->cwd.path[0] == 0)
-            return -LINUX_ENOENT;
-
-        char joined[FILENAME_MAX];
-        cwk_path_join(p->cwd.path, path, joined, sizeof(joined));
-        if ((r = chdircheck(p, joined)) < 0)
-            return r;
-        strncpy(p->cwd.path, joined, sizeof(joined));
-        p->cwd.path[sizeof(p->cwd.path) - 1] = 0;
-    }
-    return 0;
 }

@@ -1,5 +1,5 @@
 // Exercises lfi_linux_detach_thread and the deferred-free path in
-// lfi_proc_free. Runs against the same lib.lfi target used by test_lib.
+// lfi_proc_free. Runs against the lib.lfi target built in meson.build.
 
 #include "lfi_arch.h"
 #include "lfi_linux.h"
@@ -14,9 +14,6 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
-
-char *
-xasprintf(const char *fmt, ...);
 
 struct Buf {
     void *data;
@@ -262,14 +259,12 @@ test_attach_churn(struct LFILinuxEngine *linux_, struct Buf prog,
 }
 
 static struct LFILinuxEngine *
-make_engine(struct LFIEngine *engine, const char **maps)
+make_engine(struct LFIEngine *engine)
 {
     return lfi_linux_new(engine,
         (struct LFILinuxOptions) {
             .stacksize = mb(2),
             .exit_unknown_syscalls = true,
-            .wd = "/",
-            .dir_maps = maps,
         });
 }
 
@@ -295,12 +290,6 @@ main(int argc, const char **argv)
 
     size_t pagesize = getpagesize();
 
-    char cwd[FILENAME_MAX];
-    char *d = getcwd(cwd, sizeof(cwd));
-    assert(d == cwd);
-    char *map = xasprintf("/=%s", cwd);
-    const char *maps[] = { map, NULL };
-
     const char *envp[] = {
         "LFI=1",
         "USER=sandbox",
@@ -314,7 +303,7 @@ main(int argc, const char **argv)
     {
         struct LFIEngine *engine = make_lfi(pagesize);
         assert(engine);
-        struct LFILinuxEngine *linux_ = make_engine(engine, maps);
+        struct LFILinuxEngine *linux_ = make_engine(engine);
         assert(linux_);
         test_explicit_detach(linux_, prog, &argv[1], argc - 1, envp);
         lfi_linux_free(linux_);
@@ -324,7 +313,7 @@ main(int argc, const char **argv)
     {
         struct LFIEngine *engine = make_lfi(pagesize);
         assert(engine);
-        struct LFILinuxEngine *linux_ = make_engine(engine, maps);
+        struct LFILinuxEngine *linux_ = make_engine(engine);
         assert(linux_);
         test_deferred_free(linux_, prog, &argv[1], argc - 1, envp);
         lfi_linux_free(linux_);
@@ -334,7 +323,7 @@ main(int argc, const char **argv)
     {
         struct LFIEngine *engine = make_lfi(pagesize);
         assert(engine);
-        struct LFILinuxEngine *linux_ = make_engine(engine, maps);
+        struct LFILinuxEngine *linux_ = make_engine(engine);
         assert(linux_);
         test_destructor_only(linux_, prog, &argv[1], argc - 1, envp);
         lfi_linux_free(linux_);
@@ -344,7 +333,7 @@ main(int argc, const char **argv)
     {
         struct LFIEngine *engine = make_lfi(pagesize);
         assert(engine);
-        struct LFILinuxEngine *linux_ = make_engine(engine, maps);
+        struct LFILinuxEngine *linux_ = make_engine(engine);
         assert(linux_);
         test_attach_churn(linux_, prog, &argv[1], argc - 1, envp);
         lfi_linux_free(linux_);
@@ -352,6 +341,5 @@ main(int argc, const char **argv)
     }
 
     munmap(prog.data, prog.size);
-    free(map);
     return 0;
 }

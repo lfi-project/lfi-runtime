@@ -16,24 +16,10 @@ struct LFILinuxOptions {
     // Enable generation of a perf.map file containing symbol mappings.
     bool perf;
 
-    // Null-terminated list of directory mappings from the sandbox FS to the
-    // host. Each directory mapping is expressed as sandbox_path=host_path. For
-    // example, you might have /=/path/to/lfi-sysroot along with /work=$PWD.
-    const char **dir_maps;
-
-    // Working directory that the sandbox starts in, within the sandbox FS. For
-    // example, you might set wd to /work if you have mapped $PWD=/work.
-    const char *wd;
-
     // Exit the entire process when an unknown syscall is executed, rather than
     // returning ENOSYS. This is useful for debugging when we want programs
     // that use unsupported syscalls to crash.
     bool exit_unknown_syscalls;
-
-    // Pass most system calls through to the host without checking them
-    // (UNSAFE). Useful for testing and benchmarking for system calls that the
-    // runtime doesn't support. Only works on Linux.
-    bool sys_passthrough;
 
     // Enable debugger support by hooking into the _r_debug symbol.
     bool debug;
@@ -86,9 +72,9 @@ lfi_proc_new(struct LFILinuxEngine *engine);
 struct LFIBox *
 lfi_proc_box(struct LFILinuxProc *proc);
 
-// Loads an ELF program in the proc's address space. The path is used to set up
-// debugging, and can be NULL if unknown. The buffer is not modified by the
-// loader and can be freed after loading is complete.
+// Loads a static-pie ELF program in the proc's address space. The path is
+// used to set up debugging, and can be NULL if unknown. The buffer is not
+// modified by the loader and can be freed after loading is complete.
 bool
 lfi_proc_load(struct LFILinuxProc *proc, const uint8_t *prog, size_t prog_size,
     const char *prog_path);
@@ -120,9 +106,8 @@ lfi_proc_sym(struct LFILinuxProc *proc, const char *symname);
 // Returns true if the sandbox asked to terminate by calling exit_group, and
 // stores the exit code it requested in *code if code is non-NULL.
 //
-// The runtime does not stop threads that were already running when the sandbox
-// calls exit. Note that lfi_proc_free waits for the sandbox's threads to exit
-// before returning.
+// The runtime does not stop host threads that are already running inside the
+// sandbox when it calls exit_group; they leave at their next syscall.
 bool
 lfi_proc_exited(struct LFILinuxProc *proc, int *code);
 
@@ -146,17 +131,18 @@ lfi_thread_free(struct LFILinuxThread *t);
 struct LFIContext **
 lfi_thread_ctxp(struct LFILinuxThread *t);
 
-// Initialize the ability to dynamically spawn new sandbox threads when
-// invoking from new host threads.
+// Initialize the ability to dynamically create new sandbox contexts when
+// invoking from new host threads. Each such context gets its own stack but no
+// thread-local storage: the runtime does not support TLS or sandbox-created
+// threads.
 void
 lfi_linux_init_clone(struct LFILinuxThread *main_thread);
 
 // Detach the current host thread from the given proc, if it has been lazily
 // attached via lfi_linux_init_clone's clone callback. Runs the teardown that
 // would otherwise run when the host thread exits (freeing the attached
-// context and its stack, plus the in-sandbox teardown where there is one), and
-// clears this thread's TLS entry for proc so the destructor will not fire
-// later. The caller must not reuse the context pointer afterwards, a
+// context and its stack), and clears this thread's TLS entry for proc so the
+// destructor will not fire later. The caller must not reuse the context pointer afterwards, a
 // subsequent call into proc from this thread needs a null context pointer so
 // that the clone callback runs again.
 //

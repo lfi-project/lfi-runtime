@@ -13,18 +13,6 @@ option('enable_examples',
   value: true,
   description: 'build the sbox examples')
 
-option('max_futexes',
-  type: 'integer',
-  min: 1,
-  max: 16384,
-  value: 512,
-  description: 'maximum number of futexes per sandbox')
-
-option('enable_dyld',
-  type: 'boolean',
-  value: true,
-  description: 'enable loading of dynamically-linked executables')
-
 option('enable_tlsdesc',
   type: 'boolean',
   value: false,
@@ -64,11 +52,6 @@ option('static_lfi_run',
   type: 'boolean',
   value: false,
   description: 'statically link lfi-run and lfi-scale')
-
-option('sys_minimal',
-  type: 'boolean',
-  value: false,
-  description: 'enable the minimal runtime, which only supports syscalls for basic functionality and memory allocation')
 
 option('ctxreg_tp_offset',
   type: 'integer',

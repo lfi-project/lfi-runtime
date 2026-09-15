@@ -9,13 +9,11 @@ _Static_assert(LFI_SYS_pause > LINUX_SYS_LAST, "LFI_SYS_pause invalid");
 
 #define SYS(SYSNAME, expr)    \
     case LINUX_SYS_##SYSNAME: \
-        handled = true;       \
         r = expr;             \
         break;
 
 #define LFI(SYSNAME, expr)  \
     case LFI_SYS_##SYSNAME: \
-        handled = true;     \
         r = expr;           \
         break;
 

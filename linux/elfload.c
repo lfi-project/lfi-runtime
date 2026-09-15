@@ -22,8 +22,6 @@
 
 // We do not load ELF files that have more than 64 program headers.
 #define PHNUM_MAX 64
-// We do not allow interpreter paths longer than 1024 bytes.
-#define INTERP_MAX 1024
 // We do not allow executable segments above 1GiB.
 #define CODE_MAX (1UL * 1024 * 1024 * 1024)
 
@@ -91,52 +89,6 @@ static lfiptr
 p2l(struct LFIBox *box, uintptr_t p)
 {
     return lfi_box_p2l(box, p);
-}
-
-char *
-elf_interp(const uint8_t *prog_data, size_t prog_size)
-{
-    struct Buf prog = (struct Buf) {
-        .data = prog_data,
-        .size = prog_size,
-    };
-
-    Elf64_Ehdr ehdr;
-    size_t n = buf_read(prog, &ehdr, sizeof(ehdr), 0);
-    if (n != sizeof(ehdr))
-        return NULL;
-
-    if (ehdr.e_phnum == 0 || ehdr.e_phnum > PHNUM_MAX)
-        return NULL;
-    if (ehdr.e_phoff >= prog_size)
-        return NULL;
-
-    Elf64_Phdr phdr[ehdr.e_phnum];
-    n = buf_read(prog, phdr, sizeof(Elf64_Phdr) * ehdr.e_phnum, ehdr.e_phoff);
-    if (n != sizeof(Elf64_Phdr) * ehdr.e_phnum)
-        return NULL;
-
-    // Look for the PT_INTERP section, which will hold the name of the dynamic
-    // interpreter that this ELF binary should be loaded with.
-    for (int x = 0; x < ehdr.e_phnum; x++) {
-        if (phdr[x].p_type == PT_INTERP) {
-            if (phdr[x].p_filesz >= INTERP_MAX)
-                return NULL;
-            char *interp = malloc(phdr[x].p_filesz + 1);
-            if (!interp)
-                return NULL;
-            size_t n = buf_read(prog, interp, phdr[x].p_filesz,
-                phdr[x].p_offset);
-            if (n != phdr[x].p_filesz) {
-                free(interp);
-                return NULL;
-            }
-            // Null-terminate.
-            interp[phdr[x].p_filesz] = 0;
-            return interp;
-        }
-    }
-    return NULL;
 }
 
 // Convert ELF protection flags to LFI mmap protection flags.
@@ -417,8 +369,7 @@ err1:
 
 bool
 elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
-    const uint8_t *prog_data, size_t prog_size, const char *interp_path,
-    int interp_fd, const uint8_t *interp_data, size_t interp_size, int map_op,
+    const uint8_t *prog_data, size_t prog_size, int map_op,
     struct ELFLoadInfo *info)
 {
     struct Buf prog = (struct Buf) {
@@ -427,51 +378,33 @@ elf_load(struct LFILinuxProc *proc, const char *prog_path, int prog_fd,
         .size = prog_size,
     };
 
-    struct Buf interp = (struct Buf) {
-        .fd = interp_fd,
-        .data = interp_data,
-        .size = interp_size,
-    };
-
     uintptr_t base = proc->box_info.min;
-    uintptr_t p_first, p_last, p_entry, i_first, i_last, i_entry;
-    bool has_interp = interp.data != NULL;
+    uintptr_t p_first, p_last, p_entry;
     size_t pagesize = lfi_opts(proc->engine->engine).pagesize;
-    Elf64_Ehdr p_ehdr, i_ehdr;
+    Elf64_Ehdr p_ehdr;
 
+    // ELF loading failure leaves the address space in a partially-loaded
+    // state.
     if (!elf_load_one(proc, prog, base, pagesize, map_op, &p_first, &p_last,
             &p_entry, &p_ehdr))
-        goto err;
-    if (has_interp) {
-        if (!elf_load_one(proc, interp, p_last, pagesize, map_op, &i_first,
-                &i_last, &i_entry, &i_ehdr))
-            goto err;
-    }
+        return false;
 
     if (proc->engine->opts.perf)
         if (!perf_output_jit_interface_file(prog_data, prog_size, p_first))
             ERROR("failed to generate perf map");
 
-    // Register the ELF files we loaded with lldb/gdb.
-    if (has_interp)
-        db_register_load(proc, interp_path, interp_data, interp_size, i_first);
+    // Register the ELF file we loaded with lldb/gdb.
     db_register_load(proc, prog_path, prog_data, prog_size, p_first);
 
     struct LFIBox *box = proc->box;
     *info = (struct ELFLoadInfo) {
-        .lastva = has_interp ? p2l(box, i_last) : p2l(box, p_last),
+        .lastva = p2l(box, p_last),
         .elfentry = p2l(box, p_entry),
-        .ldentry = has_interp ? p2l(box, i_entry) : 0,
         .elfbase = p2l(box, p_first),
-        .ldbase = has_interp ? p2l(box, i_first) : p2l(box, p_first),
         .elfphoff = p_ehdr.e_phoff,
         .elfphnum = p_ehdr.e_phnum,
         .elfphentsize = p_ehdr.e_phentsize,
     };
 
     return true;
-
-err:
-    // ELF loading failed: address space may be in a partially-loaded state.
-    return false;
 }

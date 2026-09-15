@@ -24,9 +24,3 @@ buf_read(struct Buf buf, void *to, size_t count, size_t offset)
     memcpy(to, &buf.data[offset], count);
     return count;
 }
-
-struct Buf
-buf_read_file(struct LFILinuxEngine *engine, const char *filename);
-
-void
-buf_close(struct Buf *buf);

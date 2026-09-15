@@ -4,11 +4,9 @@
 #include "lfi_arch.h"
 #include "lfi_core.h"
 #include "linux.h"
-#include "lock.h"
 #include "proc.h"
 
 #include <assert.h>
-#include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -34,8 +32,6 @@ host_getauxval(unsigned long type)
 }
 #endif
 
-// First TID, to avoid using low TID numbers.
-#define BASE_TID 10000
 // Maximum number of argv arguments.
 #define ARGV_MAX 1024
 // Maxmimum number of envp arguments.
@@ -46,14 +42,6 @@ host_getauxval(unsigned long type)
 #define ENVP_MAXLEN 1024
 // Window for randomizing the stack's sub-page offset.
 #define STACK_RND_RANGE 8192
-
-static int
-next_tid(struct LFILinuxProc *p)
-{
-    return BASE_TID +
-        atomic_fetch_add_explicit(&p->total_thread_count, 1,
-            memory_order_relaxed);
-}
 
 struct Auxv {
     uint64_t a_type;
@@ -190,7 +178,7 @@ stack_init(struct LFILinuxThread *t, int argc, const char **argv,
     // Create the auxiliary vector.
     struct AuxvList auxv = {
         (struct Auxv) { LINUX_AT_SECURE, 0 },
-        (struct Auxv) { LINUX_AT_BASE, t->proc->elfinfo.ldbase },
+        (struct Auxv) { LINUX_AT_BASE, t->proc->elfinfo.elfbase },
         (struct Auxv) { LINUX_AT_PHDR,
             t->proc->elfinfo.elfbase + t->proc->elfinfo.elfphoff },
         (struct Auxv) { LINUX_AT_PHNUM, t->proc->elfinfo.elfphnum },
@@ -253,8 +241,6 @@ thread_alloc(struct LFILinuxProc *proc, enum LFIThreadOwner owner)
         return NULL;
     t->proc = proc;
     t->owner = owner;
-    t->tid = next_tid(proc);
-    list_init(&t->threads_elem);
     return t;
 }
 
@@ -299,29 +285,6 @@ err1:
     return NULL;
 }
 
-// Create a new thread cloned from the given thread.
-struct LFILinuxThread *
-thread_clone(struct LFILinuxThread *t, enum LFIThreadOwner owner)
-{
-    struct LFILinuxThread *new_t = thread_alloc(t->proc, owner);
-    if (!new_t)
-        goto err1;
-    struct LFIContext *ctx = lfi_ctx_new(t->proc->box, new_t);
-    if (!ctx)
-        goto err2;
-    new_t->ctx = ctx;
-    // Copy all registers.
-    *lfi_ctx_regs(new_t->ctx) = *lfi_ctx_regs(t->ctx);
-    lfi_ctx_regs_relink_ctxreg(new_t->ctx);
-
-    return new_t;
-
-err2:
-    free(new_t);
-err1:
-    return NULL;
-}
-
 EXPORT int
 lfi_thread_run(struct LFILinuxThread *p)
 {
@@ -331,16 +294,11 @@ lfi_thread_run(struct LFILinuxThread *p)
 EXPORT void
 lfi_thread_free(struct LFILinuxThread *t)
 {
-    // Unmap the stack (if created). If this thread was spawned by the sandbox
-    // calling clone (fake or real), the stack will have been created by the
-    // sandbox and not by us, so we don't have to free it.
+    // Unmap the stack (if created).
     if (t->stack) {
         size_t stacksize = t->proc->engine->opts.stacksize;
         lfi_box_munmap(t->proc->box, t->stack, stacksize);
     }
-    // Free pthread object (if created).
-    if (t->pthread)
-        free(t->pthread);
     // Free the context.
     lfi_ctx_free(t->ctx);
     // Free the thread.

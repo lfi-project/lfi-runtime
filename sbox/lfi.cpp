@@ -39,8 +39,6 @@ bool LFIManager::ensure() {
 }
 
 bool LFIManager::create(size_t n) {
-    const char* dir_maps[] = {nullptr};
-
     engine_ = lfi_new(
         {
             .pagesize = static_cast<size_t>(getpagesize()),
@@ -61,10 +59,7 @@ bool LFIManager::create(size_t n) {
                                        .stacksize = 2 * 1024 * 1024,
                                        .verbose = false,
                                        .perf = false,
-                                       .dir_maps = dir_maps,
-                                       .wd = nullptr,
                                        .exit_unknown_syscalls = false,
-                                       .sys_passthrough = false,
                                        .debug = false,
                                        .brk_control = false,
                                        .brk_size = 0,

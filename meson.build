@@ -134,9 +134,6 @@ if get_option('segue_cache_gs')
     defines += '-DSEGUE_CACHE_GS'
   endif
 endif
-if get_option('sys_minimal')
-  defines += '-DSYS_MINIMAL'
-endif
 defines += '-DCTXREG_TP_OFFSET=@0@'.format(get_option('ctxreg_tp_offset'))
 
 if not meson.is_subproject()
