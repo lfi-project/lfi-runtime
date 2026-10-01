@@ -435,9 +435,7 @@ lfi_clone(struct LFIBox *box, struct LFIContext **ctxp) __asm__("lfi_clone");
     __extension__({                                                 \
         ret_type LFI_XX(__lfi_trampoline, name)                     \
             args __asm__("lfi_trampoline");                         \
-        lfi_invoke_info.ctx = ctxp;                                 \
-        lfi_invoke_info.targetfn = fn;                              \
-        lfi_invoke_info.box = box_;                                 \
+        lfi_set_invoke_info(ctxp, fn, box_);                        \
         LFI_XX(__lfi_trampoline, name)(__VA_ARGS__);                \
     })
 
