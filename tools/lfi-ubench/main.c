@@ -64,17 +64,23 @@ native_call(void)
 
 // pin_cpu pins the calling process to a single CPU so that the context-switch
 // benchmark measures actual switches rather than parallel execution on
-// separate cores.
+// separate cores. It picks the lowest CPU in the current affinity mask, so
+// running under e.g. `taskset -c 2` keeps the benchmark on CPU 2.
 static void
-pin_cpu(int cpu)
+pin_cpu(void)
 {
 #ifdef __linux__
     cpu_set_t set;
-    CPU_ZERO(&set);
-    CPU_SET(cpu, &set);
-    sched_setaffinity(0, sizeof(set), &set);
-#else
-    (void) cpu;
+    if (sched_getaffinity(0, sizeof(set), &set) != 0)
+        return;
+    for (int cpu = 0; cpu < CPU_SETSIZE; cpu++) {
+        if (CPU_ISSET(cpu, &set)) {
+            CPU_ZERO(&set);
+            CPU_SET(cpu, &set);
+            sched_setaffinity(0, sizeof(set), &set);
+            return;
+        }
+    }
 #endif
 }
 #endif // UBENCH_BASELINES
@@ -235,7 +241,7 @@ main(int argc, const char **argv)
         assert(pid >= 0);
         if (pid == 0) {
             // Child: echo each byte back to the parent.
-            pin_cpu(0);
+            pin_cpu();
             close(p2c[1]);
             close(c2p[0]);
             char b;
@@ -246,7 +252,7 @@ main(int argc, const char **argv)
             _exit(0);
         }
 
-        pin_cpu(0);
+        pin_cpu();
         close(p2c[0]);
         close(c2p[1]);
 
