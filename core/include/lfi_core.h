@@ -405,7 +405,7 @@ struct LFIInvokeInfo {
 };
 
 #ifdef __cplusplus
-#define lfi_thread_local thread_local
+#define lfi_thread_local __thread
 #else
 #define lfi_thread_local _Thread_local
 #endif
