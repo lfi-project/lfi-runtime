@@ -96,6 +96,10 @@ struct LFILinuxProc {
 enum LFIThreadOwner {
     // Created by lfi_thread_new and entered by whoever calls lfi_thread_run.
     LFI_THREAD_MAIN,
+    // The runtime created this thread's pthread in sys_clone, so it owns both
+    // the host thread and this structure and frees them once the thread leaves
+    // the sandbox. Only the full configuration creates these.
+    LFI_THREAD_RUNTIME,
     // The context is entered by a host thread calling in through the
     // trampoline, so the embedder owns that thread and the runtime has no
     // handle for it.
@@ -106,7 +110,8 @@ struct LFILinuxThread {
     // Underlying sandbox context.
     struct LFIContext *ctx;
 
-    // Base of the sandbox stack the runtime mapped for this thread.
+    // Base of the sandbox stack the runtime mapped for this thread, or 0 if
+    // the sandbox provided the stack (threads spawned by sys_clone).
     lfiptr stack;
     size_t stack_size;
 
@@ -139,8 +144,9 @@ void
 thread_dealloc(struct LFILinuxThread *t);
 
 // Actually free the proc storage. Used by lfi_proc_free and by the last
-// detach when pending_free is set. Callers must ensure no thread is using the
-// proc anymore (attached_threads == 0).
+// detach when pending_free is set. Callers must ensure no attached thread is
+// using the proc anymore (attached_threads == 0). Runtime-spawned threads are
+// waited for by the full configuration's full_proc_free.
 void
 proc_destroy(struct LFILinuxProc *proc);
 

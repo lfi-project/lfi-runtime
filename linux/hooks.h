@@ -37,6 +37,37 @@ full_thread_free(struct LFILinuxThread *t)
     (void) t;
 }
 
+static inline void
+full_proc_join_threads(struct LFILinuxProc *proc)
+{
+    (void) proc;
+}
+
+static inline void
+full_thread_exit(struct LFILinuxThread *t)
+{
+    (void) t;
+}
+
+static inline void
+full_init_clone(struct LFILinuxThread *main_thread)
+{
+    (void) main_thread;
+}
+
+static inline bool
+full_clone_thread(struct LFILinuxProc *proc, struct LFILinuxThread **o_t)
+{
+    (void) proc, (void) o_t;
+    return false;
+}
+
+static inline void
+full_detach_thread(struct LFILinuxThread *t)
+{
+    (void) t;
+}
+
 static inline bool
 full_syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0,
     uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5,

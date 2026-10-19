@@ -81,14 +81,32 @@
     X(clock_gettime, -ENOSYS, -ENOSYS, LINUX)                  \
     X(gettimeofday, -ENOSYS, -ENOSYS, LINUX)                   \
     X(resources, -ENOSYS, -ENOSYS, LINUX)                      \
-    /* passthrough: signal stubs and identity */               \
+    /* signal stubs and identity (rt_sigprocmask is needed for \
+       threads, so the full runtime always has it) */          \
     X(rt_sigaction, -ENOSYS, -ENOSYS, LINUX)                   \
     X(rt_sigaction_invalid, -ENOSYS, -ENOSYS, LINUX)           \
-    X(rt_sigprocmask, -ENOSYS, -ENOSYS, LINUX)                 \
-    X(gettid, -ENOSYS, -ENOSYS, LINUX)                         \
-    /* misc */                                                 \
-    X(set_tid_address, 1, 1, 1)                                \
+    X(rt_sigprocmask, -ENOSYS, LINUX, LINUX)                   \
     X(getpid, -ENOSYS, -ENOSYS, LINUX)                         \
+    /* threads: the minimal runtime has no clone (or mmap) */  \
+    X(gettid, -ENOSYS, LINUX, LINUX)                           \
+    X(set_tid_address, 1, LINUX, LINUX)                        \
+    X(set_tid_address_null, 1, LINUX, LINUX)                   \
+    X(thread_create_join, -EAGAIN, LINUX, LINUX)               \
+    X(thread_sequential, -EAGAIN, LINUX, LINUX)                \
+    X(thread_tid, -EAGAIN, LINUX, LINUX)                       \
+    X(thread_tls, -EAGAIN, LINUX, LINUX)                       \
+    X(thread_condvar, -EAGAIN, LINUX, LINUX)                   \
+    X(clone_tids, -ENOSYS, LINUX, LINUX)                       \
+    X(clone_newns_fs, -ENOSYS, LINUX, LINUX)                   \
+    /* only threads can be created, on a sandbox stack */      \
+    X(clone_fork, -ENOSYS, -ENOSYS, -ENOSYS)                   \
+    X(clone_no_thread, -ENOSYS, -EINVAL, -EINVAL)              \
+    X(clone_bad_stack, -ENOSYS, -EFAULT, -EFAULT)              \
+    X(futex_wait_mismatch, -ENOSYS, LINUX, LINUX)              \
+    X(futex_wait_timeout, -ENOSYS, LINUX, LINUX)               \
+    X(futex_wake_none, -ENOSYS, LINUX, LINUX)                  \
+    X(futex_invalid, -ENOSYS, LINUX, LINUX)                    \
+    /* misc */                                                 \
     X(bogus_sysno, LINUX, LINUX, LINUX)
 
 #if defined(__x86_64__)

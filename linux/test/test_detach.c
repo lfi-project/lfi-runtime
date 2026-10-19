@@ -258,6 +258,48 @@ test_attach_churn(struct LFILinuxEngine *linux_, struct Buf prog,
     printf("attach churn OK\n");
 }
 
+#ifdef LINUX_FULL
+// In the full configuration, lib.lfi (linked with boxrt) exports
+// _lfi_thread_create, so the threads that host threads attach to are created
+// by the sandbox with pthread_create and each has its own TLS.
+#define TLS_THREADS 4
+#define TLS_ITERS   1000
+
+static void *
+tls_thread(void *arg)
+{
+    struct LFILinuxProc *proc = arg;
+    struct LFIContext *ctx = NULL;
+    for (int i = 1; i <= TLS_ITERS; i++) {
+        int x = LFI_INVOKE(lfi_proc_box(proc), &ctx,
+            lfi_proc_sym(proc, "tls_incr"), int, (void) );
+        assert(x == i);
+    }
+    lfi_linux_detach_thread(proc);
+    return NULL;
+}
+
+static void
+test_attached_tls(struct LFILinuxEngine *linux_, struct Buf prog,
+    const char **argv, int argc, const char **envp)
+{
+    struct LFILinuxProc *proc = make_proc(linux_, prog, argv, argc, envp);
+
+    pthread_t th[TLS_THREADS];
+    for (int i = 0; i < TLS_THREADS; i++) {
+        int r = pthread_create(&th[i], NULL, tls_thread, proc);
+        assert(r == 0);
+    }
+    for (int i = 0; i < TLS_THREADS; i++) {
+        int r = pthread_join(th[i], NULL);
+        assert(r == 0);
+    }
+
+    lfi_proc_free(proc);
+    printf("attached TLS OK\n");
+}
+#endif
+
 static struct LFILinuxEngine *
 make_engine(struct LFIEngine *engine)
 {
@@ -339,6 +381,18 @@ main(int argc, const char **argv)
         lfi_linux_free(linux_);
         lfi_free(engine);
     }
+
+#ifdef LINUX_FULL
+    {
+        struct LFIEngine *engine = make_lfi(pagesize);
+        assert(engine);
+        struct LFILinuxEngine *linux_ = make_engine(engine);
+        assert(linux_);
+        test_attached_tls(linux_, prog, &argv[1], argc - 1, envp);
+        lfi_linux_free(linux_);
+        lfi_free(engine);
+    }
+#endif
 
     munmap(prog.data, prog.size);
     return 0;

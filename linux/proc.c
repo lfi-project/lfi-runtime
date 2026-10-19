@@ -176,6 +176,9 @@ lfi_proc_exited(struct LFILinuxProc *proc, int *code)
 EXPORT void
 lfi_proc_free(struct LFILinuxProc *proc)
 {
+    // Wait for any threads the runtime spawned for the sandbox to leave it.
+    full_proc_join_threads(proc);
+
     // If any host threads are still lazily attached, defer the actual free
     // until the last detach happens. The detach path observes pending_free
     // under lk_proc and calls proc_destroy itself.

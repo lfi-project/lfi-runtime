@@ -1,3 +1,4 @@
+#include "hooks.h"
 #include "lfi_arch.h"
 #include "lfi_core.h"
 #include "linux.h"
@@ -45,8 +46,9 @@ attach_ctx(struct LFILinuxProc *proc, struct LFIContext *ctx)
 // Tear down a single (proc, ctx) attachment. Used by both thread_destructor
 // (on host thread exit) and by lfi_linux_detach_thread.
 //
-// The runtime built the context entirely host-side, so lfi_thread_free is the
-// whole teardown.
+// If the sandbox created the thread (full configuration), it tears down its
+// side first. Otherwise the runtime built the context entirely host-side, so
+// lfi_thread_free is the whole teardown.
 //
 // If this detach takes attached_threads to zero and lfi_proc_free has
 // already been called (pending_free), finish the deferred free here. While
@@ -57,6 +59,7 @@ detach_ctx(struct LFILinuxProc *proc, struct LFIContext *ctx)
 {
     struct LFILinuxThread *thread = lfi_ctx_data(ctx);
 
+    full_detach_thread(thread);
     lfi_thread_free(thread);
 
     lock(&proc->lk_proc);
@@ -81,14 +84,12 @@ thread_destructor(void *p)
     }
 }
 
-// Clone callback: allocates a stack and creates a context for a host thread
-// that is entering the sandbox for the first time. No pthread or TLS
+// Creates a context for a host thread that is entering the sandbox for the
+// first time, with a stack the runtime allocates. No pthread or TLS
 // involvement.
-static struct LFIContext *
-lfi_linux_clone_cb(struct LFIBox *box)
+static struct LFILinuxThread *
+host_thread_new(struct LFILinuxProc *proc)
 {
-    struct LFILinuxProc *proc = lfi_box_data(box);
-
     // Create thread structure. This runs on a host thread the embedder owns,
     // so it is an LFI_THREAD_HOST: it is reclaimed when that host thread exits
     // (or detaches), and exit_group must never signal or wait on it.
@@ -96,7 +97,7 @@ lfi_linux_clone_cb(struct LFIBox *box)
     if (!t)
         return NULL;
 
-    t->ctx = lfi_ctx_new(box, t);
+    t->ctx = lfi_ctx_new(proc->box, t);
     if (!t->ctx) {
         thread_dealloc(t);
         return NULL;
@@ -105,7 +106,7 @@ lfi_linux_clone_cb(struct LFIBox *box)
     // Allocate stack in sandbox memory. It is pinned since lfi_thread_free
     // unmaps it when the host thread detaches.
     size_t stacksize = proc->engine->opts.stacksize;
-    t->stack = lfi_box_mapany(box, stacksize,
+    t->stack = lfi_box_mapany(proc->box, stacksize,
         LFI_PROT_READ | LFI_PROT_WRITE,
         LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS | LFI_MAP_PINNED, -1, 0);
     if (t->stack == (lfiptr) -1) {
@@ -127,12 +128,36 @@ lfi_linux_clone_cb(struct LFIBox *box)
     // Set tp to 0 (no TLS support).
     lfi_ctx_set_tp(t->ctx, 0);
 
-    // Hand ownership of the thread to the host thread that is attaching, so
-    // that its stack is reclaimed when that thread exits rather than being
-    // held until the proc is destroyed. attached_threads keeps lfi_proc_free
-    // from freeing the proc out from under a still-attached thread.
-    atomic_fetch_add_explicit(&proc->attached_threads, 1,
-        memory_order_relaxed);
+    return t;
+}
+
+// Clone callback: creates a context for a host thread that is entering the
+// sandbox for the first time.
+static struct LFIContext *
+lfi_linux_clone_cb(struct LFIBox *box)
+{
+    struct LFILinuxProc *proc = lfi_box_data(box);
+
+    // The new thread is handed to the host thread that is attaching, so that
+    // it is reclaimed when that thread exits rather than being held until the
+    // proc is destroyed. attached_threads keeps lfi_proc_free from freeing the
+    // proc out from under a still-attached thread. It is taken before the
+    // context is created, since the full configuration may run sandbox code
+    // to create it.
+    atomic_fetch_add_explicit(&proc->attached_threads, 1, memory_order_relaxed);
+
+    // The full configuration has the sandbox create the thread if it can, so
+    // that the sandbox's libc sets up the thread (including TLS). Otherwise
+    // the runtime builds the context itself.
+    struct LFILinuxThread *t;
+    if (!full_clone_thread(proc, &t))
+        t = host_thread_new(proc);
+    if (!t) {
+        atomic_fetch_sub_explicit(&proc->attached_threads, 1,
+            memory_order_relaxed);
+        return NULL;
+    }
+
     if (!attach_ctx(proc, t->ctx)) {
         atomic_fetch_sub_explicit(&proc->attached_threads, 1,
             memory_order_relaxed);
@@ -146,6 +171,7 @@ lfi_linux_clone_cb(struct LFIBox *box)
 EXPORT void
 lfi_linux_init_clone(struct LFILinuxThread *main)
 {
+    full_init_clone(main);
     lfi_set_clone_cb(lfi_box_engine(main->proc->box), lfi_linux_clone_cb);
 }
 

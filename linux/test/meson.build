@@ -35,7 +35,7 @@ test_detach = executable(
   'test_detach.elf',
   'test_detach.c',
   dependencies: [lfi_linux],
-  c_args: c_args_warnings,
+  c_args: c_args_warnings + linux_defines,
 )
 
 test('detach.lfi',

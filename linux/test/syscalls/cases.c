@@ -1,6 +1,7 @@
 // See cases.h. Everything here must be valid both natively (glibc/musl on the
 // host) and inside an LFI sandbox (musl compiled with the LFI toolchain), so
-// only syscall(2) and plain memory accesses are used.
+// only syscall(2) and plain memory accesses are used, except by the thread
+// cases, which also use pthreads and the libc clone wrapper.
 
 #define _GNU_SOURCE
 
@@ -8,7 +9,12 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
+#include <linux/futex.h>
+#include <pthread.h>
+#include <sched.h>
 #include <signal.h>
+#include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/ioctl.h>
@@ -1264,6 +1270,342 @@ case_bogus_sysno(void)
     if (r < 0)
         return r;
     return 1;
+}
+
+// Linux accepts a null address, which clears the clear-child-tid address, and
+// still returns the caller's tid.
+long
+case_set_tid_address_null(void)
+{
+    long r = SYSCALL(SYS_set_tid_address, 0);
+    if (r < 0)
+        return r;
+    return r > 0 ? 0 : 1;
+}
+
+// Threads. A raw clone cannot return into C code on the new stack, so these
+// go through pthreads or the libc clone wrapper.
+
+static _Atomic(long) thread_sum;
+
+static void *
+thread_add(void *arg)
+{
+    atomic_fetch_add(&thread_sum, (long) arg);
+    return arg;
+}
+
+// Threads run concurrently and can be joined, with their results.
+long
+case_thread_create_join(void)
+{
+    enum { N = 4 };
+    pthread_t th[N];
+    atomic_store(&thread_sum, 0);
+    long ret = 0;
+    long n = 0;
+    for (; n < N; n++) {
+        int err = pthread_create(&th[n], NULL, thread_add, (void *) (n + 1));
+        if (err) {
+            ret = -err;
+            break;
+        }
+    }
+    for (long i = 0; i < n; i++) {
+        void *res;
+        if (pthread_join(th[i], &res) != 0 || res != (void *) (i + 1))
+            ret = ret ? ret : 1;
+    }
+    if (ret == 0 && atomic_load(&thread_sum) != N * (N + 1) / 2)
+        ret = 2;
+    return ret;
+}
+
+// Threads created and joined one after another. libc's thread list lock is
+// released by the clear-child-tid futex of each exiting thread, so a lost
+// clear or wake hangs the next create or join.
+long
+case_thread_sequential(void)
+{
+    for (long i = 0; i < 32; i++) {
+        pthread_t th;
+        void *res;
+        int err = pthread_create(&th, NULL, thread_add, (void *) i);
+        if (err)
+            return -err;
+        if (pthread_join(th, &res) != 0 || res != (void *) i)
+            return 1;
+    }
+    return 0;
+}
+
+static void *
+thread_gettid(void *arg)
+{
+    (void) arg;
+    return (void *) syscall(SYS_gettid);
+}
+
+// A thread has its own tid.
+long
+case_thread_tid(void)
+{
+    pthread_t th;
+    void *res;
+    int err = pthread_create(&th, NULL, thread_gettid, NULL);
+    if (err)
+        return -err;
+    if (pthread_join(th, &res) != 0)
+        return 1;
+    long tid = (long) res;
+    long self = SYSCALL(SYS_gettid);
+    if (tid <= 0 || self <= 0)
+        return 2;
+    return tid != self ? 0 : 3;
+}
+
+static __thread long tls_value = 1;
+
+static void *
+thread_tls(void *arg)
+{
+    (void) arg;
+    long before = tls_value;
+    tls_value = 42;
+    return (void *) before;
+}
+
+// A thread gets its own copy of thread-local variables (CLONE_SETTLS).
+long
+case_thread_tls(void)
+{
+    tls_value = 7;
+    pthread_t th;
+    void *res;
+    int err = pthread_create(&th, NULL, thread_tls, NULL);
+    if (err)
+        return -err;
+    if (pthread_join(th, &res) != 0)
+        return 1;
+    if ((long) res != 1)
+        return 2;
+    return tls_value == 7 ? 0 : 3;
+}
+
+enum { PINGPONG_ROUNDS = 200 };
+static pthread_mutex_t pp_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t pp_cond = PTHREAD_COND_INITIALIZER;
+static int pp_turn;
+
+static void *
+thread_pong(void *arg)
+{
+    (void) arg;
+    for (int i = 0; i < PINGPONG_ROUNDS; i++) {
+        pthread_mutex_lock(&pp_lock);
+        while (pp_turn != 1)
+            pthread_cond_wait(&pp_cond, &pp_lock);
+        pp_turn = 0;
+        pthread_cond_broadcast(&pp_cond);
+        pthread_mutex_unlock(&pp_lock);
+    }
+    return NULL;
+}
+
+// Two threads hand a turn back and forth through a mutex and condition
+// variable, which block and wake each other with futexes.
+long
+case_thread_condvar(void)
+{
+    pp_turn = 0;
+    pthread_t th;
+    int err = pthread_create(&th, NULL, thread_pong, NULL);
+    if (err)
+        return -err;
+    for (int i = 0; i < PINGPONG_ROUNDS; i++) {
+        pthread_mutex_lock(&pp_lock);
+        pp_turn = 1;
+        pthread_cond_broadcast(&pp_cond);
+        while (pp_turn != 0)
+            pthread_cond_wait(&pp_cond, &pp_lock);
+        pthread_mutex_unlock(&pp_lock);
+    }
+    return pthread_join(th, NULL) == 0 ? 0 : 1;
+}
+
+#define CLONE_THREAD_FLAGS                                             \
+    (CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_THREAD | \
+        CLONE_SYSVSEM)
+
+static char clone_stack[64 * 1024] __attribute__((aligned(16)));
+static char clone_stack2[64 * 1024] __attribute__((aligned(16)));
+
+// Raw clone (the libc wrapper refuses CLONE_THREAD) whose child exits at
+// once, without touching its stack. Returns the new tid, or -errno, in the
+// parent.
+static long
+raw_clone_exit(unsigned long flags, char *stack, int *ptid, int *ctid)
+{
+    long ret;
+#if defined(__x86_64__)
+    register long r10 __asm__("r10") = (long) ctid;
+    register long r8 __asm__("r8") = 0;
+    __asm__ volatile("syscall\n"
+                     "test %%rax, %%rax\n"
+                     "jnz 1f\n"
+                     "mov $60, %%eax\n"
+                     "xor %%edi, %%edi\n"
+                     "syscall\n"
+                     "2: jmp 2b\n"
+                     "1:\n"
+                     : "=a"(ret)
+                     : "a"((long) SYS_clone), "D"(flags), "S"(stack),
+                     "d"(ptid), "r"(r10), "r"(r8)
+                     : "rcx", "r11", "memory");
+#elif defined(__aarch64__)
+    register long x8 __asm__("x8") = SYS_clone;
+    register long x0 __asm__("x0") = (long) flags;
+    register long x1 __asm__("x1") = (long) stack;
+    register long x2 __asm__("x2") = (long) ptid;
+    register long x3 __asm__("x3") = 0;
+    register long x4 __asm__("x4") = (long) ctid;
+    __asm__ volatile("svc #0\n"
+                     "cbnz x0, 1f\n"
+                     "mov x8, #93\n"
+                     "mov x0, #0\n"
+                     "svc #0\n"
+                     "2: b 2b\n"
+                     "1:\n"
+                     : "+r"(x0)
+                     : "r"(x8), "r"(x1), "r"(x2), "r"(x3), "r"(x4)
+                     : "memory");
+    ret = x0;
+#else
+#error "unsupported architecture"
+#endif
+    return ret;
+}
+
+// CLONE_PARENT_SETTID stores the new tid for the parent, CLONE_CHILD_SETTID
+// stores it for the child, and CLONE_CHILD_CLEARTID clears it and wakes a
+// futex waiter when the thread exits.
+long
+case_clone_tids(void)
+{
+    static int ptid, ctid;
+    ptid = -1;
+    ctid = -1;
+    long tid = raw_clone_exit(CLONE_THREAD_FLAGS | CLONE_PARENT_SETTID |
+            CLONE_CHILD_CLEARTID,
+        clone_stack + sizeof(clone_stack), &ptid, &ctid);
+    if (tid < 0)
+        return tid;
+    for (;;) {
+        int v = __atomic_load_n(&ctid, __ATOMIC_SEQ_CST);
+        if (v == 0)
+            break;
+        syscall(SYS_futex, &ctid, FUTEX_WAIT, v, NULL);
+    }
+    if (ptid != tid)
+        return 1;
+
+    // Without CLONE_CHILD_CLEARTID the child's tid stays in place.
+    ctid = -1;
+    tid = raw_clone_exit(CLONE_THREAD_FLAGS | CLONE_CHILD_SETTID,
+        clone_stack2 + sizeof(clone_stack2), NULL, &ctid);
+    if (tid < 0)
+        return tid;
+    while (__atomic_load_n(&ctid, __ATOMIC_SEQ_CST) != tid)
+        ;
+    return 0;
+}
+
+// Linux refuses CLONE_NEWNS together with CLONE_FS.
+long
+case_clone_newns_fs(void)
+{
+    return SYSCALL(SYS_clone, CLONE_THREAD_FLAGS | CLONE_NEWNS,
+        clone_stack + sizeof(clone_stack), 0, 0, 0);
+}
+
+// fork and vfork are not supported. Not run natively.
+long
+case_clone_fork(void)
+{
+    return SYSCALL(SYS_clone, SIGCHLD, 0, 0, 0, 0);
+}
+
+// Only threads can be created: Linux would create a process sharing the
+// address space. Not run natively.
+long
+case_clone_no_thread(void)
+{
+    return SYSCALL(SYS_clone, CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND,
+        clone_stack + sizeof(clone_stack), 0, 0, 0);
+}
+
+// The new thread's stack must be in the sandbox. Not run natively.
+long
+case_clone_bad_stack(void)
+{
+    return SYSCALL(SYS_clone, CLONE_THREAD_FLAGS, 0xffff800000000000UL, 0, 0,
+        0);
+}
+
+static int futex_word;
+static int futex_word2;
+
+// FUTEX_WAIT returns at once if the word does not hold the expected value.
+long
+case_futex_wait_mismatch(void)
+{
+    futex_word = 1;
+    long r = SYSCALL(SYS_futex, &futex_word, FUTEX_WAIT_PRIVATE, 0, NULL);
+    if (r == -EAGAIN)
+        return 0;
+    return r < 0 ? r : 1;
+}
+
+// FUTEX_WAIT with a timeout gives up once it expires.
+long
+case_futex_wait_timeout(void)
+{
+    futex_word = 0;
+    struct timespec ts = { 0, 1000000 };
+    long r = SYSCALL(SYS_futex, &futex_word, FUTEX_WAIT_PRIVATE, 0, &ts);
+    if (r == -ETIMEDOUT)
+        return 0;
+    return r < 0 ? r : 1;
+}
+
+// FUTEX_WAKE and FUTEX_REQUEUE with no waiters wake nobody.
+long
+case_futex_wake_none(void)
+{
+    long r = SYSCALL(SYS_futex, &futex_word, FUTEX_WAKE_PRIVATE, INT_MAX);
+    if (r != 0)
+        return r < 0 ? r : 1;
+    r = SYSCALL(SYS_futex, &futex_word, FUTEX_REQUEUE_PRIVATE, 1, 1,
+        &futex_word2);
+    if (r != 0)
+        return r < 0 ? r : 2;
+    return 0;
+}
+
+// A misaligned word, a null word, and an unknown operation are refused.
+long
+case_futex_invalid(void)
+{
+    long r = SYSCALL(SYS_futex, (char *) &futex_word + 1, FUTEX_WAKE, 1);
+    if (r != -EINVAL)
+        return r < 0 ? r : 1;
+    if (SYSCALL(SYS_futex, 0, FUTEX_WAKE, 1) != -EFAULT)
+        return 2;
+    if (SYSCALL(SYS_futex, 0, FUTEX_WAIT, 0, NULL) != -EFAULT)
+        return 3;
+    if (SYSCALL(SYS_futex, &futex_word, 99, 0) != -ENOSYS)
+        return 4;
+    return 0;
 }
 
 #if defined(__x86_64__)

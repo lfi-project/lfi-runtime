@@ -52,6 +52,12 @@ static const struct ExitCase exit_cases[] = {
     { "exit_group_42", "42", "g" },
     { "exit_group_300", "300", "g" },
     { "exit_7", "7", "e" },
+#ifdef LINUX_FULL
+    { "exit_group_thread_5", "5", "t" },
+    // The main thread's stack must outlive lfi_thread_free while other
+    // threads may still be using it.
+    { "exit_group_stack_reader_6", "6", "s" },
+#endif
 };
 
 static int ntests;
@@ -242,6 +248,10 @@ run_exit_cases(const char *progpath)
     for (size_t i = 0; i < sizeof(exit_cases) / sizeof(exit_cases[0]); i++) {
         const struct ExitCase *e = &exit_cases[i];
 
+        // Run natively first, so nothing happens between the sandbox
+        // exiting and lfi_thread_free below.
+        int want = host_exit_status(e);
+
         struct LFIEngine *engine = make_lfi();
         struct LFILinuxEngine *linux_ = make_engine(engine, false);
         assert(linux_);
@@ -259,9 +269,9 @@ run_exit_cases(const char *progpath)
         int got = lfi_thread_run(t) & 0xff;
         int code = 0;
         bool exited = lfi_proc_exited(proc, &code);
+        lfi_thread_free(t);
 
-        int want = host_exit_status(e);
-        bool group = e->how[0] == 'g';
+        bool group = e->how[0] != 'e';
         bool pass = got == want && exited == group &&
             (!group || (code & 0xff) == want);
         report(e->name, pass, got, want);
@@ -269,7 +279,6 @@ run_exit_cases(const char *progpath)
             fprintf(stderr, "%s: lfi_proc_exited = %d, expected %d\n",
                 e->name, exited, group);
 
-        lfi_thread_free(t);
         lfi_proc_free(proc);
         lfi_linux_free(linux_);
         lfi_free(engine);

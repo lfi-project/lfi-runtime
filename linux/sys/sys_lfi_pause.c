@@ -5,7 +5,8 @@
 uintptr_t
 sys_lfi_pause(struct LFILinuxThread *t)
 {
-    if (t->owner != LFI_THREAD_MAIN) {
+    // Only a context entered with lfi_ctx_run can be handed back.
+    if (t->owner == LFI_THREAD_HOST) {
         ERROR("sandbox tried to pause a context that was never entered to run");
         abort();
     }

@@ -17,7 +17,7 @@ exit_prog_lfi = custom_target('syscall_exit_prog.lfi',
 test_syscalls = executable(
   'test_syscalls.elf',
   ['test_syscalls.c', 'cases.c', 'exit_prog.c'],
-  dependencies: [lfi_linux],
+  dependencies: [lfi_linux, dependency('threads')],
   include_directories: include_directories('..'),
   c_args: c_args_warnings + linux_defines + ['-DHOST_TEST'],
 )

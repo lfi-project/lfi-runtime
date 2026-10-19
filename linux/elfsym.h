@@ -10,3 +10,8 @@ elf_dynamic(const uint8_t *elfdat, size_t elfsize, uintptr_t *o_dynamic);
 // the dynamic symbol table can be loaded with lfi_proc_sym.
 bool
 elf_loadsyms(struct LFILinuxProc *proc, const uint8_t *elfdat, size_t elfsize);
+
+// Looks up a symbol with lfi_proc_sym and places its address in 'p' if it is
+// a valid, aligned sandbox code address.
+bool
+elf_loadsym(struct LFILinuxProc *proc, lfiptr *p, const char *sym);

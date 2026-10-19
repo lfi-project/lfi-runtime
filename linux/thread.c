@@ -267,9 +267,8 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
     if (!t->ctx)
         goto err2;
 
-    // The stack is pinned since lfi_thread_free unmaps it: if the sandbox
-    // could unmap it, that could later destroy whatever was mapped in its
-    // place.
+    // The stack is pinned so that the sandbox cannot unmap it. It stays
+    // mapped until the proc is freed (see lfi_thread_free).
     size_t stacksize = proc->engine->opts.stacksize;
     if (lfi_opts(proc->engine->engine).no_aslr) {
         // Deterministic placement: the stack goes at the top of the sandbox.
@@ -310,8 +309,11 @@ EXPORT void
 lfi_thread_free(struct LFILinuxThread *t)
 {
     // Unmap the stack (if created). It is pinned, so it is still the mapping
-    // the runtime made.
-    if (t->stack) {
+    // the runtime made. A main thread's stack is left for lfi_box_free to
+    // reclaim: other sandbox threads may still be using it (exit_group does
+    // not stop them at once), and libc keeps pointers into the argv, envp,
+    // and auxv stored on it.
+    if (t->stack && t->owner != LFI_THREAD_MAIN) {
         size_t stacksize = t->proc->engine->opts.stacksize;
         lfi_box_munmap(t->proc->box, t->stack, stacksize);
     }

@@ -84,13 +84,10 @@ passthrough_syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0,
     PASS(prlimit64)
     PASS(sysinfo)
     PASS(getpid)
-    PASS(gettid)
 
-    // Signals are never delivered to the sandbox, so these are stubs.
+    // Signals are never delivered to the sandbox, so this is a stub.
     FULL_SYS(rt_sigaction,
             full_sys_rt_sigaction(t, a0, a1, a2, a3))
-    FULL_SYS(rt_sigprocmask,
-            full_sys_rt_sigprocmask(t, a0, a1, a2, a3))
     }
     // clang-format on
 
@@ -110,6 +107,28 @@ full_syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0,
             full_sys_mprotect(t, a0, a1, a2))
     FULL_SYS(munmap,
             full_sys_munmap(t, a0, a1))
+
+    // Threads. These are never passed through: TIDs are virtual, and the
+    // runtime tracks the clear-child-tid address of each thread itself.
+#if defined(LFI_ARCH_X64)
+    // syscall: clone(flags, stack, ptid, ctid, tls)
+    FULL_SYS(clone,
+            full_sys_clone(t, a0, a1, a2, a3, a4))
+#else
+    // syscall: clone(flags, stack, ptid, tls, ctid)
+    FULL_SYS(clone,
+            full_sys_clone(t, a0, a1, a2, a4, a3))
+#endif
+    FULL_SYS(futex,
+            full_sys_futex(t, a0, a1, a2, a3, a4, a5))
+    FULL_SYS(set_tid_address,
+            full_sys_set_tid_address(t, a0))
+    FULL_SYS(gettid,
+            full_sys_gettid(t))
+    // A stub, since signals are never delivered to the sandbox. libc blocks
+    // signals around creating and exiting threads.
+    FULL_SYS(rt_sigprocmask,
+            full_sys_rt_sigprocmask(t, a0, a1, a2, a3))
     }
     // clang-format on
 

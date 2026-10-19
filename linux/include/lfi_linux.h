@@ -113,12 +113,15 @@ lfi_proc_sym(struct LFILinuxProc *proc, const char *symname);
 // Returns true if the sandbox asked to terminate by calling exit_group, and
 // stores the exit code it requested in *code if code is non-NULL.
 //
-// The runtime does not stop host threads that are already running inside the
-// sandbox when it calls exit_group; they leave at their next syscall.
+// The runtime does not stop threads that are already running inside the
+// sandbox when it calls exit_group (host threads, and in the full
+// configuration threads the sandbox spawned with clone); they leave at their
+// next syscall.
 bool
 lfi_proc_exited(struct LFILinuxProc *proc, int *code);
 
-// Frees an LFILinuxProc.
+// Frees an LFILinuxProc. In the full configuration, this first waits for the
+// threads the sandbox spawned with clone to exit.
 void
 lfi_proc_free(struct LFILinuxProc *proc);
 
@@ -131,7 +134,9 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
 int
 lfi_thread_run(struct LFILinuxThread *t);
 
-// Frees an LFILinuxThread.
+// Frees an LFILinuxThread. The stack of a thread created by lfi_thread_new
+// stays mapped until the proc is freed, since other sandbox threads may still
+// be using it.
 void
 lfi_thread_free(struct LFILinuxThread *t);
 
@@ -139,17 +144,25 @@ struct LFIContext **
 lfi_thread_ctxp(struct LFILinuxThread *t);
 
 // Initialize the ability to dynamically create new sandbox contexts when
-// invoking from new host threads. Each such context gets its own stack but no
-// thread-local storage: the runtime does not support TLS or sandbox-created
-// threads.
+// invoking from new host threads.
+//
+// In the full configuration, if the sandbox exports _lfi_thread_create and
+// _lfi_thread_destroy, each such context is a thread the sandbox creates with
+// pthread_create (via a clone syscall), so it has the sandbox libc's thread
+// state, including TLS. This runs _lfi_thread_create on main_thread once to
+// set up the thread that later threads are cloned from.
+//
+// Otherwise each context gets a stack from the runtime but no thread-local
+// storage.
 void
 lfi_linux_init_clone(struct LFILinuxThread *main_thread);
 
 // Detach the current host thread from the given proc, if it has been lazily
 // attached via lfi_linux_init_clone's clone callback. Runs the teardown that
 // would otherwise run when the host thread exits (freeing the attached
-// context and its stack), and clears this thread's TLS entry for proc so the
-// destructor will not fire later. The caller must not reuse the context pointer afterwards, a
+// context and its stack, plus the in-sandbox teardown where there is one), and
+// clears this thread's TLS entry for proc so the destructor will not fire
+// later. The caller must not reuse the context pointer afterwards, a
 // subsequent call into proc from this thread needs a null context pointer so
 // that the clone callback runs again.
 //
