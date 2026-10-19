@@ -77,6 +77,21 @@ bool mmap_query_page(const struct MMapAddrSpace *mm, uintptr_t addr,
   return true;
 }
 
+bool mmap_is_mapped(const struct MMapAddrSpace *mm, uintptr_t addr, size_t len,
+                    int prot, int excl_flags) {
+  return mm->impl.is_mapped(addr, len, prot, excl_flags);
+}
+
+bool mmap_has_mapping(const struct MMapAddrSpace *mm, uintptr_t addr,
+                      size_t len, int excl_flags) {
+  return mm->impl.has_mapping(addr, len, excl_flags);
+}
+
+bool mmap_has_flags(const struct MMapAddrSpace *mm, uintptr_t addr, size_t len,
+                    int flags) {
+  return mm->impl.has_flags(addr, len, flags);
+}
+
 enum MMapError mmap_protect(struct MMapAddrSpace *mm, uintptr_t addr,
                             size_t len, int prot, MMapUpdateFn ufn,
                             void *udata) {

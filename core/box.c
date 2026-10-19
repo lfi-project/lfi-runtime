@@ -479,6 +479,30 @@ lfi_box_mapat(struct LFIBox *box, lfiptr addr, size_t size, int prot, int flags,
 }
 
 EXPORT lfiptr
+lfi_box_mapat_noreplace(struct LFIBox *box, lfiptr addr, size_t size, int prot,
+    int flags, int fd, off_t off)
+{
+    BOX_LOCK(box, lk);
+    if (!lfi_box_bufvalid(box, addr, size))
+        return (lfiptr) -1;
+    if (mmap_has_mapping(box->mm, l2p(box, addr), size, LFI_MAP_RESERVE))
+        return (lfiptr) -1;
+    return box_mapat_locked(box, addr, size, prot, flags, fd, off);
+}
+
+EXPORT lfiptr
+lfi_box_mapat_unpinned(struct LFIBox *box, lfiptr addr, size_t size, int prot,
+    int flags, int fd, off_t off)
+{
+    BOX_LOCK(box, lk);
+    if (!lfi_box_bufvalid(box, addr, size))
+        return (lfiptr) -1;
+    if (mmap_has_flags(box->mm, l2p(box, addr), size, LFI_MAP_PINNED))
+        return (lfiptr) -1;
+    return box_mapat_locked(box, addr, size, prot, flags, fd, off);
+}
+
+EXPORT lfiptr
 lfi_box_mapat_register(struct LFIBox *box, lfiptr addr, size_t size, int prot,
     int flags, int fd, off_t off)
 {
@@ -530,6 +554,24 @@ lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size,
     return box_mprotect_locked(box, addr, size, prot, true);
 }
 
+EXPORT int
+lfi_box_mprotect_mapped(struct LFIBox *box, lfiptr addr, size_t size, int prot)
+{
+    BOX_LOCK(box, lk);
+    size_t pagesize = box->engine->opts.pagesize;
+    if (size == 0 || addr % pagesize != 0 || size % pagesize != 0)
+        return -EINVAL;
+    if (!lfi_box_bufvalid(box, addr, size))
+        return -ENOMEM;
+    if (!mmap_is_mapped(box->mm, l2p(box, addr), size, 0, LFI_MAP_RESERVE))
+        return -ENOMEM;
+    if (mmap_has_flags(box->mm, l2p(box, addr), size, LFI_MAP_PINNED))
+        return -EACCES;
+    if (box_mprotect_locked(box, addr, size, prot, false) != 0)
+        return -EINVAL;
+    return 0;
+}
+
 EXPORT bool
 lfi_box_mquery(struct LFIBox *box, lfiptr addr, struct LFIMapInfo *info)
 {
@@ -570,6 +612,17 @@ EXPORT int
 lfi_box_munmap(struct LFIBox *box, lfiptr addr, size_t size)
 {
     BOX_LOCK(box, lk);
+    return box_munmap_locked(box, addr, size);
+}
+
+EXPORT int
+lfi_box_munmap_unpinned(struct LFIBox *box, lfiptr addr, size_t size)
+{
+    BOX_LOCK(box, lk);
+    if (!lfi_box_bufvalid(box, addr, size))
+        return -EINVAL;
+    if (mmap_has_flags(box->mm, l2p(box, addr), size, LFI_MAP_PINNED))
+        return -EINVAL;
     return box_munmap_locked(box, addr, size);
 }
 
@@ -635,6 +688,22 @@ lfi_box_copyto(struct LFIBox *box, lfiptr dst, const void *src, size_t size)
     return dst;
 }
 
+EXPORT bool
+lfi_box_copyto_checked(struct LFIBox *box, lfiptr dst, const void *src,
+    size_t size)
+{
+    BOX_LOCK(box, lk);
+    if (!lfi_box_bufvalid(box, dst, size))
+        return false;
+    if (size == 0)
+        return true;
+    if (!mmap_is_mapped(box->mm, l2p(box, dst), size, LFI_PROT_WRITE,
+            LFI_MAP_RESERVE))
+        return false;
+    memcpy((void *) l2p(box, dst), src, size);
+    return true;
+}
+
 EXPORT uintptr_t
 lfi_box_l2p(struct LFIBox *box, lfiptr l)
 {
@@ -681,7 +750,7 @@ lfi_box_init_ret(struct LFIBox *box)
 
     size_t pagesize = box->engine->opts.pagesize;
     lfiptr p = box_mapany_locked(box, pagesize, LFI_PROT_READ | LFI_PROT_WRITE,
-        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0, false);
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE | LFI_MAP_PINNED, -1, 0, false);
     if (p == (lfiptr) -1 || !lfi_box_ptrvalid(box, p))
         return false;
 

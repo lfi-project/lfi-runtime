@@ -11,8 +11,15 @@ srcs = files(
   'sys.c',
 )
 
+# Extra defines for liblfi-linux. The full configuration appends to this.
+linux_defines = []
+
 subdir('arch/' + archmap[cpu])
 subdir('sys')
+
+if get_option('linux_full')
+  subdir('full')
+endif
 
 libelf_dep = []
 if not have_elf_h
@@ -22,7 +29,7 @@ endif
 liblfi_linux = static_library(
   'lfi-linux',
   srcs,
-  c_args: c_args_warnings + defines,
+  c_args: c_args_warnings + defines + linux_defines,
   dependencies: [lfi_core.as_link_whole()] + libelf_dep,
   install: true,
   include_directories: include_directories('include', 'arch/' + archmap[cpu]),

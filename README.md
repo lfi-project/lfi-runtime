@@ -5,7 +5,15 @@ The LFI runtime is responsible for loading sandboxes and handling host calls. It
 * `core`: provides functionality for reserving virtual address space, mapping
   sandbox memory, transferring control to/from the sandbox. It does not impose
   any runtime API on the sandbox beyond the minimum necessary.
-* `linux`: provides a Linux emulation layer on top of the core library.
+* `linux`: provides a Linux emulation layer on top of the core library. By
+  default this is a minimal runtime that only services the system calls
+  needed for startup and `brk`-based memory allocation.
+* `linux/full`: the full Linux configuration, built only with
+  `-Dlinux_full=true`. It extends the minimal runtime through the hooks in
+  `linux/hooks.h` (per-proc and per-thread state, plus first look at every
+  syscall) and currently adds anonymous `mmap`, `munmap`, and `mprotect`.
+  Sandboxed libraries built for it can use the libc allocator instead of
+  minialloc.
 * `sbox`: a C++ library for calling sandboxed functions with a lightweight
   tainting API. See [sbox/README.md](sbox/README.md) for details.
 

@@ -64,3 +64,8 @@ option('enable_ubench_baselines',
   type: 'boolean',
   value: false,
   description: 'build the extra non-LFI host baseline benchmarks (native_call, host_syscall, host_ctxswitch) in lfi-ubench')
+
+option('linux_full',
+  type: 'boolean',
+  value: false,
+  description: 'build the full Linux emulation layer (linux/full) on top of the minimal runtime')

@@ -40,6 +40,16 @@ struct AddrSpace {
 
   Error unmap(uintptr_t addr, size_t len, UpdateFn ufn = nullptr);
   bool query_page(uintptr_t addr, MapInfo *info) const;
+  // Return true if every page in [addr, addr+len) is covered by a mapping
+  // whose protection includes all of 'prot' and whose flags contain none of
+  // 'excl_flags'.
+  bool is_mapped(uintptr_t addr, size_t len, int prot, int excl_flags) const;
+  // Return true if any page in [addr, addr+len) is covered by a mapping whose
+  // flags contain none of 'excl_flags'.
+  bool has_mapping(uintptr_t addr, size_t len, int excl_flags) const;
+  // Return true if any page in [addr, addr+len) is covered by a mapping whose
+  // flags contain any of 'flags'.
+  bool has_flags(uintptr_t addr, size_t len, int flags) const;
   Error protect(uintptr_t addr, size_t len, int prot, UpdateFn ufn = nullptr);
 
 private:

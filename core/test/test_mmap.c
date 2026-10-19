@@ -2,6 +2,7 @@
 #include "test.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -111,6 +112,116 @@ main(void)
     found = lfi_box_mquery(box, p4, &info);
     assert(found);
     assert(info.prot == LFI_PROT_READ);
+
+    // Test 9: mprotect_mapped refuses ranges with gaps or reservations
+    lfiptr p5 = lfi_box_mapany(box, pagesize * 3, LFI_PROT_READ,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
+    assert(p5 != (lfiptr) -1);
+    r = lfi_box_mprotect_mapped(box, p5, pagesize * 3,
+        LFI_PROT_READ | LFI_PROT_WRITE);
+    assert(r == 0);
+    found = lfi_box_mquery(box, p5 + 2 * pagesize, &info);
+    assert(found);
+    assert(info.prot == (LFI_PROT_READ | LFI_PROT_WRITE));
+
+    r = lfi_box_munmap(box, p5 + pagesize, pagesize);
+    assert(r == 0);
+    r = lfi_box_mprotect_mapped(box, p5, pagesize * 3, LFI_PROT_READ);
+    assert(r == -ENOMEM);
+    // Nothing changed, including the mapped pages around the gap.
+    found = lfi_box_mquery(box, p5, &info);
+    assert(found);
+    assert(info.prot == (LFI_PROT_READ | LFI_PROT_WRITE));
+
+    lfiptr p6 = lfi_box_mapat(box, p5 + pagesize, pagesize, LFI_PROT_NONE,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE | LFI_MAP_RESERVE, -1, 0);
+    assert(p6 == p5 + pagesize);
+    r = lfi_box_mprotect_mapped(box, p5, pagesize * 3, LFI_PROT_READ);
+    assert(r == -ENOMEM);
+    r = lfi_box_mprotect_mapped(box, p5, pagesize, LFI_PROT_READ);
+    assert(r == 0);
+    r = lfi_box_mprotect_mapped(box, p5 + 1, pagesize, LFI_PROT_READ);
+    assert(r == -EINVAL);
+
+    // Test 10: mapat_noreplace replaces reservations and free pages, but not
+    // mappings. p5 is now: mapped, reserved, mapped.
+    lfiptr q = lfi_box_mapat_noreplace(box, p5, pagesize * 3, LFI_PROT_READ,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
+    assert(q == (lfiptr) -1);
+    found = lfi_box_mquery(box, p5 + pagesize, &info);
+    assert(found);
+    assert(info.flags & LFI_MAP_RESERVE);
+    q = lfi_box_mapat_noreplace(box, p5 + pagesize, pagesize,
+        LFI_PROT_READ | LFI_PROT_WRITE, LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1,
+        0);
+    assert(q == p5 + pagesize);
+    found = lfi_box_mquery(box, q, &info);
+    assert(found);
+    assert(!(info.flags & LFI_MAP_RESERVE));
+    r = lfi_box_munmap(box, p5, pagesize * 3);
+    assert(r == 0);
+    q = lfi_box_mapat_noreplace(box, p5, pagesize * 3, LFI_PROT_READ,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
+    assert(q == p5);
+
+    // Test 11: the sandbox-facing calls refuse pinned mappings, but the plain
+    // calls the runtime uses still work on them.
+    lfiptr pin = lfi_box_mapany(box, pagesize * 2, LFI_PROT_READ,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE | LFI_MAP_PINNED, -1, 0);
+    assert(pin != (lfiptr) -1);
+    r = lfi_box_mprotect_mapped(box, pin + pagesize, pagesize,
+        LFI_PROT_READ | LFI_PROT_WRITE);
+    assert(r == -EACCES);
+    r = lfi_box_munmap_unpinned(box, pin, pagesize);
+    assert(r == -EINVAL);
+    q = lfi_box_mapat_unpinned(box, pin + pagesize, pagesize,
+        LFI_PROT_READ | LFI_PROT_WRITE, LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1,
+        0);
+    assert(q == (lfiptr) -1);
+    q = lfi_box_mapat_noreplace(box, pin, pagesize, LFI_PROT_READ,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
+    assert(q == (lfiptr) -1);
+    found = lfi_box_mquery(box, pin + pagesize, &info);
+    assert(found);
+    assert(info.prot == LFI_PROT_READ);
+    assert(info.flags & LFI_MAP_PINNED);
+    // Unpinned ranges next to it are unaffected.
+    r = lfi_box_munmap_unpinned(box, p5, pagesize * 3);
+    assert(r == 0);
+    r = lfi_box_munmap(box, pin, pagesize * 2);
+    assert(r == 0);
+    found = lfi_box_mquery(box, pin, &info);
+    assert(!found);
+
+    // Test 12: copyto_checked writes only to writable, mapped pages, including
+    // when the destination straddles two pages.
+    lfiptr w = lfi_box_mapany(box, pagesize * 2, LFI_PROT_READ | LFI_PROT_WRITE,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1, 0);
+    assert(w != (lfiptr) -1);
+    uint64_t val = 0x1122334455667788;
+    bool ok = lfi_box_copyto_checked(box, w + pagesize - 4, &val, sizeof(val));
+    assert(ok);
+    uint64_t back;
+    lfi_box_copyfm(box, &back, w + pagesize - 4, sizeof(back));
+    assert(back == val);
+    r = lfi_box_mprotect(box, w + pagesize, pagesize, LFI_PROT_READ);
+    assert(r == 0);
+    ok = lfi_box_copyto_checked(box, w + pagesize - 4, &val, sizeof(val));
+    assert(!ok);
+    r = lfi_box_munmap(box, w + pagesize, pagesize);
+    assert(r == 0);
+    ok = lfi_box_copyto_checked(box, w + pagesize - 4, &val, sizeof(val));
+    assert(!ok);
+    q = lfi_box_mapat(box, w + pagesize, pagesize,
+        LFI_PROT_READ | LFI_PROT_WRITE,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE | LFI_MAP_RESERVE, -1, 0);
+    assert(q == w + pagesize);
+    ok = lfi_box_copyto_checked(box, w + pagesize - 4, &val, sizeof(val));
+    assert(!ok);
+    ok = lfi_box_copyto_checked(box, w, &val, sizeof(val));
+    assert(ok);
+    r = lfi_box_munmap(box, w, pagesize * 2);
+    assert(r == 0);
 
     lfi_box_free(box);
     lfi_free(engine);

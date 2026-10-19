@@ -45,6 +45,12 @@ enum MMapError mmap_unmap(struct MMapAddrSpace *mm, uintptr_t addr, size_t len,
                           MMapUpdateFn ufn, void *udata);
 bool mmap_query_page(const struct MMapAddrSpace *mm, uintptr_t addr,
                      struct MMapInfo *info);
+bool mmap_is_mapped(const struct MMapAddrSpace *mm, uintptr_t addr, size_t len,
+                    int prot, int excl_flags);
+bool mmap_has_mapping(const struct MMapAddrSpace *mm, uintptr_t addr,
+                      size_t len, int excl_flags);
+bool mmap_has_flags(const struct MMapAddrSpace *mm, uintptr_t addr, size_t len,
+                    int flags);
 enum MMapError mmap_protect(struct MMapAddrSpace *mm, uintptr_t addr,
                             size_t len, int prot, MMapUpdateFn ufn,
                             void *udata);

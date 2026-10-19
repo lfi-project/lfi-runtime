@@ -82,9 +82,11 @@ init_cb(struct LFIBox *box)
     }
     // Share the mapping inside the sandbox as read/exec. This mapping is
     // unverified because it contains specific trampoline sequences that the
-    // verifier cannot validate.
+    // verifier cannot validate. It is pinned so that the sandbox cannot unmap
+    // or reprotect it.
     lfiptr boxmap = box_mapany_locked(box, size,
-        LFI_PROT_READ | LFI_PROT_EXEC, LFI_MAP_SHARED, fd, 0, true);
+        LFI_PROT_READ | LFI_PROT_EXEC, LFI_MAP_SHARED | LFI_MAP_PINNED, fd, 0,
+        true);
     if (boxmap == (lfiptr) -1)
         goto err1;
     box->cbinfo.cbentries_box = (struct CallbackEntry *) boxmap;

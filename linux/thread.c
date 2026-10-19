@@ -1,5 +1,6 @@
 #include "align.h"
 #include "elfdefs.h"
+#include "hooks.h"
 #include "host.h"
 #include "lfi_arch.h"
 #include "lfi_core.h"
@@ -241,7 +242,18 @@ thread_alloc(struct LFILinuxProc *proc, enum LFIThreadOwner owner)
         return NULL;
     t->proc = proc;
     t->owner = owner;
+    if (!full_thread_init(t)) {
+        free(t);
+        return NULL;
+    }
     return t;
+}
+
+void
+thread_dealloc(struct LFILinuxThread *t)
+{
+    full_thread_free(t);
+    free(t);
 }
 
 EXPORT struct LFILinuxThread *
@@ -255,17 +267,20 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
     if (!t->ctx)
         goto err2;
 
+    // The stack is pinned since lfi_thread_free unmaps it: if the sandbox
+    // could unmap it, that could later destroy whatever was mapped in its
+    // place.
     size_t stacksize = proc->engine->opts.stacksize;
     if (lfi_opts(proc->engine->engine).no_aslr) {
         // Deterministic placement: the stack goes at the top of the sandbox.
         t->stack = lfi_box_mapat(proc->box, proc->box_info.max - stacksize,
             stacksize, LFI_PROT_READ | LFI_PROT_WRITE,
-            LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+            LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS | LFI_MAP_PINNED, -1, 0);
     } else {
         // Place the main thread stack at a random location.
         t->stack = lfi_box_mapany(proc->box, stacksize,
             LFI_PROT_READ | LFI_PROT_WRITE,
-            LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+            LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS | LFI_MAP_PINNED, -1, 0);
     }
     if (t->stack == (lfiptr) -1) {
         LOG(proc->engine, "failed to map stack");
@@ -280,7 +295,7 @@ lfi_thread_new(struct LFILinuxProc *proc, int argc, const char **argv,
 err3:
     lfi_ctx_free(t->ctx);
 err2:
-    free(t);
+    thread_dealloc(t);
 err1:
     return NULL;
 }
@@ -294,7 +309,8 @@ lfi_thread_run(struct LFILinuxThread *p)
 EXPORT void
 lfi_thread_free(struct LFILinuxThread *t)
 {
-    // Unmap the stack (if created).
+    // Unmap the stack (if created). It is pinned, so it is still the mapping
+    // the runtime made.
     if (t->stack) {
         size_t stacksize = t->proc->engine->opts.stacksize;
         lfi_box_munmap(t->proc->box, t->stack, stacksize);
@@ -302,7 +318,7 @@ lfi_thread_free(struct LFILinuxThread *t)
     // Free the context.
     lfi_ctx_free(t->ctx);
     // Free the thread.
-    free(t);
+    thread_dealloc(t);
 }
 
 EXPORT struct LFIContext **

@@ -97,10 +97,12 @@ init_cb(struct LFIBox *box)
     if (aliasmap == (void *) -1)
         goto err;
     box->cbinfo.dataentries_alias = (struct CallbackDataEntry *) aliasmap;
-    // Map the code/data entry regions.
+    // Map the code/data entry regions. Both are pinned: if the sandbox could
+    // make the data entries writable or map over them, it could redirect the
+    // code entries' branches out of the sandbox.
     lfiptr codemap = box_mapany_locked(box, size,
-        LFI_PROT_READ | LFI_PROT_WRITE, LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE, -1,
-        0, false);
+        LFI_PROT_READ | LFI_PROT_WRITE,
+        LFI_MAP_ANONYMOUS | LFI_MAP_PRIVATE | LFI_MAP_PINNED, -1, 0, false);
     if (codemap == (lfiptr) -1)
         goto err1;
     // Fill in the code for each entry.
@@ -116,7 +118,7 @@ init_cb(struct LFIBox *box)
         goto err2;
     // Map the data entries over the second half of the reservation.
     lfiptr boxmap = box_mapat_locked(box, codemap + size / 2, size / 2,
-        LFI_PROT_READ, LFI_MAP_SHARED, fd, 0);
+        LFI_PROT_READ, LFI_MAP_SHARED | LFI_MAP_PINNED, fd, 0);
     if (boxmap == (lfiptr) -1)
         goto err2;
     box->cbinfo.cbentries = (struct CallbackEntry *) codemap;

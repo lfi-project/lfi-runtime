@@ -2,6 +2,7 @@
 
 #include "elfload.h"
 #include "elfsym.h"
+#include "hooks.h"
 #include "lfi_core.h"
 #include "linux.h"
 #include "lock.h"
@@ -35,6 +36,14 @@ lfi_proc_new(struct LFILinuxEngine *engine)
     pthread_mutex_init(&proc->lk_brk, NULL);
 
     lfi_box_setdata(box, proc);
+
+    if (!full_proc_init(proc)) {
+        pthread_mutex_destroy(&proc->lk_brk);
+        pthread_mutex_destroy(&proc->lk_proc);
+        lfi_box_free(box);
+        free(proc);
+        return NULL;
+    }
 
     return proc;
 }
@@ -83,10 +92,12 @@ proc_load(struct LFILinuxProc *proc, int prog_fd, const uint8_t *prog,
         proc->engine->opts.brk_size :
         BRKMAXSIZE;
 
-    // Reserve the brk region.
+    // Reserve the brk region. Pages above the break stay part of the
+    // reservation, which counts as unmapped for mprotect.
     if (brkmaxsize > 0) {
         lfiptr brkregion = lfi_box_mapat(proc->box, proc->brkbase, brkmaxsize,
-            LFI_PROT_NONE, LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+            LFI_PROT_NONE,
+            LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS | LFI_MAP_RESERVE, -1, 0);
         if (brkregion == (lfiptr) -1)
             return false;
     }
@@ -142,6 +153,7 @@ lfi_proc_load_file(struct LFILinuxProc *proc, const char *prog_path)
 void
 proc_destroy(struct LFILinuxProc *proc)
 {
+    full_proc_free(proc);
     free(proc->dynsym.data);
     free(proc->dynstr.data);
     lfi_box_free(proc->box);

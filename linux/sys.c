@@ -1,4 +1,6 @@
 #include "sys.h"
+
+#include "hooks.h"
 #include "sys/sys.h"
 
 #include <stdlib.h>
@@ -12,6 +14,11 @@ syshandle(struct LFILinuxThread *t, uintptr_t sysno, uintptr_t a0, uintptr_t a1,
     sys_checkpoint(t);
 
     uintptr_t r = -LINUX_ENOSYS;
+
+    // The full configuration (if built in) gets the first look at every
+    // syscall and may override anything below.
+    if (full_syshandle(t, sysno, a0, a1, a2, a3, a4, a5, &r))
+        return r;
 
     // clang-format off
     switch (sysno) {

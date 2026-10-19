@@ -41,6 +41,11 @@ jobs:
         meson setup build-clang
         ninja -C build-clang test
 
+    - name: Build & Test (linux_full, asan+ubsan)
+      run: |
+        meson setup build-full -Db_sanitize=address,undefined -Dlinux_full=true
+        ninja -C build-full test
+
   test-macos:
     strategy:
       matrix:

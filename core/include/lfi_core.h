@@ -115,6 +115,20 @@ struct LFIMapInfo {
 // top 128MiB of the sandbox).
 #define LFI_MAP_EXECUTABLE 0x1000
 
+// LFI_MAP_RESERVE marks a mapping (normally PROT_NONE) that only reserves
+// address space, such as the region a heap may later grow into. It is
+// occupied for placement purposes, but lfi_box_mprotect_mapped treats it as
+// unmapped. It has no effect on the host mapping.
+#define LFI_MAP_RESERVE 0x2000
+
+// LFI_MAP_PINNED marks a mapping the runtime owns, such as the callback
+// trampolines or a thread stack that the runtime frees itself. The calls that
+// act on behalf of the sandbox (lfi_box_mapat_noreplace, lfi_box_mapat_unpinned,
+// lfi_box_munmap_unpinned, and lfi_box_mprotect_mapped) refuse any range that
+// overlaps a pinned mapping, so sandbox code cannot replace, unmap, or change
+// the protection of it. It has no effect on the host mapping.
+#define LFI_MAP_PINNED 0x4000
+
 // Creates a new LFI engine and reserve enough virtual address space for 'n'
 // sandboxes.
 struct LFIEngine *
@@ -167,6 +181,19 @@ lfiptr
 lfi_box_mapat(struct LFIBox *box, lfiptr addr, size_t size, int prot, int flags,
     int fd, off_t off);
 
+// Same as lfi_box_mapat, but atomically fails (returning -1) if any page in
+// the range is already mapped, other than by an LFI_MAP_RESERVE reservation,
+// which is replaced.
+lfiptr
+lfi_box_mapat_noreplace(struct LFIBox *box, lfiptr addr, size_t size, int prot,
+    int flags, int fd, off_t off);
+
+// Same as lfi_box_mapat, but atomically fails (returning -1) if any page in
+// the range is part of an LFI_MAP_PINNED mapping.
+lfiptr
+lfi_box_mapat_unpinned(struct LFIBox *box, lfiptr addr, size_t size, int prot,
+    int flags, int fd, off_t off);
+
 // Registers an existing memory mapping in the sandbox at 'addr'. This is used
 // in cases where the system loader has already mmapped a region in the sandbox
 // before liblfi has started. Returns -1 on failure. May run the verifier for
@@ -191,6 +218,11 @@ lfi_box_mapany_noverify(struct LFIBox *box, size_t size, int prot, int flags,
 int
 lfi_box_munmap(struct LFIBox *box, lfiptr addr, size_t size);
 
+// Same as lfi_box_munmap, but atomically fails if any page in the range is part
+// of an LFI_MAP_PINNED mapping. Returns 0 on success or -EINVAL on failure.
+int
+lfi_box_munmap_unpinned(struct LFIBox *box, lfiptr addr, size_t size);
+
 // Changes the protection of a memory mapping inside the sandbox. May run the
 // verifier for executable pages.
 int
@@ -201,6 +233,14 @@ lfi_box_mprotect(struct LFIBox *box, lfiptr addr, size_t size, int prot);
 int
 lfi_box_mprotect_noverify(struct LFIBox *box, lfiptr addr, size_t size,
     int prot);
+
+// Same as lfi_box_mprotect, but atomically checks that every page in the range
+// is mapped (and not an LFI_MAP_RESERVE reservation) first. 'addr' and 'size'
+// must be page aligned and 'size' non-zero. Returns 0 on success, -ENOMEM if
+// any page in the range is not mapped, -EACCES if any page is part of an
+// LFI_MAP_PINNED mapping, or -EINVAL on any other failure.
+int
+lfi_box_mprotect_mapped(struct LFIBox *box, lfiptr addr, size_t size, int prot);
 
 // Queries memory mapping information for a page. Returns true if the page is
 // mapped and places the info in 'info', or false if the page is not mapped.
@@ -231,6 +271,16 @@ lfi_box_copyfm(struct LFIBox *box, void *dst, lfiptr src, size_t size);
 // Copies data in to the given sandbox location.
 lfiptr
 lfi_box_copyto(struct LFIBox *box, lfiptr dst, const void *src, size_t size);
+
+// Same as lfi_box_copyto, but copies nothing and returns false unless every
+// page of the destination is mapped writable (and not an LFI_MAP_RESERVE
+// reservation). Use this to write to sandbox memory whose address the sandbox
+// chose, since the plain copy would fault in the host. The check and the copy
+// happen under the box lock, so a concurrent munmap or mprotect cannot slip in
+// between.
+bool
+lfi_box_copyto_checked(struct LFIBox *box, lfiptr dst, const void *src,
+    size_t size);
 
 // Use of the following two functions assumes that the sandbox and host share
 // an address space.

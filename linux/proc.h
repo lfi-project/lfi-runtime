@@ -10,6 +10,11 @@
 // Maximum number of bytes that can be allocated via sys_brk.
 #define BRKMAXSIZE (512UL * 1024 * 1024)
 
+// State owned by the full configuration (linux/full). Only allocated when the
+// runtime is built with -Dlinux_full=true; see hooks.h.
+struct LFIFullProc;
+struct LFIFullThread;
+
 // Information from loading the ELF image.
 struct ELFLoadInfo {
     lfiptr lastva;
@@ -80,6 +85,9 @@ struct LFILinuxProc {
     // lock.
     pthread_mutex_t lk_proc;
 
+    // Full-configuration state, or NULL in the minimal runtime.
+    struct LFIFullProc *full;
+
     struct LFILinuxEngine *engine;
 };
 
@@ -113,6 +121,9 @@ struct LFILinuxThread {
     // Set once the sandbox has handed this context back with the LFI pause
     // syscall, which happens at most once, at the end of its startup.
     bool paused;
+
+    // Full-configuration state, or NULL in the minimal runtime.
+    struct LFIFullThread *full;
 };
 
 #ifdef __cplusplus
@@ -122,6 +133,10 @@ extern "C" {
 // Allocates a thread. Callers still have to set up ctx and any stack.
 struct LFILinuxThread *
 thread_alloc(struct LFILinuxProc *proc, enum LFIThreadOwner owner);
+
+// Frees a thread from thread_alloc. Does not free its ctx or stack.
+void
+thread_dealloc(struct LFILinuxThread *t);
 
 // Actually free the proc storage. Used by lfi_proc_free and by the last
 // detach when pending_free is set. Callers must ensure no thread is using the

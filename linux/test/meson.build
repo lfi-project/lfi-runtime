@@ -16,12 +16,17 @@ if not lficc.found()
   subdir_done()
 endif
 
-# The runtime provides no mmap, so sandboxed libraries use minialloc, a
-# brk-based allocator, in place of the libc allocator.
-minialloc = subproject('minialloc')
+# The minimal runtime provides no mmap, so sandboxed libraries use minialloc,
+# a brk-based allocator, in place of the libc allocator. The full
+# configuration has mmap and uses the libc allocator.
+lib_extra_srcs = []
+if not get_option('linux_full')
+  minialloc = subproject('minialloc')
+  lib_extra_srcs = minialloc.get_variable('minialloc_srcs')
+endif
 lib = custom_target('lib.lfi',
   output: 'lib.lfi',
-  input: ['library/add.c'] + minialloc.get_variable('minialloc_srcs'),
+  input: ['library/add.c'] + lib_extra_srcs,
   command: [lficc, '-O2', '-o', '@OUTPUT@', '@INPUT@', '-static-pie',
             '-lboxrt', '-Wl,--export-dynamic'],
 )
@@ -37,3 +42,7 @@ test('detach.lfi',
   test_detach, args: [lib],
   suite: ['linux'],
 )
+
+if host_machine.system() == 'linux'
+  subdir('syscalls')
+endif

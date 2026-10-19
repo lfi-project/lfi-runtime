@@ -98,18 +98,19 @@ lfi_linux_clone_cb(struct LFIBox *box)
 
     t->ctx = lfi_ctx_new(box, t);
     if (!t->ctx) {
-        free(t);
+        thread_dealloc(t);
         return NULL;
     }
 
-    // Allocate stack in sandbox memory.
+    // Allocate stack in sandbox memory. It is pinned since lfi_thread_free
+    // unmaps it when the host thread detaches.
     size_t stacksize = proc->engine->opts.stacksize;
     t->stack = lfi_box_mapany(box, stacksize,
         LFI_PROT_READ | LFI_PROT_WRITE,
-        LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+        LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS | LFI_MAP_PINNED, -1, 0);
     if (t->stack == (lfiptr) -1) {
         lfi_ctx_free(t->ctx);
-        free(t);
+        thread_dealloc(t);
         return NULL;
     }
     t->stack_size = stacksize;

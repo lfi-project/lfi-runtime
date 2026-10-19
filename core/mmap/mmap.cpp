@@ -165,6 +165,41 @@ bool AddrSpace::query_page(uintptr_t addr, MapInfo *info) const {
   return true;
 }
 
+// The queries below cover every page touched by [addr, addr+len), so 'addr'
+// need not be page aligned. Callers keep addr+len within the address space, so
+// it does not overflow.
+bool AddrSpace::is_mapped(uintptr_t addr, size_t len, int prot,
+                          int excl_flags) const {
+  uint64_t start = to_page(addr);
+  uint64_t end = to_page_ceil(addr + len);
+  uint64_t cursor = start;
+  for (auto &e : regions_.get_overlapping(start, end)) {
+    if (e.start > cursor || (e.val.flags & excl_flags) != 0 ||
+        (e.val.prot & prot) != prot)
+      return false;
+    cursor = e.end;
+  }
+  return cursor >= end;
+}
+
+bool AddrSpace::has_mapping(uintptr_t addr, size_t len, int excl_flags) const {
+  uint64_t start = to_page(addr);
+  uint64_t end = to_page_ceil(addr + len);
+  for (auto &e : regions_.get_overlapping(start, end))
+    if ((e.val.flags & excl_flags) == 0)
+      return true;
+  return false;
+}
+
+bool AddrSpace::has_flags(uintptr_t addr, size_t len, int flags) const {
+  uint64_t start = to_page(addr);
+  uint64_t end = to_page_ceil(addr + len);
+  for (auto &e : regions_.get_overlapping(start, end))
+    if ((e.val.flags & flags) != 0)
+      return true;
+  return false;
+}
+
 Error AddrSpace::protect(uintptr_t addr, size_t len, int prot, UpdateFn ufn) {
   uint64_t pagesize = 1ULL << p2pagesize_;
   if (addr % pagesize != 0 || len == 0)
