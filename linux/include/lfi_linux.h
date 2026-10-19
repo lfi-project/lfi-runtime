@@ -21,6 +21,13 @@ struct LFILinuxOptions {
     // that use unsupported syscalls to crash.
     bool exit_unknown_syscalls;
 
+    // Pass a fixed set of system calls (file I/O, filesystem, time, and
+    // resource queries) directly through to the host without checking them,
+    // and stub out signals (UNSAFE). This is meant for testing and benchmarking programs that need more than
+    // the runtime supports, such as SPEC. Requires a runtime built with
+    // -Dlinux_full=true on a Linux host; lfi_linux_new fails otherwise.
+    bool sys_passthrough;
+
     // Enable debugger support by hooking into the _r_debug symbol.
     bool debug;
 

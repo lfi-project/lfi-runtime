@@ -7,10 +7,19 @@
 #include "cases.h"
 
 #include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/sysinfo.h>
+#include <sys/time.h>
+#include <sys/uio.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifndef PROT_SEM
@@ -616,6 +625,617 @@ case_mremap_grow(void)
     return 0;
 }
 
+// The passthrough cases below make their scratch files in /tmp. The native
+// run and the sandboxed run are different processes (the sandbox runs in the
+// test driver), so a name that includes the pid is unique to each run.
+static void
+tmp_path(char *buf, const char *tag)
+{
+    static const char prefix[] = "/tmp/lfi-syscall-test-";
+    size_t n = 0;
+    for (size_t i = 0; prefix[i]; i++)
+        buf[n++] = prefix[i];
+    long pid = SYSCALL(SYS_getpid);
+    char digits[24];
+    size_t nd = 0;
+    do {
+        digits[nd++] = '0' + (char) (pid % 10);
+        pid /= 10;
+    } while (pid > 0);
+    while (nd > 0)
+        buf[n++] = digits[--nd];
+    buf[n++] = '-';
+    for (size_t i = 0; tag[i]; i++)
+        buf[n++] = tag[i];
+    buf[n] = '\0';
+}
+
+#define TMP_PATH_MAX 64
+
+static long
+tmp_create(char *path, const char *tag, int flags)
+{
+    tmp_path(path, tag);
+    return SYSCALL(SYS_openat, AT_FDCWD, path, flags | O_CREAT | O_TRUNC,
+        0600);
+}
+
+static void
+tmp_remove(long fd, const char *path)
+{
+    SYSCALL(SYS_close, fd);
+    SYSCALL(SYS_unlinkat, AT_FDCWD, path, 0);
+}
+
+static int
+bytes_equal(const void *a, const void *b, size_t n)
+{
+    const unsigned char *x = a, *y = b;
+    for (size_t i = 0; i < n; i++)
+        if (x[i] != y[i])
+            return 0;
+    return 1;
+}
+
+static const char file_msg[] = "hello from the sandbox";
+
+// Fills a file with one page of a byte pattern.
+static long
+fill_page(long fd, unsigned char v)
+{
+    unsigned char buf[256];
+    for (size_t i = 0; i < sizeof(buf); i++)
+        buf[i] = v;
+    for (size_t off = 0; off < PAGE; off += sizeof(buf)) {
+        long r = SYSCALL(SYS_write, fd, buf, sizeof(buf));
+        if (r != (long) sizeof(buf))
+            return r < 0 ? r : -EIO;
+    }
+    return 0;
+}
+
+long
+case_mmap_file_badfd(void)
+{
+    long p = SYSCALL(SYS_mmap, 0, PAGE, PROT_READ, MAP_PRIVATE, 1 << 30, 0L);
+    if (p < 0)
+        return p;
+    unmap(p, PAGE);
+    return 1;
+}
+
+// A private file mapping shows the file's contents.
+long
+case_mmap_file_private(void)
+{
+    char path[TMP_PATH_MAX];
+    long fd = tmp_create(path, "mmap-private", O_RDWR);
+    if (fd < 0)
+        return fd;
+    long ret = fill_page(fd, 0x5a);
+    if (ret == 0) {
+        long p = SYSCALL(SYS_mmap, 0, PAGE, PROT_READ, MAP_PRIVATE, fd, 0L);
+        if (p < 0) {
+            ret = p;
+        } else {
+            const volatile unsigned char *q = (const volatile unsigned char *) p;
+            for (size_t i = 0; i < PAGE; i++)
+                if (q[i] != 0x5a)
+                    ret = 1;
+            unmap(p, PAGE);
+        }
+    }
+    tmp_remove(fd, path);
+    return ret;
+}
+
+// Stores through a shared file mapping reach the file.
+long
+case_mmap_file_shared(void)
+{
+    char path[TMP_PATH_MAX];
+    long fd = tmp_create(path, "mmap-shared", O_RDWR);
+    if (fd < 0)
+        return fd;
+    long ret = fill_page(fd, 0);
+    if (ret == 0) {
+        long p = SYSCALL(SYS_mmap, 0, PAGE, PROT_READ | PROT_WRITE, MAP_SHARED,
+            fd, 0L);
+        if (p < 0) {
+            ret = p;
+        } else {
+            *(volatile unsigned char *) p = 0x77;
+            unmap(p, PAGE);
+            unsigned char c = 0;
+            if (SYSCALL(SYS_lseek, fd, 0, SEEK_SET) != 0)
+                ret = 1;
+            else if (SYSCALL(SYS_read, fd, &c, 1) != 1)
+                ret = 2;
+            else if (c != 0x77)
+                ret = 3;
+        }
+    }
+    tmp_remove(fd, path);
+    return ret;
+}
+
+// Mapping a file that is not open for reading fails.
+long
+case_mmap_file_wronly(void)
+{
+    char path[TMP_PATH_MAX];
+    long fd = tmp_create(path, "mmap-wronly", O_WRONLY);
+    if (fd < 0)
+        return fd;
+    long p = SYSCALL(SYS_mmap, 0, PAGE, PROT_READ, MAP_PRIVATE, fd, 0L);
+    tmp_remove(fd, path);
+    if (p < 0)
+        return p;
+    unmap(p, PAGE);
+    return 1;
+}
+
+// A directory cannot be mapped.
+long
+case_mmap_file_dir(void)
+{
+    long fd = SYSCALL(SYS_openat, AT_FDCWD, "/", O_RDONLY | O_DIRECTORY);
+    if (fd < 0)
+        return fd;
+    long p = SYSCALL(SYS_mmap, 0, PAGE, PROT_READ, MAP_PRIVATE, fd, 0L);
+    SYSCALL(SYS_close, fd);
+    if (p < 0)
+        return p;
+    unmap(p, PAGE);
+    return 1;
+}
+
+// An O_PATH descriptor is not a valid descriptor for mmap.
+long
+case_mmap_file_opath(void)
+{
+    char path[TMP_PATH_MAX];
+    long fd = tmp_create(path, "mmap-opath", O_RDWR);
+    if (fd < 0)
+        return fd;
+    long ret = fill_page(fd, 0);
+    if (ret == 0) {
+        long pfd = SYSCALL(SYS_openat, AT_FDCWD, path, O_PATH);
+        if (pfd < 0) {
+            ret = pfd;
+        } else {
+            ret = SYSCALL(SYS_mmap, 0, PAGE, PROT_READ, MAP_PRIVATE, pfd, 0L);
+            if (ret >= 0) {
+                unmap(ret, PAGE);
+                ret = 1;
+            }
+            SYSCALL(SYS_close, pfd);
+        }
+    }
+    tmp_remove(fd, path);
+    return ret;
+}
+
+// A negative offset is past the largest file offset.
+long
+case_mmap_file_bad_offset(void)
+{
+    char path[TMP_PATH_MAX];
+    long fd = tmp_create(path, "mmap-offset", O_RDWR);
+    if (fd < 0)
+        return fd;
+    long ret = fill_page(fd, 0);
+    if (ret == 0) {
+        ret = SYSCALL(SYS_mmap, 0, PAGE, PROT_READ, MAP_PRIVATE, fd,
+            -(long) PAGE);
+        if (ret >= 0) {
+            unmap(ret, PAGE);
+            ret = 1;
+        }
+    }
+    tmp_remove(fd, path);
+    return ret;
+}
+
+// A MAP_FIXED file mapping that fails leaves the old mapping in place.
+long
+case_mmap_file_fixed_keeps(void)
+{
+    long fd = SYSCALL(SYS_openat, AT_FDCWD, "/", O_RDONLY | O_DIRECTORY);
+    if (fd < 0)
+        return fd;
+    long p = map_anon(PAGE, PROT_READ | PROT_WRITE, 0, -1, 0);
+    if (p < 0) {
+        SYSCALL(SYS_close, fd);
+        return p;
+    }
+    *(volatile unsigned char *) p = 0x3c;
+    long ret = SYSCALL(SYS_mmap, p, PAGE, PROT_READ, MAP_PRIVATE | MAP_FIXED,
+        fd, 0L);
+    SYSCALL(SYS_close, fd);
+    if (ret >= 0) {
+        ret = 1;
+    } else if (SYSCALL(SYS_mprotect, p, PAGE, PROT_READ | PROT_WRITE) != 0) {
+        // Checked first so a removed mapping is reported, not faulted on.
+        ret = 2;
+    } else if (*(volatile unsigned char *) p != 0x3c) {
+        ret = 3;
+    }
+    unmap(p, PAGE);
+    return ret;
+}
+
+// Data written to a file reads back, and the offset moves as expected.
+long
+case_file_rw(void)
+{
+    char path[TMP_PATH_MAX];
+    long fd = tmp_create(path, "rw", O_RDWR);
+    if (fd < 0)
+        return fd;
+    char buf[sizeof(file_msg)] = { 0 };
+    long ret = 0;
+    if (SYSCALL(SYS_write, fd, file_msg, sizeof(file_msg)) != sizeof(file_msg))
+        ret = 1;
+    else if (SYSCALL(SYS_lseek, fd, 0, SEEK_SET) != 0)
+        ret = 2;
+    else if (SYSCALL(SYS_read, fd, buf, sizeof(buf)) != sizeof(buf))
+        ret = 3;
+    else if (!bytes_equal(buf, file_msg, sizeof(file_msg)))
+        ret = 4;
+    else if (SYSCALL(SYS_lseek, fd, 0, SEEK_END) != sizeof(file_msg))
+        ret = 5;
+    else if (SYSCALL(SYS_read, fd, buf, sizeof(buf)) != 0)
+        ret = 6;
+    tmp_remove(fd, path);
+    return ret;
+}
+
+// Vectored I/O, which musl uses for all stdio.
+long
+case_file_readv_writev(void)
+{
+    char path[TMP_PATH_MAX];
+    long fd = tmp_create(path, "iov", O_RDWR);
+    if (fd < 0)
+        return fd;
+    struct iovec out[2] = {
+        { (void *) file_msg, 5 },
+        { (void *) (file_msg + 5), sizeof(file_msg) - 5 },
+    };
+    char a[3], b[sizeof(file_msg) - 3];
+    struct iovec in[2] = { { a, sizeof(a) }, { b, sizeof(b) } };
+    long ret = 0;
+    if (SYSCALL(SYS_writev, fd, out, 2) != sizeof(file_msg))
+        ret = 1;
+    else if (SYSCALL(SYS_lseek, fd, 0, SEEK_SET) != 0)
+        ret = 2;
+    else if (SYSCALL(SYS_readv, fd, in, 2) != sizeof(file_msg))
+        ret = 3;
+    else if (!bytes_equal(a, file_msg, sizeof(a)) ||
+        !bytes_equal(b, file_msg + sizeof(a), sizeof(b)))
+        ret = 4;
+    tmp_remove(fd, path);
+    return ret;
+}
+
+long
+case_file_stat(void)
+{
+    char path[TMP_PATH_MAX];
+    long fd = tmp_create(path, "stat", O_RDWR);
+    if (fd < 0)
+        return fd;
+    struct stat st;
+    long ret = 0;
+    if (SYSCALL(SYS_write, fd, file_msg, sizeof(file_msg)) != sizeof(file_msg))
+        ret = 1;
+    else if (SYSCALL(SYS_fstat, fd, &st) != 0)
+        ret = 2;
+    else if (st.st_size != sizeof(file_msg) || !S_ISREG(st.st_mode))
+        ret = 3;
+    else if (SYSCALL(SYS_newfstatat, AT_FDCWD, path, &st, 0) != 0)
+        ret = 4;
+    else if (st.st_size != sizeof(file_msg))
+        ret = 5;
+    else if (SYSCALL(SYS_faccessat, AT_FDCWD, path, R_OK | W_OK) != 0)
+        ret = 6;
+    tmp_remove(fd, path);
+    if (ret != 0)
+        return ret;
+    // Existence checks on a file that is gone.
+    if (SYSCALL(SYS_faccessat, AT_FDCWD, path, F_OK) != -ENOENT)
+        return 7;
+    if (SYSCALL(SYS_newfstatat, AT_FDCWD, path, &st, 0) != -ENOENT)
+        return 8;
+    return 0;
+}
+
+static long
+rename_moves(const char *from, const char *to, long r)
+{
+    if (r != 0)
+        return r < 0 ? r : 1;
+    if (SYSCALL(SYS_faccessat, AT_FDCWD, from, F_OK) != -ENOENT)
+        return 2;
+    if (SYSCALL(SYS_faccessat, AT_FDCWD, to, F_OK) != 0)
+        return 3;
+    return 0;
+}
+
+long
+case_file_rename(void)
+{
+    char a[TMP_PATH_MAX], b[TMP_PATH_MAX];
+    long fd = tmp_create(a, "rename-a", O_RDWR);
+    if (fd < 0)
+        return fd;
+    tmp_path(b, "rename-b");
+    long ret = 0;
+#ifdef SYS_renameat
+    ret = rename_moves(a, b,
+        SYSCALL(SYS_renameat, AT_FDCWD, a, AT_FDCWD, b));
+#endif
+    if (ret == 0)
+        ret = rename_moves(b, a,
+            SYSCALL(SYS_renameat2, AT_FDCWD, b, AT_FDCWD, a, 0));
+    tmp_remove(fd, a);
+    SYSCALL(SYS_unlinkat, AT_FDCWD, b, 0);
+    return ret;
+}
+
+// readlink on a regular file fails with EINVAL (xalancbmk relies on this).
+long
+case_file_readlink_regular(void)
+{
+    char path[TMP_PATH_MAX];
+    long fd = tmp_create(path, "readlink", O_RDWR);
+    if (fd < 0)
+        return fd;
+    char buf[64];
+    long r = SYSCALL(SYS_readlinkat, AT_FDCWD, path, buf, sizeof(buf));
+    tmp_remove(fd, path);
+    return r;
+}
+
+long
+case_file_dup_fcntl(void)
+{
+    char path[TMP_PATH_MAX];
+    long fd = tmp_create(path, "dup", O_RDWR);
+    if (fd < 0)
+        return fd;
+    const long nfd = 200;
+    long ret = 0;
+    if (SYSCALL(SYS_dup3, fd, nfd, 0) != nfd)
+        ret = 1;
+    else if ((SYSCALL(SYS_fcntl, nfd, F_GETFL) & O_ACCMODE) != O_RDWR)
+        ret = 2;
+    else if (SYSCALL(SYS_fcntl, nfd, F_SETFD, FD_CLOEXEC) != 0)
+        ret = 3;
+    else if (SYSCALL(SYS_fcntl, nfd, F_GETFD) != FD_CLOEXEC)
+        ret = 4;
+    else if (SYSCALL(SYS_dup3, fd, fd, 0) != -EINVAL)
+        ret = 5;
+    SYSCALL(SYS_close, nfd);
+    tmp_remove(fd, path);
+    return ret;
+}
+
+// musl checks whether stdout is a tty with TIOCGWINSZ.
+long
+case_file_ioctl_notty(void)
+{
+    char path[TMP_PATH_MAX];
+    long fd = tmp_create(path, "ioctl", O_RDWR);
+    if (fd < 0)
+        return fd;
+    struct winsize ws;
+    long r = SYSCALL(SYS_ioctl, fd, TIOCGWINSZ, &ws);
+    tmp_remove(fd, path);
+    return r;
+}
+
+static long
+cwd_is(const char *want)
+{
+    char buf[4096];
+    long n = SYSCALL(SYS_getcwd, buf, sizeof(buf));
+    if (n < 0)
+        return n;
+    size_t len = 0;
+    while (want[len])
+        len++;
+    return n == (long) len + 1 && bytes_equal(buf, want, len + 1) ? 0 : 1;
+}
+
+long
+case_cwd_chdir(void)
+{
+    char old[4096];
+    long n = SYSCALL(SYS_getcwd, old, sizeof(old));
+    if (n < 0)
+        return n;
+    long r = SYSCALL(SYS_chdir, "/");
+    if (r < 0)
+        return r;
+    long ret = cwd_is("/") == 0 ? 0 : 1;
+    if (SYSCALL(SYS_chdir, old) != 0)
+        return 2;
+    if (ret == 0 && cwd_is(old) != 0)
+        ret = 3;
+    return ret;
+}
+
+long
+case_getdents64(void)
+{
+    long fd = SYSCALL(SYS_openat, AT_FDCWD, "/", O_RDONLY | O_DIRECTORY);
+    if (fd < 0)
+        return fd;
+    _Alignas(8) char buf[4096];
+    long n = SYSCALL(SYS_getdents64, fd, buf, sizeof(buf));
+    SYSCALL(SYS_close, fd);
+    if (n < 0)
+        return n;
+    // The first record is at least a header and a one byte name.
+    unsigned short reclen = *(unsigned short *) (buf + 16);
+    if (n < 20 || reclen < 20 || reclen > n)
+        return 1;
+    return 0;
+}
+
+long
+case_umask(void)
+{
+    long old = SYSCALL(SYS_umask, 027);
+    if (old < 0)
+        return old;
+    long r = SYSCALL(SYS_umask, old);
+    return r == 027 ? 0 : 1;
+}
+
+static long
+clock_ok(clockid_t id)
+{
+    struct timespec ts = { -1, -1 };
+    long r = SYSCALL(SYS_clock_gettime, id, &ts);
+    if (r != 0)
+        return r < 0 ? r : 1;
+    return ts.tv_sec >= 0 && ts.tv_nsec >= 0 && ts.tv_nsec < 1000000000 ? 0 :
+                                                                       2;
+}
+
+// There is no vDSO in the sandbox, so every clock is a syscall.
+long
+case_clock_gettime(void)
+{
+    long r;
+    if ((r = clock_ok(CLOCK_REALTIME)) != 0)
+        return r;
+    if ((r = clock_ok(CLOCK_MONOTONIC)) != 0)
+        return r;
+    if ((r = clock_ok(CLOCK_PROCESS_CPUTIME_ID)) != 0)
+        return r;
+    struct timespec ts;
+    if (SYSCALL(SYS_clock_gettime, 1000, &ts) != -EINVAL)
+        return 3;
+    return 0;
+}
+
+long
+case_gettimeofday(void)
+{
+    struct timeval tv = { 0, -1 };
+    long r = SYSCALL(SYS_gettimeofday, &tv, 0);
+    if (r != 0)
+        return r < 0 ? r : 1;
+    return tv.tv_sec > 0 && tv.tv_usec >= 0 && tv.tv_usec < 1000000 ? 0 : 2;
+}
+
+long
+case_resources(void)
+{
+    struct rusage ru;
+    long r = SYSCALL(SYS_getrusage, RUSAGE_SELF, &ru);
+    if (r != 0)
+        return r < 0 ? r : 1;
+    // 502.gcc_r only reads limits.
+    uint64_t lim[2] = { 0, 0 };
+    r = SYSCALL(SYS_prlimit64, 0, RLIMIT_AS, 0, lim);
+    if (r != 0)
+        return r < 0 ? r : 2;
+    if (lim[0] > lim[1])
+        return 3;
+    struct sysinfo si;
+    r = SYSCALL(SYS_sysinfo, &si);
+    if (r != 0)
+        return r < 0 ? r : 4;
+    return si.totalram > 0 ? 0 : 5;
+}
+
+// The kernel's struct sigaction with a 64-signal mask.
+struct ksigaction {
+    uintptr_t handler;
+    unsigned long flags;
+    uintptr_t restorer;
+    uint64_t mask;
+};
+
+// Querying an untouched signal reports SIG_DFL, and installing and resetting
+// a disposition succeeds. The runtime's stub does not remember dispositions,
+// so the case does not read one back after setting it.
+long
+case_rt_sigaction(void)
+{
+    struct ksigaction old;
+    for (size_t i = 0; i < sizeof(old); i++)
+        ((volatile char *) &old)[i] = 0x55;
+    long r = SYSCALL(SYS_rt_sigaction, SIGUSR2, 0, &old, 8);
+    if (r != 0)
+        return r < 0 ? r : 1;
+    if (old.handler != (uintptr_t) SIG_DFL || old.mask != 0)
+        return 2;
+    struct ksigaction act = { (uintptr_t) SIG_IGN, 0, 0, 0 };
+    if (SYSCALL(SYS_rt_sigaction, SIGUSR2, &act, 0, 8) != 0)
+        return 3;
+    act.handler = (uintptr_t) SIG_DFL;
+    if (SYSCALL(SYS_rt_sigaction, SIGUSR2, &act, 0, 8) != 0)
+        return 4;
+    return 0;
+}
+
+long
+case_rt_sigaction_invalid(void)
+{
+    struct ksigaction act = { (uintptr_t) SIG_IGN, 0, 0, 0 };
+    struct ksigaction old;
+    long r = SYSCALL(SYS_rt_sigaction, SIGUSR2, 0, &old, 4);
+    if (r != -EINVAL)
+        return r < 0 ? r : 1;
+    if (SYSCALL(SYS_rt_sigaction, 0, 0, &old, 8) != -EINVAL)
+        return 2;
+    if (SYSCALL(SYS_rt_sigaction, 65, 0, &old, 8) != -EINVAL)
+        return 3;
+    if (SYSCALL(SYS_rt_sigaction, SIGKILL, &act, 0, 8) != -EINVAL)
+        return 4;
+    // Querying SIGKILL is allowed.
+    if (SYSCALL(SYS_rt_sigaction, SIGKILL, 0, &old, 8) != 0)
+        return 5;
+    return 0;
+}
+
+// Blocking and restoring a signal succeeds and invalid arguments are refused.
+// The runtime's stub does not track the mask, so its contents are not
+// checked.
+long
+case_rt_sigprocmask(void)
+{
+    uint64_t set = 1ULL << (SIGUSR2 - 1), old = 0;
+    long r = SYSCALL(SYS_rt_sigprocmask, SIG_BLOCK, &set, &old, 8);
+    if (r != 0)
+        return r < 0 ? r : 1;
+    if (SYSCALL(SYS_rt_sigprocmask, SIG_SETMASK, &old, 0, 8) != 0)
+        return 2;
+    if (SYSCALL(SYS_rt_sigprocmask, SIG_BLOCK, 0, &old, 8) != 0)
+        return 3;
+    if (SYSCALL(SYS_rt_sigprocmask, 99, &set, 0, 8) != -EINVAL)
+        return 4;
+    if (SYSCALL(SYS_rt_sigprocmask, SIG_BLOCK, 0, &old, 4) != -EINVAL)
+        return 5;
+    return 0;
+}
+
+// The caller's tid is positive.
+long
+case_gettid(void)
+{
+    long tid = SYSCALL(SYS_gettid);
+    if (tid < 0)
+        return tid;
+    return tid > 0 ? 0 : 1;
+}
+
 // Linux returns the caller's tid, which is positive. A runtime that ignores
 // the call returns 0, which this case reports as 1.
 long
@@ -732,6 +1352,44 @@ case_arch_prctl_get_fs(void)
     if (r < 0)
         return r;
     return fs == thread_pointer() ? 0 : 1;
+}
+
+// The non-*at path syscalls, which musl uses on x86-64.
+long
+case_legacy_paths(void)
+{
+    char a[TMP_PATH_MAX], b[TMP_PATH_MAX];
+    tmp_path(a, "legacy-a");
+    tmp_path(b, "legacy-b");
+    long fd = SYSCALL(SYS_open, a, O_RDWR | O_CREAT | O_TRUNC, 0600);
+    if (fd < 0)
+        return fd;
+    struct stat st;
+    char buf[64];
+    long ret = 0;
+    if (SYSCALL(SYS_stat, a, &st) != 0 || !S_ISREG(st.st_mode))
+        ret = 1;
+    else if (SYSCALL(SYS_lstat, a, &st) != 0 || !S_ISREG(st.st_mode))
+        ret = 2;
+    else if (SYSCALL(SYS_access, a, R_OK | W_OK) != 0)
+        ret = 3;
+    else if (SYSCALL(SYS_readlink, a, buf, sizeof(buf)) != -EINVAL)
+        ret = 4;
+    else if (SYSCALL(SYS_dup2, fd, 201) != 201)
+        ret = 5;
+    else if (SYSCALL(SYS_rename, a, b) != 0)
+        ret = 6;
+    else if (SYSCALL(SYS_access, a, F_OK) != -ENOENT)
+        ret = 7;
+    else if (SYSCALL(SYS_unlink, b) != 0)
+        ret = 8;
+    else if (SYSCALL(SYS_stat, b, &st) != -ENOENT)
+        ret = 9;
+    SYSCALL(SYS_close, 201);
+    SYSCALL(SYS_close, fd);
+    SYSCALL(SYS_unlink, a);
+    SYSCALL(SYS_unlink, b);
+    return ret;
 }
 
 #endif

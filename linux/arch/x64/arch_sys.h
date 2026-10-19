@@ -54,6 +54,8 @@
 #define LINUX_SYS_chown             92
 #define LINUX_SYS_fchown            93
 #define LINUX_SYS_lchown            94
+#define LINUX_SYS_umask             95
+#define LINUX_SYS_gettimeofday      96
 #define LINUX_SYS_getrlimit         97
 #define LINUX_SYS_getrusage         98
 #define LINUX_SYS_sysinfo           99
@@ -86,7 +88,9 @@
 #define LINUX_SYS_faccessat         269
 #define LINUX_SYS_set_robust_list   273
 #define LINUX_SYS_utimensat         280
+#define LINUX_SYS_dup3              292
 #define LINUX_SYS_prlimit64         302
+#define LINUX_SYS_renameat2         316
 #define LINUX_SYS_getrandom         318
 #define LINUX_SYS_membarrier        324
 #define LINUX_SYS_statx             332

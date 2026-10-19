@@ -1,6 +1,7 @@
 // Differential syscall tests: runs each case in cases.c natively and inside
 // an LFI sandbox and compares the results (see cases.h for the expectations
-// of each configuration). Output is TAP.
+// of each configuration). In the full configuration the cases run a second
+// time in passthrough mode. Output is TAP.
 
 #include "cases.h"
 #include "lfi_arch.h"
@@ -29,9 +30,11 @@ struct Case {
     long (*host)(void);
     long expect_minimal;
     long expect_full;
+    long expect_passthrough;
 };
 
-#define CASE_ENTRY(name, min, full) { "case_" #name, case_##name, min, full },
+#define CASE_ENTRY(name, min, full, pass) \
+    { "case_" #name, case_##name, min, full, pass },
 static const struct Case cases[] = {
     SYSCALL_CASES(CASE_ENTRY)
     SYSCALL_CASES_ARCH(CASE_ENTRY)
@@ -90,7 +93,7 @@ readfile(const char *path)
 }
 
 static struct LFILinuxEngine *
-make_engine(struct LFIEngine *engine)
+make_engine(struct LFIEngine *engine, bool passthrough)
 {
     // Unknown syscalls must come back as ENOSYS rather than killing the
     // process, since several cases test exactly that.
@@ -98,6 +101,7 @@ make_engine(struct LFIEngine *engine)
         (struct LFILinuxOptions) {
             .stacksize = mb(2),
             .exit_unknown_syscalls = false,
+            .sys_passthrough = passthrough,
         });
 }
 
@@ -148,11 +152,12 @@ host_result(const struct Case *c)
 }
 
 static long
-expected(const struct Case *c)
+expected(const struct Case *c, bool passthrough)
 {
 #ifdef LINUX_FULL
-    long e = c->expect_full;
+    long e = passthrough ? c->expect_passthrough : c->expect_full;
 #else
+    (void) passthrough;
     long e = c->expect_minimal;
 #endif
     if (e == LINUX)
@@ -161,11 +166,11 @@ expected(const struct Case *c)
 }
 
 static void
-run_cases(const char *libpath)
+run_cases(const char *libpath, bool passthrough)
 {
     struct Buf lib = readfile(libpath);
     struct LFIEngine *engine = make_lfi();
-    struct LFILinuxEngine *linux_ = make_engine(engine);
+    struct LFILinuxEngine *linux_ = make_engine(engine, passthrough);
     assert(linux_);
 
     struct LFILinuxProc *proc = lfi_proc_new(linux_);
@@ -189,15 +194,18 @@ run_cases(const char *libpath)
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
         const struct Case *c = &cases[i];
+        char name[128];
+        snprintf(name, sizeof(name), "%s%s", passthrough ? "passthrough/" : "",
+            c->name);
         lfiptr fn = lfi_proc_sym(proc, c->name);
         if (!fn) {
-            report(c->name, false, 0, 0);
+            report(name, false, 0, 0);
             fprintf(stderr, "%s: not found in sandbox\n", c->name);
             continue;
         }
-        long want = expected(c);
+        long want = expected(c, passthrough);
         long got = LFI_INVOKE(box, ctxp, fn, long, (void));
-        report(c->name, got == want, got, want);
+        report(name, got == want, got, want);
     }
 
     lfi_thread_free(t);
@@ -235,7 +243,7 @@ run_exit_cases(const char *progpath)
         const struct ExitCase *e = &exit_cases[i];
 
         struct LFIEngine *engine = make_lfi();
-        struct LFILinuxEngine *linux_ = make_engine(engine);
+        struct LFILinuxEngine *linux_ = make_engine(engine, false);
         assert(linux_);
         struct LFILinuxProc *proc = lfi_proc_new(linux_);
         assert(proc);
@@ -278,12 +286,18 @@ main(int argc, const char **argv)
         return 1;
     }
 
-    size_t n = sizeof(cases) / sizeof(cases[0]) +
-        sizeof(exit_cases) / sizeof(exit_cases[0]);
+    size_t ncases = sizeof(cases) / sizeof(cases[0]);
+    size_t n = ncases + sizeof(exit_cases) / sizeof(exit_cases[0]);
+#ifdef LINUX_FULL
+    n += ncases;
+#endif
     printf("1..%zu\n", n);
 
-    run_cases(argv[1]);
+    run_cases(argv[1], false);
     run_exit_cases(argv[2]);
+#ifdef LINUX_FULL
+    run_cases(argv[1], true);
+#endif
 
     return nfailed == 0 ? 0 : 1;
 }

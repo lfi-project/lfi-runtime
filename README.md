@@ -13,7 +13,8 @@ The LFI runtime is responsible for loading sandboxes and handling host calls. It
   `linux/hooks.h` (per-proc and per-thread state, plus first look at every
   syscall) and currently adds anonymous `mmap`, `munmap`, and `mprotect`.
   Sandboxed libraries built for it can use the libc allocator instead of
-  minialloc.
+  minialloc. It also provides a passthrough mode for testing and benchmarking
+  (see below).
 * `sbox`: a C++ library for calling sandboxed functions with a lightweight
   tainting API. See [sbox/README.md](sbox/README.md) for details.
 
@@ -41,17 +42,17 @@ experimental support for RISC-V that is in-progress.
 ```
 Usage: lfi-run [OPTION...] INPUT...
 
-  -h, --help                show help
-  -V, --verbose             verbose output
-  --perf                    enable perf support
-  -v, --verify              enable verification
-  -p, --sys-passthrough     pass most system calls directly to the host
-  --pagesize=<int>          system page size
-  --env=<var=val>           set environment variable
-  --dir=<box=host>          map sandbox path to host directory
-  --wd=<dir>                working directory within sandbox
-  -r, --restricted          apply --dir and --wd flags (default is --dir /=/ --wd $PWD for testing)
-  <input>                   input command
+  -h, --help             show help
+  -V, --verbose          verbose output
+  --perf                 enable perf support
+  -v, --verify           enable verification
+  --no-debug             disable debugging support
+  -p, --sys-passthrough  pass file, time, and resource syscalls to the host (UNSAFE, requires linux_full) (default)
+  --no-sys-passthrough   disable --sys-passthrough
+  --no-aslr              disable address space layout randomization
+  --pagesize=<int>       system page size
+  --env=<var=val>        set environment variable
+  <input>                input command
 ```
 
 # Threat Model

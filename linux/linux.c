@@ -9,6 +9,14 @@
 EXPORT struct LFILinuxEngine *
 lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
 {
+#if !defined(LINUX_FULL) || !defined(__linux__)
+    if (opts.sys_passthrough) {
+        ERROR("sys_passthrough requires the full configuration on Linux "
+              "(-Dlinux_full=true)");
+        return NULL;
+    }
+#endif
+
     struct LFILinuxEngine *engine = malloc(sizeof(struct LFILinuxEngine));
     if (!engine)
         return NULL;

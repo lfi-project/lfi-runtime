@@ -6,7 +6,7 @@ endif
 executable(
   'lfi-run',
   files('main.c'),
-  c_args: c_args_warnings,
+  c_args: c_args_warnings + linux_defines,
   dependencies: [lfi_linux],
   link_args: link_args,
   install: true,

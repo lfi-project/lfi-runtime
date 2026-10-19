@@ -56,6 +56,14 @@ readfile(const char *path)
     };
 }
 
+// Passthrough is the default wherever the runtime supports it: in the full
+// configuration on a Linux host.
+#if defined(LINUX_FULL) && defined(__linux__)
+#define PASSTHROUGH_DEFAULT true
+#else
+#define PASSTHROUGH_DEFAULT false
+#endif
+
 static void
 usage(const char *prog_name)
 {
@@ -65,6 +73,9 @@ usage(const char *prog_name)
     printf("  --perf                 enable perf support\n");
     printf("  -v, --verify           enable verification\n");
     printf("  --no-debug             disable debugging support\n");
+    printf("  -p, --sys-passthrough  pass file, time, and resource syscalls to the host (UNSAFE, requires linux_full)%s\n",
+        PASSTHROUGH_DEFAULT ? " (default)" : "");
+    printf("  --no-sys-passthrough   disable --sys-passthrough\n");
     printf("  --no-aslr              disable address space layout randomization\n");
     printf("  --pagesize=<int>       system page size\n");
     printf("  --env=<var=val>        set environment variable\n");
@@ -79,6 +90,7 @@ main(int argc, char **argv)
     bool perf = false;
     bool verify = false;
     bool no_debug = false;
+    bool sys_passthrough = PASSTHROUGH_DEFAULT;
     int pagesize = 0;
     bool no_aslr = false;
     const char **envs = NULL;
@@ -90,6 +102,8 @@ main(int argc, char **argv)
         { "perf", no_argument, 0, 1 },
         { "verify", no_argument, 0, 'v' },
         { "no-debug", no_argument, 0, 2 },
+        { "sys-passthrough", no_argument, 0, 'p' },
+        { "no-sys-passthrough", no_argument, 0, 8 },
         { "pagesize", required_argument, 0, 3 },
         { "env", required_argument, 0, 4 },
         { "no-aslr", no_argument, 0, 7 },
@@ -98,7 +112,7 @@ main(int argc, char **argv)
 
     int opt;
     int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "hVv", long_options,
+    while ((opt = getopt_long(argc, argv, "hVvp", long_options,
                 &option_index)) != -1) {
         switch (opt) {
         case 'h':
@@ -115,6 +129,12 @@ main(int argc, char **argv)
             break;
         case 2:
             no_debug = true;
+            break;
+        case 'p':
+            sys_passthrough = true;
+            break;
+        case 8:
+            sys_passthrough = false;
             break;
         case 3:
             pagesize = atoi(optarg);
@@ -158,6 +178,7 @@ main(int argc, char **argv)
             .stacksize = mb(2),
             .verbose = verbose,
             .exit_unknown_syscalls = true,
+            .sys_passthrough = sys_passthrough,
             .perf = perf,
             .debug = !no_debug,
         });
