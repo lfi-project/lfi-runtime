@@ -221,7 +221,10 @@ run_cases(const char *libpath, bool passthrough)
     munmap(lib.data, lib.size);
 }
 
-// Runs exit_prog natively in a child and returns its exit status.
+// Runs exit_prog natively in a child and returns its exit status. The child
+// re-executes the driver rather than calling exit_prog_main directly: a forked
+// child can inherit helper threads (ThreadSanitizer starts one in every forked
+// child), and then an exit of the main thread would not end the process.
 static int
 host_exit_status(const struct ExitCase *e)
 {
@@ -229,7 +232,7 @@ host_exit_status(const struct ExitCase *e)
     assert(pid >= 0);
     if (pid == 0) {
         char *argv[] = { "exit_prog", (char *) e->code, (char *) e->how, NULL };
-        exit_prog_main(3, argv);
+        execv("/proc/self/exe", argv);
         _exit(97);
     }
     int status;
@@ -290,6 +293,10 @@ run_exit_cases(const char *progpath)
 int
 main(int argc, const char **argv)
 {
+    // Re-executed by host_exit_status.
+    if (argc > 0 && strcmp(argv[0], "exit_prog") == 0)
+        return exit_prog_main(argc, (char **) argv);
+
     if (argc != 3) {
         fprintf(stderr, "usage: %s cases.lfi exit_prog.lfi\n", argv[0]);
         return 1;
@@ -301,6 +308,8 @@ main(int argc, const char **argv)
     n += ncases;
 #endif
     printf("1..%zu\n", n);
+    // Flushed before any fork, so that no child writes it out again.
+    fflush(stdout);
 
     run_cases(argv[1], false);
     run_exit_cases(argv[2]);

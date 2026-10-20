@@ -4,7 +4,7 @@
 // syscalls, or (mode 's') exits the process with exit_group while a second
 // thread is still reading the main thread's stack. Compiled with the LFI
 // toolchain as a sandboxed program, and natively (with HOST_TEST defined) into
-// the test driver, which runs it in a forked child.
+// the test driver, which runs it in a child that re-executes the driver.
 
 #include <pthread.h>
 #include <stdatomic.h>
