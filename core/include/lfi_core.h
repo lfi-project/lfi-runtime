@@ -67,6 +67,9 @@ struct LFIOptions {
     // entry and it is freed when that thread exits. A thread that already has
     // an alternate stack does not get a new one.
     bool no_init_sigaltstack;
+
+    // Make runtime calls only through the context register.
+    bool ctxreg_rtcalls;
 };
 
 struct LFIBoxInfo {
@@ -129,8 +132,9 @@ struct LFIMapInfo {
 // the protection of it. It has no effect on the host mapping.
 #define LFI_MAP_PINNED 0x4000
 
-// Creates a new LFI engine and reserve enough virtual address space for 'n'
-// sandboxes.
+// Creates a new LFI engine and reserves virtual address space for 'n'
+// sandboxes up front. Further sandboxes can still be created: each reserves its
+// own address space when it is created, and gives it back when it is freed.
 struct LFIEngine *
 lfi_new(struct LFIOptions opts, size_t nsandboxes);
 
@@ -446,6 +450,8 @@ enum {
     LFI_ERR_SIGALTSTACK = 5,
     // Error with protection keys.
     LFI_ERR_PKU = 6,
+    // Option not supported in this configuration.
+    LFI_ERR_UNSUPPORTED = 7,
 };
 
 struct LFIInvokeInfo {

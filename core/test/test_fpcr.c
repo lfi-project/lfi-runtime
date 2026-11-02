@@ -87,7 +87,8 @@ set_fpcr(uint64_t v)
 
 static uint64_t cb_fpcr;
 
-static void
+// Unused when FP control switching is disabled.
+__attribute__((unused)) static void
 callback(void)
 {
     cb_fpcr = get_fpcr();
@@ -101,7 +102,8 @@ static uint64_t nest_fpcr;
 
 // A callback that temporarily changes the host's FPCR and invokes the sandbox
 // on the same context while it is changed, then restores it.
-static void
+// Unused when FP control switching is disabled.
+__attribute__((unused)) static void
 nested_callback(void)
 {
     uint64_t saved = get_fpcr();
@@ -115,7 +117,8 @@ static int run_calls;
 static uint64_t run_guest_fpcr;
 
 // Syscall handler for P_RUN: the host's FPCR is loaded while it runs.
-static void
+// Unused when FP control switching is disabled.
+__attribute__((unused)) static void
 run_handler(struct LFIContext *ctx)
 {
     assert(get_fpcr() == HOST_FPCR);

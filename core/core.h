@@ -197,9 +197,12 @@ gb(size_t x)
 
 // Guard sizes for sandbox isolation. These are configurable per-architecture.
 //
-// BOX_INTERNAL_GUARD: space at the end of each sandbox (within the box's
-// allocated size) that is not usable by sandbox code. This reduces the
-// sandbox's usable address range.
+// BOX_INTERNAL_GUARD: space at each end of a sandbox (within the box's
+// allocated size) that is not usable by sandbox code: the usable range is
+// [base + BOX_INTERNAL_GUARD, base + size - BOX_INTERNAL_GUARD). This reduces
+// the sandbox's usable address range. It must be a non-zero multiple of the
+// page size (checked by lfi_new): with densely packed sandboxes, the guard at
+// the top of one sandbox also holds the sys page of the sandbox above it.
 //
 // BOX_EXTERNAL_GUARD: additional space allocated beyond each sandbox's size,
 // increasing the per-sandbox footprint. This provides isolation between
@@ -216,7 +219,7 @@ gb(size_t x)
 
 #elif defined(LFI_ARCH_X64)
 
-#define BOX_INTERNAL_GUARD 0
+#define BOX_INTERNAL_GUARD kb(128)
 #ifdef HAVE_PKU
 #define BOX_EXTERNAL_GUARD 0
 #define REGION_GUARD       0
@@ -231,7 +234,7 @@ gb(size_t x)
 
 #elif defined(LFI_ARCH_RISCV64)
 
-#define BOX_INTERNAL_GUARD 0
+#define BOX_INTERNAL_GUARD kb(128)
 #define BOX_EXTERNAL_GUARD 0
 #define REGION_GUARD       0
 

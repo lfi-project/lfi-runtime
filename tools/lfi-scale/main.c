@@ -202,7 +202,7 @@ usage(const char *prog_name)
     printf("  -h, --help           show help\n");
     printf("  -V, --verbose        verbose output\n");
     printf("  -n, --nsandboxes=N   reserve space for exactly N sandboxes instead of probing\n");
-    printf("  -s, --spawn          after reserving, spawn sandboxes until failure\n");
+    printf("  -s, --spawn          after reserving, spawn sandboxes until failure or the reserved space is used up\n");
     printf("  -v, --verify         enable verification of loaded code\n");
     printf("  --no-run             do not run sandbox initialization (only create and load)\n");
     printf("  --no-load            do not load a program into sandboxes (only create; implies --no-run)\n");
@@ -359,7 +359,9 @@ main(int argc, char **argv)
         NULL,
     };
 
-    // Phase 2: spawn sandboxes until failure, keeping all of them alive.
+    // Phase 2: spawn sandboxes until failure or until the reserved space is
+    // used up, keeping all of them alive. (Sandboxes beyond the reserved ones
+    // would each reserve address space of their own.)
     struct Spawned *spawned = NULL;
     size_t cap = 0;
     size_t count = 0;
@@ -370,7 +372,7 @@ main(int argc, char **argv)
     size_t rss_before = vm_rss();
     uint64_t start = time_ns();
 
-    for (;;) {
+    while (count < nsandboxes) {
         if (count == cap) {
             cap = cap ? cap * 2 : 1024;
             spawned = xrealloc(spawned, cap * sizeof(struct Spawned));

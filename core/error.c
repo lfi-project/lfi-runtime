@@ -30,6 +30,8 @@ name(int err)
         return "pku operation failed";
     case LFI_ERR_SIGALTSTACK:
         return "sigaltstack failed";
+    case LFI_ERR_UNSUPPORTED:
+        return "unsupported option";
     default:
         return "unknown error";
     }

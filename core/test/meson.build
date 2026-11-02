@@ -9,7 +9,7 @@ tests = [
 # Add architecture-specific tests
 if cpu != 'riscv64'
   tests += ['test_trampoline.c', 'test_trampoline_clone.c',
-    'test_callback_abort.c']
+    'test_callback_abort.c', 'test_boxgrow.c', 'test_ctxreg_rtcalls.c']
 endif
 
 # Segue (and thus segue_cache_gs) is x86-64 only.

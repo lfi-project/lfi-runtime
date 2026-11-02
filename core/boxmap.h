@@ -1,24 +1,26 @@
 #pragma once
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
 struct BoxMapOptions {
-    // Size in bytes of the minimum allocatable chunk.
+    // Size in bytes of the minimum allocatable chunk. Spaces are aligned to it.
     size_t chunksize;
-    // Size in bytes to reserve on either end of a region. Must be zero or a
-    // multiple of the chunk size.
-    size_t guardsize;
+    // Size in bytes to keep reserved below and above the allocatable part of
+    // each region. Multiples of the page size.
+    size_t guard_lo;
+    size_t guard_hi;
 };
 
 struct BoxMap;
 
-// boxmap_new creates a new BoxMap structure.
+// boxmap_new creates a new BoxMap structure with no reserved regions.
 struct BoxMap *
 boxmap_new(struct BoxMapOptions opts);
 
-// boxmap_delete frees a BoxMap structure.
+// boxmap_delete unmaps all regions and frees a BoxMap structure.
 void
 boxmap_delete(struct BoxMap *map);
 
@@ -30,29 +32,22 @@ boxmap_size(struct BoxMap *map);
 uint64_t
 boxmap_active(struct BoxMap *map);
 
-// boxmap_reserve reserves 'size' bytes of space in 'map'. If 'size' is 0, it
-// will attempt to reserve as much space as possible, failing only if a
-// minimum amount could not be reserved. Returns false if an error occurred.
+// boxmap_reserve reserves a region with 'size' bytes of allocatable space (a
+// multiple of the chunk size), plus the guards. The region stays reserved
+// until the map is deleted. Returns false if an error occurred.
 bool
 boxmap_reserve(struct BoxMap *map, size_t size);
 
-// boxmap_addspace adds a new space to 'map' of size 'size'. Returns 0 if an
-// error occurred.
+// boxmap_addspace allocates a space of size 'size' (a multiple of the chunk
+// size) in 'map'. If no reserved region has room, it reserves a new region for
+// just this space, which is unmapped again when the space is removed. Returns 0
+// if an error occurred.
 uintptr_t
 boxmap_addspace(struct BoxMap *map, size_t size);
 
 // boxmap_rmspace removes the given space from 'map'.
 void
 boxmap_rmspace(struct BoxMap *map, uintptr_t space, size_t size);
-
-// boxmap_strerror returns a string description when a boxmap function returns
-// an error.
-char *
-boxmap_strerror(void);
-
-enum {
-    ADDR_REGION_MAX = 16,
-};
 
 struct ExtAlloc {
     uintptr_t base;
@@ -63,21 +58,31 @@ struct ExtAlloc {
 };
 
 struct AddrRegion {
+    // Allocatable part of the region.
     void *base;
     size_t size;
     size_t active;
     struct ExtAlloc *alloc;
 
-    // The full span originally reserved for this region.
+    // The span that is mapped for this region: the allocatable part plus the
+    // guards.
     void *mapbase;
     size_t mapsize;
+
+    // Set for regions that boxmap_addspace reserved on demand. These are
+    // unmapped when their last space is removed.
+    bool ondemand;
 };
 
 struct BoxMap {
-    struct AddrRegion regions[ADDR_REGION_MAX];
+    struct AddrRegion *regions;
     size_t nregions;
+    size_t capregions;
 
     struct BoxMapOptions opts;
+
+    // Protects the regions and their allocators.
+    pthread_mutex_t lk;
 };
 
 struct ExtAlloc *

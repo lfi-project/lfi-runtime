@@ -25,6 +25,7 @@ init_verifier(struct LFIVerifier *v, struct LFIOptions *opts)
         v->opts.box = LFI_BOX_FULL;
 
     v->opts.ctxreg = true;
+    v->opts.no_base_rtcalls = opts->ctxreg_rtcalls;
     v->opts.err = logerr;
 
 #if defined(LFI_ARCH_ARM64)
@@ -192,6 +193,23 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
     if (!check_pku())
         return NULL;
 #endif
+    // The usable range of a sandbox ends a whole number of pages before its
+    // end, leaving room for the sys page of a sandbox placed above it.
+    if (opts.pagesize == 0 || BOX_INTERNAL_GUARD < opts.pagesize ||
+        BOX_INTERNAL_GUARD % opts.pagesize != 0) {
+        lfi_error = LFI_ERR_UNSUPPORTED;
+        lfi_error_desc = xasprintf("page size %zu does not divide the %zu-byte "
+                                   "internal sandbox guard",
+            opts.pagesize, (size_t) BOX_INTERNAL_GUARD);
+        return NULL;
+    }
+#if defined(LFI_ARCH_RISCV64)
+    if (opts.ctxreg_rtcalls) {
+        lfi_error = LFI_ERR_UNSUPPORTED;
+        lfi_error_desc = xasprintf("ctxreg_rtcalls is not supported on riscv64");
+        return NULL;
+    }
+#endif
 
     struct LFIEngine *engine = malloc(sizeof(struct LFIEngine));
     if (!engine) {
@@ -199,9 +217,21 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
         return NULL;
     }
 
+    // Every region keeps REGION_GUARD below its first sandbox, and, unless
+    // sandboxes have no sys page (ctxreg_rtcalls), at least a page so that the
+    // first sandbox's sys page is inside the region. Above the last sandbox,
+    // the sandbox's own external guard already provides BOX_EXTERNAL_GUARD of
+    // the region guard.
+    size_t guard_lo = REGION_GUARD;
+    if (!opts.ctxreg_rtcalls && guard_lo < opts.pagesize)
+        guard_lo = opts.pagesize;
+    size_t guard_hi = REGION_GUARD > BOX_EXTERNAL_GUARD ?
+        REGION_GUARD - BOX_EXTERNAL_GUARD :
+        0;
     struct BoxMapOptions bm_opts = (struct BoxMapOptions) {
         .chunksize = gb(4),
-        .guardsize = REGION_GUARD,
+        .guard_lo = guard_lo,
+        .guard_hi = guard_hi,
     };
     struct BoxMap *bm = boxmap_new(bm_opts);
     if (!bm) {
@@ -209,17 +239,15 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
         goto err1;
     }
 
-    // Reserve space for n sandboxes with appropriate footprint, region guards
-    // on each side, and 1 chunk worth of slack because boxmap has to do
-    // internal alignment when mmap returns non-chunk-aligned region.
-    size_t reserve = nsandboxes * box_footprint(opts.boxsize) +
-        bm_opts.chunksize + bm_opts.guardsize * 2;
-
+    // Pre-reserve space for n sandboxes in one region. Sandboxes beyond these
+    // get a region of their own when they are created.
+    size_t reserve = nsandboxes * box_footprint(opts.boxsize);
     if (nsandboxes > 0) {
-        if (!boxmap_reserve(bm, reserve)) {
+        if (reserve / nsandboxes != box_footprint(opts.boxsize) ||
+            !boxmap_reserve(bm, reserve)) {
             lfi_error = LFI_ERR_RESERVE;
-            lfi_error_desc = xasprintf("attempted to reserve %ld bytes",
-                reserve);
+            lfi_error_desc = xasprintf("attempted to reserve %zu bytes",
+                reserve + guard_lo + guard_hi);
             goto err2;
         }
     }
@@ -240,8 +268,9 @@ lfi_new(struct LFIOptions opts, size_t nsandboxes)
 
     init_verifier(&engine->verifier, &opts);
 
-    LOG(engine, "initialized LFI engine: %ld GiB",
-        reserve / 1024 / 1024 / 1024);
+    LOG(engine, "initialized LFI engine: %zu GiB reserved for %zu sandboxes",
+        (reserve + (nsandboxes > 0 ? guard_lo + guard_hi : 0)) / gb(1),
+        nsandboxes);
 
     return engine;
 

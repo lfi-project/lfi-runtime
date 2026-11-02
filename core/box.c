@@ -170,6 +170,8 @@ lfi_box_new(struct LFIEngine *engine)
         goto err1;
     }
 
+    uintptr_t max = base + size - BOX_INTERNAL_GUARD;
+
     int pkey = 0;
 #ifdef HAVE_PKU
     pkey = pkey_alloc(0, 0);
@@ -182,24 +184,21 @@ lfi_box_new(struct LFIEngine *engine)
         goto err2;
     }
     assert(pkey != 0);
-    int r = pkey_mprotect((void *) base, size, PROT_NONE, pkey);
+    int r = pkey_mprotect((void *) base, max - base, PROT_NONE, pkey);
     assert(r == 0);
     pku_host_access();
 #endif
 
-    size_t min_off = BOX_INTERNAL_GUARD > engine->opts.pagesize
-        ? BOX_INTERNAL_GUARD
-        : engine->opts.pagesize;
     *box = (struct LFIBox) {
         .pkey = pkey,
         .base = base,
         .size = size,
         .engine = engine,
-        .min = base + min_off,
-        .max = base + size - BOX_INTERNAL_GUARD,
-        .max_exec = base + size - BOX_INTERNAL_GUARD,
+        .min = base + BOX_INTERNAL_GUARD,
+        .max = max,
+        .max_exec = max,
     };
-    if (!syssetup(box)) {
+    if (!engine->opts.ctxreg_rtcalls && !syssetup(box)) {
         lfi_error = LFI_ERR_MMAP;
 #ifdef HAVE_PKU
         pkey_free(pkey);
@@ -630,9 +629,10 @@ EXPORT void
 lfi_box_free(struct LFIBox *box)
 {
     size_t pagesize = box->engine->opts.pagesize;
-    void *p = mmap((void *) (box->base - pagesize), box->size + pagesize,
-        PROT_NONE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-    assert(p == (void *) (box->base - pagesize));
+    uintptr_t start = box->sys_page ? box->base - pagesize : box->base;
+    void *p = mmap((void *) start, box->max - start, PROT_NONE,
+        MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+    assert(p == (void *) start);
     lfi_box_cb_free(box);
     boxmap_rmspace(box->engine->bm, box->base, box_footprint(box->size));
 #ifdef HAVE_PKU
@@ -723,11 +723,21 @@ static uint8_t ret[] = {
     0xc0, 0x03, 0x3f, 0xd6, // blr x30
 };
 
+static uint8_t ret_ctxreg[] = {
+    0x3e, 0x03, 0x5e, 0xf8, // ldur x30, [x25, #-32]
+    0xc0, 0x03, 0x3f, 0xd6, // blr x30
+};
+
 #elif defined(LFI_ARCH_X64)
 
 static uint8_t ret[] = {
     0x4c, 0x8d, 0x1d, 0x04, 0x00, 0x00, 0x00, // lea 0x4(%rip), %r11
     0x41, 0xff, 0x66, 0xe0,                   // jmp *-0x20(%r14)
+};
+
+static uint8_t ret_ctxreg[] = {
+    0x4c, 0x8d, 0x1d, 0x04, 0x00, 0x00, 0x00, // lea 0x4(%rip), %r11
+    0x41, 0xff, 0x67, 0xe0,                   // jmp *-0x20(%r15)
 };
 
 #elif defined(LFI_ARCH_RISCV64)
@@ -736,6 +746,9 @@ static uint8_t ret[] = {
     0x83, 0xb0, 0x0a, 0xfe, // la ra, -32(x21)
     0xe7, 0x80, 0x00, 0x00, // jalr ra
 };
+
+// ctxreg_rtcalls is unsupported on riscv64.
+#define ret_ctxreg ret
 
 #else
 
@@ -759,7 +772,9 @@ lfi_box_init_ret(struct LFIBox *box)
     memset((void *) lfi_box_l2p(box, p), 0xcc, pagesize);
 #endif
 
-    lfiptr p_ret = lfi_box_copyto(box, p, ret, sizeof(ret));
+    lfiptr p_ret = box->engine->opts.ctxreg_rtcalls ?
+        lfi_box_copyto(box, p, ret_ctxreg, sizeof(ret_ctxreg)) :
+        lfi_box_copyto(box, p, ret, sizeof(ret));
 
     int r = box_mprotect_locked(box, p, pagesize,
         LFI_PROT_READ | LFI_PROT_EXEC, false);

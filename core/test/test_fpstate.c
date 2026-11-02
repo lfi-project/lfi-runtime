@@ -97,7 +97,8 @@ get_fcw(void)
 static uint32_t cb_mxcsr;
 static uint16_t cb_fcw;
 
-static void
+// Unused when FP control switching is disabled.
+__attribute__((unused)) static void
 callback(void)
 {
     cb_mxcsr = get_mxcsr();
@@ -112,7 +113,8 @@ static uint16_t nest_fcw;
 
 // A callback that temporarily changes the host's FP control state and invokes
 // the sandbox on the same context while it is changed, then restores it.
-static void
+// Unused when FP control switching is disabled.
+__attribute__((unused)) static void
 nested_callback(void)
 {
     uint32_t saved_mxcsr = get_mxcsr(), up_mxcsr = 0x5f80;
@@ -133,7 +135,8 @@ static int run_calls;
 static uint16_t run_guest_fcw;
 
 // Syscall handler for P_RUN: the host's state is loaded while it runs.
-static void
+// Unused when FP control switching is disabled.
+__attribute__((unused)) static void
 run_handler(struct LFIContext *ctx)
 {
     assert(get_mxcsr() == run_host_mxcsr);

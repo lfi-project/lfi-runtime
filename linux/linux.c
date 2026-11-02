@@ -43,14 +43,15 @@ lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
 // Global engine for libraries.
 static struct LFILinuxEngine *lib_engine;
 
-// Total number of procs (libraries) that the lib_engine is initialized for.
-#define MAX_LIBRARIES 4
+// Number of procs (libraries) that the lib_engine reserves address space for
+// up front. More can be created; each reserves its own space on demand.
+#define PRERESERVED_LIBRARIES 2
 
 EXPORT bool
 lfi_linux_lib_init(struct LFIOptions opts, struct LFILinuxOptions linux_opts)
 {
     if (!lib_engine) {
-        struct LFIEngine *engine = lfi_new(opts, MAX_LIBRARIES);
+        struct LFIEngine *engine = lfi_new(opts, PRERESERVED_LIBRARIES);
         if (!engine) {
             ERROR("fatal error initializing LFI: %s\n", lfi_errmsg());
             return false;
