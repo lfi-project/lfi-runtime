@@ -10,6 +10,8 @@ lfi_ctx_regs_init(struct LFIContext *ctx)
     ctx->regs.pkey = ctx->box->pkey;
     ctx->regs.fcw = 0x37f;
     ctx->regs.mxcsr = 0x1f80;
+    ctx->regs.host_fcw = 0x37f;
+    ctx->regs.host_mxcsr = 0x1f80;
     ctx->regs.r15 = (uint64_t) ctx->ctxreg;
 }
 

@@ -1734,4 +1734,48 @@ case_legacy_paths(void)
     return ret;
 }
 
+// A raw brk(0) syscall, which only clobbers %rax, %rcx, and %r11.
+#define RAW_BRK0(r) \
+    __asm__ volatile("syscall" : "=a"(r) : "a"((long) SYS_brk), "D"(0L) \
+                     : "rcx", "r11", "memory")
+
+// The x87 control word (precision/rounding) survives a syscall. (The verifier
+// rejects ldmxcsr/stmxcsr, so sandboxed code cannot change MXCSR.)
+long
+case_syscall_keeps_fcw(void)
+{
+    uint16_t saved, set = 0x37f | (2u << 10), got = 0; // round up
+    long r;
+    __asm__ volatile("fnstcw %0" : "=m"(saved));
+    __asm__ volatile("fldcw %0" : : "m"(set));
+    RAW_BRK0(r);
+    __asm__ volatile("fnstcw %0" : "=m"(got));
+    __asm__ volatile("fldcw %0" : : "m"(saved));
+    if (r < 0)
+        return r;
+    return got == set ? 0 : 1;
+}
+
+// All 128 bits of the xmm registers survive a syscall.
+long
+case_syscall_keeps_xmm(void)
+{
+    uint64_t in[2] = { 0x1111111111111111ULL, 0x2222222222222222ULL };
+    uint64_t out[2] = { 0, 0 };
+    long r;
+    __asm__ volatile("movdqu (%3), %%xmm5\n"
+                     "syscall\n"
+                     "movdqu %%xmm5, (%4)\n"
+                     : "=a"(r)
+                     : "a"((long) SYS_brk), "D"(0L), "r"(in), "r"(out)
+                     : "rcx", "r11", "xmm5", "memory");
+    if (r < 0)
+        return r;
+    if (out[0] != in[0])
+        return 1;
+    if (out[1] != in[1])
+        return 2;
+    return 0;
+}
+
 #endif

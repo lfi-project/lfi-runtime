@@ -128,10 +128,11 @@ struct LFIContext {
     // are stored here.
     struct LFIRegs regs;
 
-    // Set to 1 if a lfi_ret_end should be automatically called when returning
-    // from a callback to abort further sandbox execution of the callback.
+    // Set to 1 by lfi_ctx_abort_cb: the next callback to return ends the
+    // invocation that made it instead of resuming the sandbox.
     uint64_t abort_callback;
-    // Set to 1 if the most recent callback was aborted.
+    // Set to 1 if the most recent invocation to return was ended by an aborted
+    // callback (see lfi_ctx_abort_cb_status).
     uint64_t abort_status;
 
 #ifdef SEGUE_CACHE_GS

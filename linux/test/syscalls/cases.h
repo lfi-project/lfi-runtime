@@ -115,7 +115,10 @@
     X(arch_prctl_bad_code, LINUX, LINUX, LINUX)                     \
     X(arch_prctl_get_fs, LINUX, LINUX, LINUX)                       \
     /* passthrough: the legacy path syscalls musl uses on x86-64 */ \
-    X(legacy_paths, -ENOSYS, -ENOSYS, LINUX)
+    X(legacy_paths, -ENOSYS, -ENOSYS, LINUX)                        \
+    /* FP/vector state survives the syscall transition */           \
+    X(syscall_keeps_fcw, LINUX, LINUX, LINUX)                       \
+    X(syscall_keeps_xmm, LINUX, LINUX, LINUX)
 #else
 #define SYSCALL_CASES_ARCH(X)
 #endif

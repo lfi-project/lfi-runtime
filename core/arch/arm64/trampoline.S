@@ -224,6 +224,8 @@ lfi_trampoline_direct:
 
     ldr x25, [x13, REGS_X(25)]
 
+    fpctrl_enter x13, x14, x15
+
 #ifndef STORES_ONLY
     // Zero non-argument registers for full LFI.
     // TODO: calling convention or LFI_INVOKE should enforce that all unused
@@ -242,6 +244,17 @@ lfi_trampoline_direct:
 lfi_ret_end:
     bti jc
     mov REG_BASE, x0
+    // The invocation did not end in an aborted callback.
+    str xzr, [REG_BASE, CTX_ABORT_STATUS]
+    b .lfi_ret_internal
+
+// Return from the invocation after an aborted callback. Like lfi_ret_end, but
+// takes the context in REG_BASE so that the return registers are preserved.
+// abort status.
+.global lfi_ret_abort
+.p2align 4
+lfi_ret_abort:
+    bti jc
     b .lfi_ret_internal
 
 .global lfi_ret
@@ -249,6 +262,11 @@ lfi_ret_end:
 lfi_ret:
     bti jc
     get_ctx REG_BASE
+    fpctrl_exit REG_BASE, x9, x10
+    // The invocation returned normally.
+    str xzr, [REG_BASE, CTX_ABORT_STATUS]
+// lfi_ret_end is only called from host code, where the host's FP control state
+// is already loaded.
 .lfi_ret_internal:
     // restore host stack
     ldr x19, [REG_BASE, REGS_HOST_SP]

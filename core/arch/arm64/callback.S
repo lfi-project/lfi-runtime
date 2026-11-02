@@ -100,6 +100,8 @@
     stp x22, x23, [sp, #-16]!
     // Save current sandbox sp to context.
     str x12, [x9, REGS_SP]
+    fpctrl_exit x9, x10, x11
+    fpctrl_push_host x9, x10
 
     // Save context pointer in callee-saved register.
     mov x22, x9
@@ -110,6 +112,16 @@
     // Restore x18 and x9.
     mov x18, x23
     mov x9, x22
+    fpctrl_pop_host x9, x10
+
+.if \with_struct
+    // Load the return value the callback stored in the context.
+    ldr x0, [x9, #REGS_X(0)]
+    ldr x1, [x9, #REGS_X(1)]
+    ldr x8, [x9, #REGS_X(8)]
+    ldr d0, [x9, #REGS_V(0)]
+    ldr d1, [x9, #REGS_V(1)]
+.endif
 
     // Check if abort_callback is set.
     ldr x10, [x9, CTX_ABORT_CALLBACK]
@@ -120,18 +132,13 @@
     str xzr, [x9, CTX_ABORT_CALLBACK]
     mov x10, #1
     str x10, [x9, CTX_ABORT_STATUS]
-    // Call lfi_ret_end with ctx as argument.
-    mov x0, x9
-    bl lfi_ret_end
+    // Point REGS_HOST_SP back at the host stack the trampoline saved.
+    add x10, sp, #32
+    str x10, [x9, REGS_HOST_SP]
+    // Return from the invocation, keeping the callback's return value.
+    mov REG_BASE, x9
+    b lfi_ret_abort
 1:
-
-.if \with_struct
-    ldr x0, [x9, #REGS_X(0)]
-    ldr x1, [x9, #REGS_X(1)]
-    ldr x8, [x9, #REGS_X(8)]
-    ldr d0, [x9, #REGS_V(0)]
-    ldr d1, [x9, #REGS_V(1)]
-.endif
 
     // Restore the sandbox's callee-saved x22/x23.
     ldp x22, x23, [sp], 16
@@ -146,6 +153,8 @@
     str x11, [x9, REGS_HOST_SP]
     // Restore sp to current sandbox sp.
     mov sp, x12
+
+    fpctrl_resume x9, x11, x12
 
 #ifndef STORES_ONLY
     zero_caller_regs

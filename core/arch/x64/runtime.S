@@ -37,8 +37,7 @@ lfi_ctx_entry:
     seg_gs_set %rdi, %r15
 #endif
     movq REGS_R15(%rdi), %r15
-    fldcw REGS_FCW(%rdi)
-    ldmxcsr REGS_MXCSR(%rdi)
+    fpctrl_enter %rdi
 
 #ifdef HAVE_PKU
     // enabling PKU clobbers %rcx, %rdx, %rax
@@ -112,31 +111,33 @@ lfi_syscall_entry:
     movq %r9,  REGS_R9(%rcx)
     movq %r10, REGS_R10(%rcx)
     movq %r11, REGS_R11(%rcx)
-    fnstcw REGS_FCW(%rcx)
-    movq %xmm0, REGS_XMM(0)(%rcx)
-    movq %xmm1, REGS_XMM(1)(%rcx)
-    movq %xmm2, REGS_XMM(2)(%rcx)
-    movq %xmm3, REGS_XMM(3)(%rcx)
-    movq %xmm4, REGS_XMM(4)(%rcx)
-    movq %xmm5, REGS_XMM(5)(%rcx)
-    movq %xmm6, REGS_XMM(6)(%rcx)
-    movq %xmm7, REGS_XMM(7)(%rcx)
-    movq %xmm8, REGS_XMM(8)(%rcx)
-    movq %xmm9, REGS_XMM(9)(%rcx)
-    movq %xmm10, REGS_XMM(10)(%rcx)
-    movq %xmm11, REGS_XMM(11)(%rcx)
-    movq %xmm12, REGS_XMM(12)(%rcx)
-    movq %xmm13, REGS_XMM(13)(%rcx)
-    movq %xmm14, REGS_XMM(14)(%rcx)
-    movq %xmm15, REGS_XMM(15)(%rcx)
+    fpctrl_exit %rcx
+    movdqu %xmm0, REGS_XMM(0)(%rcx)
+    movdqu %xmm1, REGS_XMM(1)(%rcx)
+    movdqu %xmm2, REGS_XMM(2)(%rcx)
+    movdqu %xmm3, REGS_XMM(3)(%rcx)
+    movdqu %xmm4, REGS_XMM(4)(%rcx)
+    movdqu %xmm5, REGS_XMM(5)(%rcx)
+    movdqu %xmm6, REGS_XMM(6)(%rcx)
+    movdqu %xmm7, REGS_XMM(7)(%rcx)
+    movdqu %xmm8, REGS_XMM(8)(%rcx)
+    movdqu %xmm9, REGS_XMM(9)(%rcx)
+    movdqu %xmm10, REGS_XMM(10)(%rcx)
+    movdqu %xmm11, REGS_XMM(11)(%rcx)
+    movdqu %xmm12, REGS_XMM(12)(%rcx)
+    movdqu %xmm13, REGS_XMM(13)(%rcx)
+    movdqu %xmm14, REGS_XMM(14)(%rcx)
+    movdqu %xmm15, REGS_XMM(15)(%rcx)
 
     // restore host stack and call handler
     movq REGS_HOST_SP(%rcx), %rsp
     cld
+    fpctrl_push_host %rcx
     pushq %rcx
     movq %rcx, %rdi
     callq lfi_syscall_handler
     popq %rcx
+    fpctrl_pop_host %rcx
 
 #ifdef ENABLE_SEGUE
     seg_gs_set %rcx, %rax
@@ -154,25 +155,23 @@ lfi_syscall_entry:
     movq REGS_R9(%rcx), %r9
     movq REGS_R10(%rcx), %r10
     movq REGS_R11(%rcx), %r11
-    fldcw REGS_FCW(%rcx)
-    movq REGS_XMM(0)(%rcx), %xmm0
-    movq REGS_XMM(1)(%rcx), %xmm1
-    movq REGS_XMM(2)(%rcx), %xmm2
-    movq REGS_XMM(3)(%rcx), %xmm3
-    movq REGS_XMM(4)(%rcx), %xmm4
-    movq REGS_XMM(5)(%rcx), %xmm5
-    movq REGS_XMM(6)(%rcx), %xmm6
-    movq REGS_XMM(7)(%rcx), %xmm7
-    movq REGS_XMM(8)(%rcx), %xmm8
-    movq REGS_XMM(9)(%rcx), %xmm9
-    movq REGS_XMM(10)(%rcx), %xmm10
-    movq REGS_XMM(11)(%rcx), %xmm11
-    movq REGS_XMM(12)(%rcx), %xmm12
-    movq REGS_XMM(13)(%rcx), %xmm13
-    movq REGS_XMM(14)(%rcx), %xmm14
-    movq REGS_XMM(15)(%rcx), %xmm15
-    fldcw REGS_FCW(%rcx)
-    ldmxcsr REGS_MXCSR(%rcx)
+    movdqu REGS_XMM(0)(%rcx), %xmm0
+    movdqu REGS_XMM(1)(%rcx), %xmm1
+    movdqu REGS_XMM(2)(%rcx), %xmm2
+    movdqu REGS_XMM(3)(%rcx), %xmm3
+    movdqu REGS_XMM(4)(%rcx), %xmm4
+    movdqu REGS_XMM(5)(%rcx), %xmm5
+    movdqu REGS_XMM(6)(%rcx), %xmm6
+    movdqu REGS_XMM(7)(%rcx), %xmm7
+    movdqu REGS_XMM(8)(%rcx), %xmm8
+    movdqu REGS_XMM(9)(%rcx), %xmm9
+    movdqu REGS_XMM(10)(%rcx), %xmm10
+    movdqu REGS_XMM(11)(%rcx), %xmm11
+    movdqu REGS_XMM(12)(%rcx), %xmm12
+    movdqu REGS_XMM(13)(%rcx), %xmm13
+    movdqu REGS_XMM(14)(%rcx), %xmm14
+    movdqu REGS_XMM(15)(%rcx), %xmm15
+    fpctrl_resume %rcx
 #ifdef HAVE_PKU
     movq %rax, CTXREG_SCRATCH0_OFFSET(%r15)
     movq %rdx, CTXREG_SCRATCH1_OFFSET(%r15)

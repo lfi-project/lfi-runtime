@@ -44,6 +44,10 @@ _Static_assert(offsetof(struct LFIRegs, REG_ADDR) == REGS_ADDR,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, vector) == REGS_V0,
     "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, fpcr) == REGS_FPCR,
+    "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, host_fpcr) == REGS_HOST_FPCR,
+    "incorrect REGS offset");
 
 _Static_assert(offsetof(struct LFIRegs, vector) % 16 == 0,
     "incorrect vector alignment");
@@ -94,6 +98,10 @@ _Static_assert(offsetof(struct LFIRegs, r15) == REGS_R15,
 _Static_assert(offsetof(struct LFIRegs, fcw) == REGS_FCW,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, mxcsr) == REGS_MXCSR,
+    "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, host_fcw) == REGS_HOST_FCW,
+    "incorrect REGS offset");
+_Static_assert(offsetof(struct LFIRegs, host_mxcsr) == REGS_HOST_MXCSR,
     "incorrect REGS offset");
 _Static_assert(offsetof(struct LFIRegs, xmm) == REGS_XMM0,
     "incorrect REGS offset");

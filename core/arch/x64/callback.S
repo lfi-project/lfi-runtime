@@ -49,6 +49,7 @@
     pushq REGS_RSP(%r11)
     // Save current sandbox stack pointer.
     movq %r12, REGS_RSP(%r11)
+    fpctrl_exit %r11
 
 .if \with_struct
     movq %rdi, REGS_RDI(%r11)
@@ -67,11 +68,21 @@
     movdqu %xmm7, REGS_XMM(7)(%r11)
 .endif
 
+    fpctrl_push_host %r11
     // Save %r11 across the call (and stack alignment).
     pushq %r11
     cld
     callq *%r10
     popq %r11
+    fpctrl_pop_host %r11
+
+.if \with_struct
+    // Load the return value the callback stored in the context.
+    movq REGS_RAX(%r11), %rax
+    movq REGS_RDX(%r11), %rdx
+    movdqu REGS_XMM(0)(%r11), %xmm0
+    movdqu REGS_XMM(1)(%r11), %xmm1
+.endif
 
     cmpq $1, CTX_ABORT_CALLBACK(%r11)
     jne 1f
@@ -84,7 +95,8 @@
     addq $16, %rsp
     movq %rsp, REGS_HOST_SP(%r11)
     movq %r11, %rdi
-    callq lfi_ret_end
+    // lfi_ret_abort does not return here.
+    jmp lfi_ret_abort
 1:
 
 #ifdef ENABLE_SEGUE
@@ -102,17 +114,7 @@
     // Restore sandbox stack pointer.
     movq %r10, %rsp
 
-.if \with_struct
-    movq REGS_RAX(%r11), %rax
-    movq REGS_RDX(%r11), %rdx
-    movdqu REGS_XMM(0)(%r11), %xmm0
-    movdqu REGS_XMM(1)(%r11), %xmm1
-.endif
-
-#ifndef STORES_ONLY
-    fldcw REGS_FCW(%r11)
-    ldmxcsr REGS_MXCSR(%r11)
-#endif
+    fpctrl_resume %r11
 
 #ifdef HAVE_PKU
     movq REGS_PKEY(%r11), %rcx

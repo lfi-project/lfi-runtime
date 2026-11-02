@@ -240,10 +240,7 @@ lfi_trampoline_direct:
     // load ctxreg pointer for the sandbox
     movq REGS_R15(%r13), %r15
 
-#ifndef STORES_ONLY
-    fldcw REGS_FCW(%r13)
-    ldmxcsr REGS_MXCSR(%r13)
-#endif
+    fpctrl_enter %r13
 
 #ifdef HAVE_PKU
     movq %rcx, %rbx
@@ -284,8 +281,15 @@ lfi_ret:
     movq %rsi, %rdx
 #endif
     get_ctx %rdi
+    fpctrl_exit %rdi
 .global lfi_ret_end
 lfi_ret_end:
+    // The invocation did not end in an aborted callback.
+    movq $0, CTX_ABORT_STATUS(%rdi)
+// Return from the invocation after an aborted callback, keeping the abort
+// status, otherwise the same as lfi_ret_end.
+.global lfi_ret_abort
+lfi_ret_abort:
     // restore host sp
     movq REGS_HOST_SP(%rdi), %rsp
     // save return registers
@@ -344,14 +348,14 @@ lfi_ret_end:
     movq %r14, %rdi
     movq %r11, %rsi
     callq lfi_clone
-    popx %xmm0
-    popx %xmm1
-    popx %xmm2
-    popx %xmm3
-    popx %xmm4
-    popx %xmm5
-    popx %xmm6
     popx %xmm7
+    popx %xmm6
+    popx %xmm5
+    popx %xmm4
+    popx %xmm3
+    popx %xmm2
+    popx %xmm1
+    popx %xmm0
     popq %r11
     popq %r10
     popq %r9

@@ -10,6 +10,8 @@ lfi_ctx_regs_init(struct LFIContext *ctx)
     ctx->regs.x30 = ctx->box->base;
     ctx->regs.retaddr = ctx->box->retaddr;
     ctx->regs.x25 = (uint64_t) &ctx->ctxreg[0];
+    ctx->regs.fpcr = 0;
+    ctx->regs.host_fpcr = 0;
 }
 
 EXPORT void

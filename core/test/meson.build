@@ -8,12 +8,19 @@ tests = [
 
 # Add architecture-specific tests
 if cpu != 'riscv64'
-  tests += ['test_trampoline.c', 'test_trampoline_clone.c']
+  tests += ['test_trampoline.c', 'test_trampoline_clone.c',
+    'test_callback_abort.c']
 endif
 
 # Segue (and thus segue_cache_gs) is x86-64 only.
 if cpu == 'x86_64' and get_option('enable_segue')
   tests += ['test_segue_multibox.c']
+endif
+
+if cpu == 'x86_64'
+  tests += ['test_fpstate.c']
+elif cpu == 'aarch64'
+  tests += ['test_fpcr.c']
 endif
 
 foreach t : tests

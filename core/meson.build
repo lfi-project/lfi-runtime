@@ -19,6 +19,9 @@ srcs = files(
 if get_option('stores_only')
   defines += ['-DSTORES_ONLY']
 endif
+if get_option('assume_fixed_fpctrl')
+  defines += ['-DASSUME_FIXED_FPCTRL']
+endif
 
 subdir('arch/' + archmap[cpu])
 

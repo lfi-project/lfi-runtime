@@ -318,7 +318,8 @@ lfi_box_unregister_cb(struct LFIBox *box, void *fn);
 void
 lfi_ctx_abort_cb(struct LFIContext *ctx);
 
-// Returns true if the most recent callback was aborted.
+// Returns true if the most recent invocation on ctx to return was ended by an
+// aborted callback.
 bool
 lfi_ctx_abort_cb_status(struct LFIContext *ctx);
 

@@ -50,6 +50,10 @@ struct LFIRegs {
     uint64_t x30;
     uint64_t sp;
     uint64_t vector[64];
+    // FPCR of the sandbox, and of the host (saved on entry to the sandbox and
+    // restored on exit).
+    uint64_t fpcr;
+    uint64_t host_fpcr;
 };
 
 #define LFI_ARCH_ARM64
@@ -79,7 +83,11 @@ struct LFIRegs {
     uint64_t r15;
     uint16_t fcw;
     uint32_t mxcsr;
-    uint64_t _pad[2];
+    // Host FP control state, saved on entry to the sandbox and restored on
+    // exit.
+    uint16_t host_fcw;
+    uint32_t host_mxcsr;
+    uint64_t _pad;
     uint64_t xmm[32];
 };
 

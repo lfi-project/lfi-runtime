@@ -28,6 +28,7 @@ lfi_ctx_entry:
     str x8, [x1]
     // put entrypoint in x30
     mov x30, x2
+    fpctrl_enter x0, x8, x9
 
     // load all registers
     ldp x2, x3,   [x0, REGS_X(2)]
@@ -149,14 +150,18 @@ lfi_syscall_entry:
     stp q26, q27, [REG_BASE, REGS_V(26)]
     stp q28, q29, [REG_BASE, REGS_V(28)]
     stp q30, q31, [REG_BASE, REGS_V(30)]
+    fpctrl_exit REG_BASE, x0, x1
 
     // restore host stack and call handler
     ldr x0, [REG_BASE, REGS_HOST_SP]
     mov sp, x0
+    fpctrl_push_host REG_BASE, x1
     str REG_BASE, [sp, #-16]! // push
     mov x0, REG_BASE
     bl lfi_syscall_handler
     ldr x0, [sp], 16 // pop
+    fpctrl_pop_host x0, x1
+    fpctrl_resume x0, x2, x3
 
     // restore registers
     ldp x2, x3,   [x0, REGS_X(2)]

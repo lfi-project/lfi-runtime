@@ -69,3 +69,8 @@ option('linux_full',
   type: 'boolean',
   value: false,
   description: 'build the full Linux emulation layer (linux/full) on top of the minimal runtime')
+
+option('assume_fixed_fpctrl',
+  type: 'boolean',
+  value: false,
+  description: 'trust sandboxed code to never modify its FP control state')

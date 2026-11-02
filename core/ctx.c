@@ -79,6 +79,9 @@ lfi_ctx_run(struct LFIContext *ctx, uintptr_t entry)
     ctx->in_ctx_run = true;
     int ret = lfi_ctx_entry(ctx, (uintptr_t *) &ctx->regs.host_sp, entry);
     ctx->in_ctx_run = false;
+    // The run did not end in an aborted callback (see
+    // lfi_ctx_abort_cb_status), although a nested invocation may have.
+    ctx->abort_status = 0;
     return ret;
 }
 
