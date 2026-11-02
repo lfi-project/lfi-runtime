@@ -45,6 +45,11 @@ sys_futex(struct LFILinuxThread *t, lfiptr uaddrp, int op, uint32_t val,
     switch (op & ~LINUX_FUTEX_PRIVATE_FLAG) {
     case LINUX_FUTEX_WAIT:
         return futex_wait(t, uaddr, op, val, timeoutp);
+    case LINUX_FUTEX_WAIT_BITSET:
+        if (val3 != 0xffffffffU)
+            return -LINUX_EINVAL;
+        return futex_wait(t, uaddr,
+            (op & LINUX_FUTEX_PRIVATE_FLAG) | LINUX_FUTEX_WAIT, val, timeoutp);
     case LINUX_FUTEX_WAKE:
         return futex_wake(t, uaddr, op, val);
     case LINUX_FUTEX_REQUEUE:
