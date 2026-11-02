@@ -43,6 +43,18 @@ test('detach.lfi',
   suite: ['linux'],
 )
 
+test_load_remap = executable(
+  'test_load_remap.elf',
+  'test_load_remap.c',
+  dependencies: [lfi_linux],
+  c_args: c_args_warnings + linux_defines,
+)
+
+test('load_remap.lfi',
+  test_load_remap, args: [lib],
+  suite: ['linux'],
+)
+
 if host_machine.system() == 'linux'
   subdir('syscalls')
 endif

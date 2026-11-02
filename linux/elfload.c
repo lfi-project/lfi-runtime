@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/mman.h>
 #ifdef HAVE_GETAUXVAL
@@ -19,6 +20,10 @@
 #endif
 
 #define HWCAP2_BTI (1 << 17)
+
+#if !defined(NO_MREMAP) && !defined(MREMAP_DONTUNMAP)
+#define MREMAP_DONTUNMAP 4
+#endif
 
 // We do not load ELF files that have more than 64 program headers.
 #define PHNUM_MAX 64
@@ -175,15 +180,32 @@ buf_read_elfseg(struct LFILinuxProc *proc, uintptr_t start, uintptr_t offset,
             return false;
         }
         void *old = (void *) (buf.data + foff);
-        void *rm = mremap(old, end - start, end - start, MREMAP_MAYMOVE | MREMAP_FIXED, (void *) start);
-        if (rm == (void *) -1)
-            return false;
-        p = lfi_box_mapat_register(box, p2l(box, start), end - start, prot, LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
-        // Put the remapped mapping back so that we can still access its data from the buf object.
-        old = mmap(old, end - start, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
-        if (old == (void *) -1)
-            return false;
-        memcpy(old, rm, end - start);
+        size_t len = end - start;
+        void *rm = mremap(old, len, len,
+            MREMAP_MAYMOVE | MREMAP_FIXED | MREMAP_DONTUNMAP, (void *) start);
+        bool restore;
+        if (rm != MAP_FAILED) {
+            // An anonymous buffer is left as zero-filled pages.
+            restore = memcmp(old, rm, len) != 0;
+        } else {
+            // Fallback without file-backed MREMAP_DONTUNMAP.
+            rm = mremap(old, len, len, MREMAP_MAYMOVE | MREMAP_FIXED,
+                (void *) start);
+            if (rm == MAP_FAILED)
+                return false;
+            restore = true;
+        }
+        p = lfi_box_mapat_register(box, p2l(box, start), len, prot,
+            LFI_MAP_PRIVATE | LFI_MAP_ANONYMOUS, -1, 0);
+        if (restore) {
+            // Put a copy of the data back so that the buffer can still be
+            // read.
+            old = mmap(old, len, PROT_READ | PROT_WRITE,
+                MAP_ANONYMOUS | MAP_PRIVATE | MAP_FIXED, -1, 0);
+            if (old == MAP_FAILED)
+                return false;
+            memcpy(old, rm, len);
+        }
 #endif
     } else if (map_op == ELF_MAP) {
         p = lfi_box_mapat(box, p2l(box, start), end - start,
