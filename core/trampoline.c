@@ -1,5 +1,6 @@
 #include "core.h"
 
+#include <stdatomic.h>
 #include <stdlib.h>
 
 EXPORT thread_local struct LFIInvokeInfo lfi_invoke_info __asm__(
@@ -18,7 +19,8 @@ EXPORT void
 lfi_set_clone_cb(struct LFIEngine *engine,
     struct LFIContext *(*clone_cb_arg)(struct LFIBox *) )
 {
-    __atomic_store_n(&engine->clone_cb, clone_cb_arg, __ATOMIC_RELEASE);
+    atomic_store_explicit(&engine->clone_cb, clone_cb_arg,
+        memory_order_release);
 }
 
 void
@@ -28,8 +30,8 @@ EXPORT void
 lfi_clone(struct LFIBox *box, struct LFIContext **ctxp)
 {
     lfi_init_sigaltstack(box->engine);
-    struct LFIContext *(*clone_cb)(struct LFIBox *) = __atomic_load_n(
-        &box->engine->clone_cb, __ATOMIC_ACQUIRE);
+    struct LFIContext *(*clone_cb)(struct LFIBox *) = atomic_load_explicit(
+        &box->engine->clone_cb, memory_order_acquire);
     if (!clone_cb) {
         LOG_(
             "error: performing automatic clone during trampoline, but clone_cb is NULL");

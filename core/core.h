@@ -23,7 +23,7 @@ struct LFIEngine {
     struct LFIVerifier verifier;
 
     void (*sys_handler)(struct LFIContext *ctx);
-    struct LFIContext *(*clone_cb)(struct LFIBox *box);
+    _Atomic(struct LFIContext *(*)(struct LFIBox *)) clone_cb;
 };
 
 struct LFIBox {
