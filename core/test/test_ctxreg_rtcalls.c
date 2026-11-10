@@ -110,8 +110,9 @@ run_sys(struct LFIBox *box, lfiptr p)
     lfi_ctx_free(ctx);
 }
 
-// Returns the permissions of the mapping containing addr ("---p" etc.), or
-// NULL if addr is not mapped.
+// Returns the permissions of the mapping containing addr ("---p" etc.), NULL
+// if addr is not mapped, or "?" if the mappings cannot be read (there is no
+// /proc/self/maps, as on macOS).
 static const char *
 perms(uintptr_t addr)
 {
@@ -131,6 +132,20 @@ perms(uintptr_t addr)
     }
     fclose(f);
     return ret;
+}
+
+// Checks that the mapping containing addr has permissions 'want'. Skipped if
+// the mappings cannot be read.
+static void
+check_perms(const char *what, uintptr_t addr, const char *want)
+{
+    const char *have = perms(addr);
+    if (have && strcmp(have, "?") == 0) {
+        printf("%s: skipped, cannot read mappings\n", what);
+        return;
+    }
+    printf("%s: %s\n", what, have ? have : "unmapped");
+    assert(have && strcmp(have, want) == 0);
 }
 
 struct Box {
@@ -179,8 +194,7 @@ main(void)
         assert(p != (lfiptr) -1);
         run_sys(box, p);
         struct LFIBoxInfo info = lfi_box_info(box);
-        assert(perms(info.base - pagesize) &&
-            strcmp(perms(info.base - pagesize), "r--p") == 0);
+        check_perms("default: sys page", info.base - pagesize, "r--p");
         lfi_box_free(box);
         lfi_free(engine);
         printf("default: both runtime call kinds work\n");
@@ -209,10 +223,8 @@ main(void)
     // at all, with PKU.)
     {
         uintptr_t upper = ia.base > ib.base ? ia.base : ib.base;
-        const char *below = perms(upper - pagesize);
-        printf("ctxreg_rtcalls: page below the upper sandbox: %s\n",
-            below ? below : "unmapped");
-        assert(below && strcmp(below, "---p") == 0);
+        check_perms("ctxreg_rtcalls: page below the upper sandbox",
+            upper - pagesize, "---p");
     }
 
     lfiptr p = load(a, sys_base, sizeof(sys_base));
