@@ -1,6 +1,7 @@
-// Tests that host/sandbox transitions on arm64 keep floating-point argument
-// registers and the FP control register (FPCR) intact. The sandbox code is
-// verified, so this also checks that verified code can write FPCR.
+// Tests that host/sandbox transitions on arm64 keep the FP control register
+// (FPCR) intact. The sandbox code is verified, so this also checks that
+// verified code can write FPCR. test_fpargs.c covers the FP argument
+// registers.
 
 #include "lfi_arch.h"
 #include "lfi_core.h"
@@ -22,20 +23,13 @@
 #define SLOT 8
 
 static const uint32_t progs[][SLOT] = {
-    // 0: return (d0 passes through as the return value)
-    { 0xd65f03c0 }, // ret
-    // 1: return d7
-    {
-        0x1e6040e0, // fmov d0, d7
-        0xd65f03c0, // ret
-    },
-    // 2: set FPCR, then return
+    // 0: set FPCR, then return
     {
         0xd2a00809, // mov x9, #0x400000
         0xd51b4409, // msr fpcr, x9
         0xd65f03c0, // ret
     },
-    // 3: set FPCR, then tail-call the callback in x0
+    // 1: set FPCR, then tail-call the callback in x0
     {
         0xd2a00809, // mov x9, #0x400000
         0xd51b4409, // msr fpcr, x9
@@ -43,12 +37,12 @@ static const uint32_t progs[][SLOT] = {
         0x8b22437c, // add x28, x27, w2, uxtw
         0xd61f0380, // br x28
     },
-    // 4: return FPCR
+    // 2: return FPCR
     {
         0xd53b4400, // mrs x0, fpcr
         0xd65f03c0, // ret
     },
-    // 5: entry for lfi_ctx_run: set FPCR, make syscall 1, then make syscall 2
+    // 3: entry for lfi_ctx_run: set FPCR, make syscall 1, then make syscall 2
     // with the FPCR in x8
     {
         0xd2a00809, // mov x9, #0x400000
@@ -63,8 +57,6 @@ static const uint32_t progs[][SLOT] = {
 };
 
 enum {
-    P_RET_D0,
-    P_RET_D7,
     P_SET_FPCR,
     P_SET_FPCR_CB,
     P_GET_FPCR,
@@ -83,6 +75,16 @@ static void
 set_fpcr(uint64_t v)
 {
     __asm__ volatile("msr fpcr, %0" : : "r"(v));
+}
+
+// Invokes prog with arg in x0. The only LFI_INVOKE in this file: Clang gives
+// every LFI_INVOKE in a translation unit the prototype of the first one, so
+// all invocations here share one.
+// Unused when FP control switching is disabled.
+__attribute__((unused)) static uint64_t
+invoke(struct LFIBox *box, struct LFIContext **ctxp, lfiptr prog, void *arg)
+{
+    return LFI_INVOKE(box, ctxp, prog, uint64_t, (void *), arg);
 }
 
 static uint64_t cb_fpcr;
@@ -108,7 +110,7 @@ nested_callback(void)
 {
     uint64_t saved = get_fpcr();
     set_fpcr(0);
-    nest_fpcr = LFI_INVOKE(nest_box, nest_ctxp, nest_prog, uint64_t, (void));
+    nest_fpcr = invoke(nest_box, nest_ctxp, nest_prog, NULL);
     assert(get_fpcr() == 0);
     set_fpcr(saved);
 }
@@ -170,39 +172,25 @@ main(void)
 
 #define PROG(i) (p + (i) * SLOT * sizeof(uint32_t))
 
-    // The first invocation on a NULL context clones one lazily; the float
-    // argument registers must arrive in order.
     struct LFIContext *ctx = NULL;
-    double d0 = LFI_INVOKE(box, &ctx, PROG(P_RET_D0), double,
-        (double, double, double, double, double, double, double, double), 1.0,
-        2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
-    assert(ctx);
-    printf("lazy clone: d0 = %f\n", d0);
-    assert(d0 == 1.0);
-    lfi_ctx_free(ctx);
-    ctx = NULL;
-    double d7 = LFI_INVOKE(box, &ctx, PROG(P_RET_D7), double,
-        (double, double, double, double, double, double, double, double), 1.0,
-        2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
-    printf("lazy clone: d7 = %f\n", d7);
-    assert(d7 == 8.0);
 
 #if !defined(STORES_ONLY) && !defined(ASSUME_FIXED_FPCTRL)
     uint64_t orig_fpcr = get_fpcr();
     set_fpcr(HOST_FPCR);
     assert(get_fpcr() == HOST_FPCR);
 
-    // The sandbox starts with the default FPCR, not the host's.
-    uint64_t v = LFI_INVOKE(box, &ctx, PROG(P_GET_FPCR), uint64_t, (void));
+    // The sandbox starts with the default FPCR, not the host's. This first
+    // invocation clones the context lazily.
+    uint64_t v = invoke(box, &ctx, PROG(P_GET_FPCR), NULL);
     printf("sandbox initial fpcr = %#lx\n", (unsigned long) v);
     assert(v == 0);
     assert(get_fpcr() == HOST_FPCR);
 
     // Changes the sandbox makes to FPCR do not leak into the host, and persist
     // across invocations.
-    LFI_INVOKE(box, &ctx, PROG(P_SET_FPCR), void, (void));
+    invoke(box, &ctx, PROG(P_SET_FPCR), NULL);
     assert(get_fpcr() == HOST_FPCR);
-    v = LFI_INVOKE(box, &ctx, PROG(P_GET_FPCR), uint64_t, (void));
+    v = invoke(box, &ctx, PROG(P_GET_FPCR), NULL);
     printf("sandbox fpcr = %#lx\n", (unsigned long) v);
     assert(v == GUEST_FPCR);
 
@@ -211,11 +199,11 @@ main(void)
     lfi_ctx_regs(ctx)->fpcr = 0;
     void *box_cb = lfi_box_register_cb(box, (void *) callback);
     assert(box_cb);
-    LFI_INVOKE(box, &ctx, PROG(P_SET_FPCR_CB), void, (void (*)(void)), box_cb);
+    invoke(box, &ctx, PROG(P_SET_FPCR_CB), box_cb);
     printf("callback fpcr = %#lx\n", (unsigned long) cb_fpcr);
     assert(cb_fpcr == HOST_FPCR);
     assert(get_fpcr() == HOST_FPCR);
-    v = LFI_INVOKE(box, &ctx, PROG(P_GET_FPCR), uint64_t, (void));
+    v = invoke(box, &ctx, PROG(P_GET_FPCR), NULL);
     assert(v == GUEST_FPCR);
 
     // A callback that changes the host's FPCR, invokes the same context, and
@@ -226,8 +214,7 @@ main(void)
     nest_prog = PROG(P_GET_FPCR);
     void *box_nested_cb = lfi_box_register_cb(box, (void *) nested_callback);
     assert(box_nested_cb);
-    LFI_INVOKE(box, &ctx, PROG(P_SET_FPCR_CB), void, (void (*)(void)),
-        box_nested_cb);
+    invoke(box, &ctx, PROG(P_SET_FPCR_CB), box_nested_cb);
     printf("nested: sandbox fpcr = %#lx, host fpcr = %#lx\n",
         (unsigned long) nest_fpcr, (unsigned long) get_fpcr());
     assert(nest_fpcr == GUEST_FPCR);

@@ -18,9 +18,9 @@ if cpu == 'x86_64' and get_option('enable_segue')
 endif
 
 if cpu == 'x86_64'
-  tests += ['test_fpstate.c']
+  tests += ['test_fpstate.c', 'test_fpargs.c']
 elif cpu == 'aarch64'
-  tests += ['test_fpcr.c']
+  tests += ['test_fpcr.c', 'test_fpargs.c']
 endif
 
 foreach t : tests

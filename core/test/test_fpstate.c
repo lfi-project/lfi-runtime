@@ -1,5 +1,6 @@
-// Tests that host/sandbox transitions on x86-64 keep floating-point argument
-// registers and FP control state (x87 control word and MXCSR) intact.
+// Tests that host/sandbox transitions on x86-64 keep the FP control state (x87
+// control word and MXCSR) intact. test_fpargs.c covers the FP argument
+// registers.
 
 #include "lfi_arch.h"
 #include "lfi_core.h"
@@ -35,27 +36,23 @@
 #define SLOT 64
 
 static const uint8_t progs[][SLOT] = {
-    // 0: return (xmm0 passes through as the return value)
-    { RETSEQ },
-    // 1: return xmm7
-    { 0x0f, 0x28, 0xc7, /* movaps %xmm7, %xmm0 */ RETSEQ },
-    // 2: set MXCSR and FCW, then return
+    // 0: set MXCSR and FCW, then return
     { SET_FP, RETSEQ },
-    // 3: set MXCSR and FCW, then tail-call the callback in %rdi
+    // 1: set MXCSR and FCW, then tail-call the callback in %rdi
     { SET_FP,
         0x48, 0x89, 0xf8, // mov %rdi, %rax
         0x83, 0xe0, 0xe0, // and $0xffffffe0, %eax
         0x4c, 0x09, 0xf0, // or %r14, %rax
         0xff, 0xe0 },     // jmp *%rax
-    // 4: return MXCSR
+    // 2: return MXCSR
     { 0x0f, 0xae, 0x5c, 0x24, 0xf8, // stmxcsr -8(%rsp)
         0x8b, 0x44, 0x24, 0xf8,     // mov -8(%rsp), %eax
         RETSEQ },
-    // 5: return FCW
+    // 3: return FCW
     { 0xd9, 0x7c, 0x24, 0xf8,       // fnstcw -8(%rsp)
         0x0f, 0xb7, 0x44, 0x24, 0xf8, // movzwl -8(%rsp), %eax
         RETSEQ },
-    // 6: entry for lfi_ctx_run: set FCW, make syscall 1, then make syscall 2
+    // 4: entry for lfi_ctx_run: set FCW, make syscall 1, then make syscall 2
     // with the FCW in %rax
     { 0x66, 0xc7, 0x44, 0x24, 0xf8, 0x7f, 0x0b,   // movw $0xb7f, -8(%rsp)
         0xd9, 0x6c, 0x24, 0xf8,                   // fldcw -8(%rsp)
@@ -69,8 +66,6 @@ static const uint8_t progs[][SLOT] = {
 };
 
 enum {
-    P_RET_XMM0,
-    P_RET_XMM7,
     P_SET_FP,
     P_SET_FP_CB,
     P_GET_MXCSR,
@@ -92,6 +87,16 @@ get_fcw(void)
     uint16_t f;
     __asm__ volatile("fnstcw %0" : "=m"(f));
     return f;
+}
+
+// Invokes prog with arg in %rdi. The only LFI_INVOKE in this file: Clang gives
+// every LFI_INVOKE in a translation unit the prototype of the first one, so
+// all invocations here share one.
+// Unused when FP control switching is disabled.
+__attribute__((unused)) static uint64_t
+invoke(struct LFIBox *box, struct LFIContext **ctxp, lfiptr prog, void *arg)
+{
+    return LFI_INVOKE(box, ctxp, prog, uint64_t, (void *), arg);
 }
 
 static uint32_t cb_mxcsr;
@@ -121,7 +126,7 @@ nested_callback(void)
     uint16_t saved_fcw = get_fcw(), up_fcw = 0x0b7f;
     __asm__ volatile("ldmxcsr %0" : : "m"(up_mxcsr));
     __asm__ volatile("fldcw %0" : : "m"(up_fcw));
-    nest_fcw = LFI_INVOKE(nest_box, nest_ctxp, nest_prog, uint16_t, (void));
+    nest_fcw = (uint16_t) invoke(nest_box, nest_ctxp, nest_prog, NULL);
     assert(get_mxcsr() == up_mxcsr);
     assert(get_fcw() == up_fcw);
     __asm__ volatile("ldmxcsr %0" : : "m"(saved_mxcsr));
@@ -192,22 +197,7 @@ main(void)
 
 #define PROG(i) (p + (i) * SLOT)
 
-    // The first invocation on a NULL context clones one lazily; the float
-    // argument registers must arrive in order.
     struct LFIContext *ctx = NULL;
-    double x0 = LFI_INVOKE(box, &ctx, PROG(P_RET_XMM0), double,
-        (double, double, double, double, double, double, double, double), 1.0,
-        2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
-    assert(ctx);
-    printf("lazy clone: xmm0 = %f\n", x0);
-    assert(x0 == 1.0);
-    lfi_ctx_free(ctx);
-    ctx = NULL;
-    double x7 = LFI_INVOKE(box, &ctx, PROG(P_RET_XMM7), double,
-        (double, double, double, double, double, double, double, double), 1.0,
-        2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);
-    printf("lazy clone: xmm7 = %f\n", x7);
-    assert(x7 == 8.0);
 
 #if !defined(STORES_ONLY) && !defined(ASSUME_FIXED_FPCTRL)
     // Use a non-default host state (flush-to-zero, double precision) so that
@@ -222,12 +212,12 @@ main(void)
     // Changes the sandbox makes to its FP control state do not leak into the
     // host. Changes to the x87 control word persist across invocations; MXCSR
     // changes do not (verified code cannot make them), so the sandbox sees the
-    // MXCSR in its context.
-    LFI_INVOKE(box, &ctx, PROG(P_SET_FP), void, (void));
+    // MXCSR in its context. This first invocation clones the context lazily.
+    invoke(box, &ctx, PROG(P_SET_FP), NULL);
     assert(get_mxcsr() == host_mxcsr);
     assert(get_fcw() == host_fcw);
-    uint32_t m = LFI_INVOKE(box, &ctx, PROG(P_GET_MXCSR), uint32_t, (void));
-    uint16_t f = LFI_INVOKE(box, &ctx, PROG(P_GET_FCW), uint16_t, (void));
+    uint32_t m = (uint32_t) invoke(box, &ctx, PROG(P_GET_MXCSR), NULL);
+    uint16_t f = (uint16_t) invoke(box, &ctx, PROG(P_GET_FCW), NULL);
     printf("sandbox mxcsr = %#x, fcw = %#x\n", m, f);
     assert(m == lfi_ctx_regs(ctx)->mxcsr);
     assert(f == GUEST_FCW);
@@ -235,7 +225,7 @@ main(void)
     // The host's state is restored even when the sandbox's context holds a
     // different one.
     lfi_ctx_regs(ctx)->mxcsr = GUEST_MXCSR;
-    m = LFI_INVOKE(box, &ctx, PROG(P_GET_MXCSR), uint32_t, (void));
+    m = (uint32_t) invoke(box, &ctx, PROG(P_GET_MXCSR), NULL);
     assert(m == GUEST_MXCSR);
     assert(get_mxcsr() == host_mxcsr);
     lfi_ctx_regs(ctx)->mxcsr = 0x1f80;
@@ -245,13 +235,13 @@ main(void)
     lfi_ctx_regs(ctx)->fcw = 0x37f;
     void *box_cb = lfi_box_register_cb(box, (void *) callback);
     assert(box_cb);
-    LFI_INVOKE(box, &ctx, PROG(P_SET_FP_CB), void, (void (*)(void)), box_cb);
+    invoke(box, &ctx, PROG(P_SET_FP_CB), box_cb);
     printf("callback mxcsr = %#x, fcw = %#x\n", cb_mxcsr, cb_fcw);
     assert(cb_mxcsr == host_mxcsr);
     assert(cb_fcw == host_fcw);
     assert(get_mxcsr() == host_mxcsr);
     assert(get_fcw() == host_fcw);
-    f = LFI_INVOKE(box, &ctx, PROG(P_GET_FCW), uint16_t, (void));
+    f = (uint16_t) invoke(box, &ctx, PROG(P_GET_FCW), NULL);
     assert(f == GUEST_FCW);
 
     // A callback that changes the host's state, invokes the same context, and
@@ -262,8 +252,7 @@ main(void)
     nest_prog = PROG(P_GET_FCW);
     void *box_nested_cb = lfi_box_register_cb(box, (void *) nested_callback);
     assert(box_nested_cb);
-    LFI_INVOKE(box, &ctx, PROG(P_SET_FP_CB), void, (void (*)(void)),
-        box_nested_cb);
+    invoke(box, &ctx, PROG(P_SET_FP_CB), box_nested_cb);
     printf("nested: sandbox fcw = %#x, host mxcsr = %#x, fcw = %#x\n",
         nest_fcw, get_mxcsr(), get_fcw());
     assert(nest_fcw == GUEST_FCW);
