@@ -213,6 +213,56 @@ test_deferred_free(struct LFILinuxEngine *linux_, struct Buf prog,
     printf("deferred free OK\n");
 }
 
+// Late-attach scenario: a thread attached to one proc exits, and a pthread key
+// destructor that runs after the runtime's cleanup calls into another proc.
+// That attachment must start from fresh thread state (not the list the
+// cleanup freed), and be cleaned up in turn.
+static struct LFILinuxProc *late_proc;
+static pthread_key_t late_key;
+
+static void
+late_key_destructor(void *arg)
+{
+    (void) arg;
+    struct LFIContext *ctx = NULL;
+    invoke_add(late_proc, &ctx, 3, 4);
+}
+
+static void *
+late_attach_thread(void *arg)
+{
+    struct LFILinuxProc *proc = arg;
+    struct LFIContext *ctx = NULL;
+    invoke_add(proc, &ctx, 1, 2);
+    // The runtime's key was created by an earlier attachment, so this key's
+    // destructor runs after it.
+    pthread_setspecific(late_key, (void *) 1);
+    return NULL;
+}
+
+static void
+test_attach_after_cleanup(struct LFILinuxEngine *linux_, struct Buf prog,
+    const char **argv, int argc, const char **envp)
+{
+    struct LFILinuxProc *proc = make_proc(linux_, prog, argv, argc, envp);
+    late_proc = make_proc(linux_, prog, argv, argc, envp);
+    int r = pthread_key_create(&late_key, late_key_destructor);
+    assert(r == 0);
+
+    for (int i = 0; i < 10; i++) {
+        pthread_t th;
+        r = pthread_create(&th, NULL, late_attach_thread, proc);
+        assert(r == 0);
+        r = pthread_join(th, NULL);
+        assert(r == 0);
+    }
+
+    pthread_key_delete(late_key);
+    lfi_proc_free(late_proc);
+    lfi_proc_free(proc);
+    printf("attach after cleanup OK\n");
+}
+
 // Destructor-only scenario: helper attaches, never detaches explicitly. The
 // pthread destructor on thread exit must perform the cleanup.
 static void
@@ -368,6 +418,7 @@ main(int argc, const char **argv)
         struct LFILinuxEngine *linux_ = make_engine(engine);
         assert(linux_);
         test_destructor_only(linux_, prog, &argv[1], argc - 1, envp);
+        test_attach_after_cleanup(linux_, prog, &argv[1], argc - 1, envp);
         lfi_linux_free(linux_);
         lfi_free(engine);
     }

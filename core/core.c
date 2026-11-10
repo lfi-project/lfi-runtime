@@ -96,12 +96,16 @@ tstate_destructor(void *p)
 {
     struct ThreadState *st = p;
 
+    tstate_armed = false;
+
     // Must come before freeing the sigaltstack since the cleanup may run code
     // in the sandbox.
     if (st->cleanup) {
         void (*cleanup)(void *) = st->cleanup;
+        void *data = st->cleanup_data;
         st->cleanup = NULL;
-        cleanup(st->cleanup_data);
+        st->cleanup_data = NULL;
+        cleanup(data);
     }
 
     if (st->altstack) {
