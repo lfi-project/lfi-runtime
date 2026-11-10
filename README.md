@@ -59,12 +59,13 @@ Usage: lfi-run [OPTION...] INPUT...
 # Threat Model
 
 LFI is currently being used for library isolation, where the library has been
-written by an honest party. In addition, LFI is only currently being used in
-`SYS_MINIMAL` mode, which vastly reduces the number of system calls available
-to sandboxed programs.
+written by an honest party. In addition, LFI is only currently being used with
+the default minimal Linux runtime, which vastly reduces the number of system
+calls available to sandboxed programs.
 
-Work to harden the runtime for non-`SYS_MINIMAL` usage and for arbitrarily
-malicious programs is ongoing.
+Work to harden the full configuration (`-Dlinux_full=true`) and the runtime
+for arbitrarily malicious programs is ongoing. The full configuration's
+passthrough mode is unsafe and intended only for testing and benchmarking.
 
 Sandboxed programs are able to cause faults or cause the runtime to
 fault/abort. Work to allow the runtime to gracefully recover by handling the
