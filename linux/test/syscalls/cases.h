@@ -106,6 +106,13 @@
     X(futex_wait_timeout, -ENOSYS, LINUX, LINUX)               \
     X(futex_wake_none, -ENOSYS, LINUX, LINUX)                  \
     X(futex_invalid, -ENOSYS, LINUX, LINUX)                    \
+    X(futex_wait_bitset_expired, -ENOSYS, LINUX, LINUX)        \
+    /* deadlines are built with clock_gettime */               \
+    X(futex_wait_bitset_deadline, -ENOSYS, -ENOSYS, LINUX)     \
+    X(futex_wait_bitset_invalid, -ENOSYS, LINUX, LINUX)        \
+    X(futex_wait_bitset_wake, -EAGAIN, LINUX, LINUX)           \
+    /* FUTEX_WAKE_BITSET is not supported */                   \
+    X(futex_wake_bitset, -ENOSYS, -ENOSYS, -ENOSYS)            \
     /* misc */                                                 \
     X(bogus_sysno, LINUX, LINUX, LINUX)
 

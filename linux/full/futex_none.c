@@ -14,6 +14,16 @@ host_futex_wait(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val,
 }
 
 long
+host_futex_wait_bitset(struct LFILinuxThread *t, uint32_t *uaddr, int op,
+    uint32_t val, struct TimeSpec *deadline, uint32_t bitset)
+{
+    (void) t, (void) uaddr, (void) op, (void) val, (void) deadline,
+        (void) bitset;
+    ERROR("futex_wait_bitset is not supported on this host");
+    return -LINUX_ENOSYS;
+}
+
+long
 host_futex_wake(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val)
 {
     (void) t, (void) uaddr, (void) op, (void) val;

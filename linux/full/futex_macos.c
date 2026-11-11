@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <os/os_sync_wait_on_address.h>
 #include <stdint.h>
+#include <time.h>
 
 static long
 err_to_linux(int e)
@@ -46,6 +47,47 @@ host_futex_wait(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val,
     if (r < 0)
         return err_to_linux(errno);
     return 0;
+}
+
+// The bitset is ignored, which is exact because every wake the runtime
+// supports matches every non-zero bitset. The deadline is converted to a
+// relative timeout using the clock that op selects.
+long
+host_futex_wait_bitset(struct LFILinuxThread *t, uint32_t *uaddr, int op,
+    uint32_t val, struct TimeSpec *deadline, uint32_t bitset)
+{
+    (void) bitset;
+    if (!deadline)
+        return host_futex_wait(t, uaddr, op, val, NULL);
+
+    struct timespec now;
+    clockid_t clockid = (op & LINUX_FUTEX_CLOCK_REALTIME) ? CLOCK_REALTIME :
+                                                            CLOCK_MONOTONIC;
+    if (clock_gettime(clockid, &now) < 0)
+        return err_to_linux(errno);
+
+    int64_t sec = (int64_t) deadline->sec - (int64_t) now.tv_sec;
+    int64_t nsec = (int64_t) deadline->nsec - (int64_t) now.tv_nsec;
+    if (nsec < 0) {
+        nsec += 1000000000;
+        sec--;
+    }
+    if (sec < 0 || (sec == 0 && nsec == 0)) {
+        // The deadline has passed, but like Linux the word is still compared.
+        // The host compares it, since the sandbox may have unmapped it. A wait
+        // that returns before its timeout either found a different value or
+        // was woken, and both are reported as EAGAIN.
+        struct TimeSpec shortest = { 0, 1 };
+        long r = host_futex_wait(t, uaddr, op, val, &shortest);
+        return r == 0 ? -LINUX_EAGAIN : r;
+    }
+    // A timeout in nanoseconds overflows after about 584 years. Anything
+    // beyond a century waits without one.
+    if (sec > 100LL * 365 * 24 * 60 * 60)
+        return host_futex_wait(t, uaddr, op, val, NULL);
+
+    struct TimeSpec timeout = { (uint64_t) sec, (uint64_t) nsec };
+    return host_futex_wait(t, uaddr, op, val, &timeout);
 }
 
 long

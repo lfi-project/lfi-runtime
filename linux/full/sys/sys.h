@@ -48,11 +48,6 @@ bufhost(struct LFILinuxThread *t, lfiptr p, size_t size, size_t align)
 #define LINUX_MAP_DENYWRITE 2048
 #define LINUX_MAP_NORESERVE 16384
 
-#define LINUX_FUTEX_WAIT         0
-#define LINUX_FUTEX_WAKE         1
-#define LINUX_FUTEX_REQUEUE      3
-#define LINUX_FUTEX_PRIVATE_FLAG 128
-
 #define LINUX_CLONE_VM             0x100
 #define LINUX_CLONE_FS             0x200
 #define LINUX_CLONE_FILES          0x400

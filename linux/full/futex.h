@@ -8,6 +8,13 @@
 
 struct LFILinuxThread;
 
+#define LINUX_FUTEX_WAIT           0
+#define LINUX_FUTEX_WAKE           1
+#define LINUX_FUTEX_REQUEUE        3
+#define LINUX_FUTEX_WAIT_BITSET    9
+#define LINUX_FUTEX_PRIVATE_FLAG   128
+#define LINUX_FUTEX_CLOCK_REALTIME 256
+
 // Linux struct timespec on 64-bit targets.
 struct TimeSpec {
     uint64_t sec;
@@ -17,6 +24,10 @@ struct TimeSpec {
 long
 host_futex_wait(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val,
     struct TimeSpec *timeout);
+
+long
+host_futex_wait_bitset(struct LFILinuxThread *t, uint32_t *uaddr, int op,
+    uint32_t val, struct TimeSpec *deadline, uint32_t bitset);
 
 long
 host_futex_wake(struct LFILinuxThread *t, uint32_t *uaddr, int op,

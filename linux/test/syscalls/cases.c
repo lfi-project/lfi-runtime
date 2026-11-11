@@ -17,6 +17,7 @@
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/resource.h>
@@ -1592,7 +1593,8 @@ case_futex_wake_none(void)
     return 0;
 }
 
-// A misaligned word, a null word, and an unknown operation are refused.
+// Misaligned and null words, bad arguments, and an unknown operation are
+// refused.
 long
 case_futex_invalid(void)
 {
@@ -1605,7 +1607,222 @@ case_futex_invalid(void)
         return 3;
     if (SYSCALL(SYS_futex, &futex_word, 99, 0) != -ENOSYS)
         return 4;
+    // The other arguments are checked before the address.
+    struct timespec bad = { 0, 1000000000 };
+    if (SYSCALL(SYS_futex, 0, FUTEX_WAIT_PRIVATE, 0, &bad) != -EINVAL)
+        return 5;
+    if (SYSCALL(SYS_futex, 0, FUTEX_REQUEUE_PRIVATE, -1, 1, 0) != -EINVAL)
+        return 6;
+    if (SYSCALL(SYS_futex, 0, FUTEX_REQUEUE_PRIVATE, 1, -1, 0) != -EINVAL)
+        return 7;
+    if (SYSCALL(SYS_futex, 0, 99, 0) != -ENOSYS)
+        return 8;
+    // A misaligned second word is refused like the first.
+    r = SYSCALL(SYS_futex, &futex_word, FUTEX_REQUEUE_PRIVATE, 1, 1,
+        (char *) &futex_word2 + 1);
+    if (r != -EINVAL)
+        return r < 0 ? r : 9;
     return 0;
+}
+
+// Issues a private FUTEX_WAIT_BITSET.
+static long
+futex_wait_bitset(int *word, int val, const struct timespec *deadline,
+    int flags, unsigned bitset)
+{
+    return SYSCALL(SYS_futex, word, FUTEX_WAIT_BITSET_PRIVATE | flags, val,
+        deadline, NULL, bitset);
+}
+
+// FUTEX_WAIT_BITSET compares the word like FUTEX_WAIT, and its timeout is an
+// absolute deadline, so one long past expires at once on either clock. The
+// word is compared even then.
+long
+case_futex_wait_bitset_expired(void)
+{
+    struct timespec past = { 1, 0 };
+    futex_word = 1;
+    long r = futex_wait_bitset(&futex_word, 0, NULL, 0, FUTEX_BITSET_MATCH_ANY);
+    if (r != -EAGAIN)
+        return r < 0 ? r : 1;
+    r = futex_wait_bitset(&futex_word, 0, &past, 0, FUTEX_BITSET_MATCH_ANY);
+    if (r != -EAGAIN)
+        return r < 0 ? r : 2;
+    futex_word = 0;
+    r = futex_wait_bitset(&futex_word, 0, &past, 0, FUTEX_BITSET_MATCH_ANY);
+    if (r != -ETIMEDOUT)
+        return r < 0 ? r : 3;
+    r = futex_wait_bitset(&futex_word, 0, &past, FUTEX_CLOCK_REALTIME,
+        FUTEX_BITSET_MATCH_ANY);
+    if (r != -ETIMEDOUT)
+        return r < 0 ? r : 4;
+    // Any non-empty bitset is accepted.
+    r = futex_wait_bitset(&futex_word, 0, &past, 0, 1);
+    if (r != -ETIMEDOUT)
+        return r < 0 ? r : 5;
+    // The deadline need not be aligned.
+    _Alignas(8) char buf[sizeof(past) + 4];
+    memcpy(buf + 4, &past, sizeof(past));
+    r = futex_wait_bitset(&futex_word, 0, (struct timespec *) (buf + 4), 0,
+        FUTEX_BITSET_MATCH_ANY);
+    if (r != -ETIMEDOUT)
+        return r < 0 ? r : 6;
+    return 0;
+}
+
+// Waits until a deadline 10ms ahead on the clock and checks that the wait did
+// not return before it.
+static long
+futex_deadline_on(clockid_t clock, int flags)
+{
+    struct timespec deadline, now;
+    long r = SYSCALL(SYS_clock_gettime, clock, &deadline);
+    if (r < 0)
+        return r;
+    deadline.tv_nsec += 10000000;
+    if (deadline.tv_nsec >= 1000000000) {
+        deadline.tv_nsec -= 1000000000;
+        deadline.tv_sec++;
+    }
+    futex_word = 0;
+    r = futex_wait_bitset(&futex_word, 0, &deadline, flags,
+        FUTEX_BITSET_MATCH_ANY);
+    if (r != -ETIMEDOUT)
+        return r < 0 ? r : 1;
+    r = SYSCALL(SYS_clock_gettime, clock, &now);
+    if (r < 0)
+        return r;
+    if (now.tv_sec < deadline.tv_sec ||
+        (now.tv_sec == deadline.tv_sec && now.tv_nsec < deadline.tv_nsec))
+        return 2;
+    return 0;
+}
+
+// Waits until a deadline that has passed on the clock that flags selects, and
+// checks that the wait returned at once.
+static long
+futex_past_deadline(struct timespec deadline, int flags)
+{
+    struct timespec start, end;
+    long r = SYSCALL(SYS_clock_gettime, CLOCK_MONOTONIC, &start);
+    if (r < 0)
+        return r;
+    futex_word = 0;
+    r = futex_wait_bitset(&futex_word, 0, &deadline, flags,
+        FUTEX_BITSET_MATCH_ANY);
+    if (r != -ETIMEDOUT)
+        return r < 0 ? r : 1;
+    r = SYSCALL(SYS_clock_gettime, CLOCK_MONOTONIC, &end);
+    if (r < 0)
+        return r;
+    long ms = (end.tv_sec - start.tv_sec) * 1000 +
+        (end.tv_nsec - start.tv_nsec) / 1000000;
+    return ms < 1000 ? 0 : 2;
+}
+
+// Deadlines on each clock. This needs clock_gettime, which only passthrough
+// has. The past deadlines come first, so that a runtime that reads deadlines
+// as relative fails rather than hangs. The deadline {2, 0} has passed on both
+// clocks. A deadline two seconds after the current monotonic time has long
+// passed on CLOCK_REALTIME but not on CLOCK_MONOTONIC, which checks that the
+// clock flag is honored.
+long
+case_futex_wait_bitset_deadline(void)
+{
+    struct timespec two = { 2, 0 };
+    long r = futex_past_deadline(two, 0);
+    if (r != 0)
+        return r;
+    if ((r = futex_past_deadline(two, FUTEX_CLOCK_REALTIME)) != 0)
+        return r > 0 ? r + 10 : r;
+    struct timespec soon;
+    if ((r = SYSCALL(SYS_clock_gettime, CLOCK_MONOTONIC, &soon)) < 0)
+        return r;
+    soon.tv_sec += 2;
+    if ((r = futex_past_deadline(soon, FUTEX_CLOCK_REALTIME)) != 0)
+        return r > 0 ? r + 20 : r;
+    if ((r = futex_deadline_on(CLOCK_MONOTONIC, 0)) != 0)
+        return r > 0 ? r + 30 : r;
+    r = futex_deadline_on(CLOCK_REALTIME, FUTEX_CLOCK_REALTIME);
+    return r > 0 ? r + 40 : r;
+}
+
+// An empty bitset and a malformed deadline are refused, even before a bad
+// address.
+long
+case_futex_wait_bitset_invalid(void)
+{
+    futex_word = 0;
+    long r = futex_wait_bitset(&futex_word, 0, NULL, 0, 0);
+    if (r != -EINVAL)
+        return r < 0 ? r : 1;
+    struct timespec bad = { 0, 1000000000 };
+    r = futex_wait_bitset(&futex_word, 0, &bad, 0, FUTEX_BITSET_MATCH_ANY);
+    if (r != -EINVAL)
+        return r < 0 ? r : 2;
+    r = futex_wait_bitset(NULL, 0, NULL, 0, 0);
+    if (r != -EINVAL)
+        return r < 0 ? r : 3;
+    r = futex_wait_bitset(NULL, 0, &bad, 0, FUTEX_BITSET_MATCH_ANY);
+    if (r != -EINVAL)
+        return r < 0 ? r : 4;
+    struct timespec neg = { -1, 0 };
+    r = futex_wait_bitset(NULL, 0, &neg, 0, FUTEX_BITSET_MATCH_ANY);
+    if (r != -EINVAL)
+        return r < 0 ? r : 5;
+    // The deadline is copied before the bitset is checked. The address 8 is
+    // outside the sandbox.
+    r = futex_wait_bitset(&futex_word, 0, (const struct timespec *) 8, 0, 0);
+    if (r != -EFAULT)
+        return r < 0 ? r : 6;
+    return 0;
+}
+
+// FUTEX_WAKE_BITSET is not supported. Not run natively.
+long
+case_futex_wake_bitset(void)
+{
+    return SYSCALL(SYS_futex, &futex_word, FUTEX_WAKE_BITSET_PRIVATE, 1, NULL,
+        NULL, FUTEX_BITSET_MATCH_ANY);
+}
+
+static _Atomic(int) bitset_done;
+static _Atomic(long) bitset_result;
+
+static void *
+thread_wait_bitset(void *arg)
+{
+    (void) arg;
+    long r = futex_wait_bitset(&futex_word, 0, NULL, 0, FUTEX_BITSET_MATCH_ANY);
+    atomic_store(&bitset_result, r);
+    atomic_store(&bitset_done, 1);
+    return NULL;
+}
+
+// A FUTEX_WAIT_BITSET waiter with no deadline sleeps until a FUTEX_WAKE, which
+// is how Rust's std parks threads and blocks on a mutex. The word never
+// changes, so the waiter returns only once a wake has found it asleep.
+long
+case_futex_wait_bitset_wake(void)
+{
+    futex_word = 0;
+    atomic_store(&bitset_done, 0);
+    pthread_t th;
+    int err = pthread_create(&th, NULL, thread_wait_bitset, NULL);
+    if (err)
+        return -err;
+    long woken = 0, r = 0;
+    while (!atomic_load(&bitset_done) && r >= 0) {
+        r = SYSCALL(SYS_futex, &futex_word, FUTEX_WAKE_PRIVATE, 1);
+        woken += r > 0 ? r : 0;
+    }
+    if (pthread_join(th, NULL) != 0)
+        return 1;
+    if (r < 0)
+        return r;
+    if (atomic_load(&bitset_result) != 0)
+        return atomic_load(&bitset_result);
+    return woken == 1 ? 0 : 2;
 }
 
 #if defined(__x86_64__)

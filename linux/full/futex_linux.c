@@ -30,6 +30,20 @@ host_futex_wait(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val,
 }
 
 long
+host_futex_wait_bitset(struct LFILinuxThread *t, uint32_t *uaddr, int op,
+    uint32_t val, struct TimeSpec *deadline, uint32_t bitset)
+{
+    (void) t;
+    struct timespec k_deadline = { 0 };
+    if (deadline) {
+        k_deadline.tv_sec = deadline->sec;
+        k_deadline.tv_nsec = deadline->nsec;
+    }
+    return result(syscall(SYS_futex, uaddr, op, val,
+        deadline ? &k_deadline : NULL, NULL, bitset));
+}
+
+long
 host_futex_wake(struct LFILinuxThread *t, uint32_t *uaddr, int op, uint32_t val)
 {
     (void) t;
