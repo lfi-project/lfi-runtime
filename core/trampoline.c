@@ -1,5 +1,6 @@
 #include "core.h"
 
+#include <stdatomic.h>
 #include <stdlib.h>
 
 EXPORT thread_local struct LFIInvokeInfo lfi_invoke_info __asm__(
@@ -18,7 +19,8 @@ EXPORT void
 lfi_set_clone_cb(struct LFIEngine *engine,
     struct LFIContext *(*clone_cb_arg)(struct LFIBox *) )
 {
-    engine->clone_cb = clone_cb_arg;
+    atomic_store_explicit(&engine->clone_cb, clone_cb_arg,
+        memory_order_release);
 }
 
 void
@@ -28,14 +30,16 @@ EXPORT void
 lfi_clone(struct LFIBox *box, struct LFIContext **ctxp)
 {
     lfi_init_sigaltstack(box->engine);
-    if (!box->engine->clone_cb) {
+    struct LFIContext *(*clone_cb)(struct LFIBox *) = atomic_load_explicit(
+        &box->engine->clone_cb, memory_order_acquire);
+    if (!clone_cb) {
         LOG_(
             "error: performing automatic clone during trampoline, but clone_cb is NULL");
         abort();
     }
     // This host thread is attaching to the sandbox for the first time.
     pku_host_access();
-    struct LFIContext *ctx = box->engine->clone_cb(box);
+    struct LFIContext *ctx = clone_cb(box);
     if (!ctx) {
         LOG_("error: clone callback did not produce a context");
         abort();

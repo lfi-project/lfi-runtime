@@ -1,6 +1,7 @@
 #include "linux.h"
 
 #include "arch_sys.h"
+#include "lock.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -40,8 +41,9 @@ lfi_linux_new(struct LFIEngine *lfi_engine, struct LFILinuxOptions opts)
     return engine;
 }
 
-// Global engine for libraries.
+// Global engine for libraries. Libraries may be initialized concurrently.
 static struct LFILinuxEngine *lib_engine;
+static pthread_mutex_t lib_engine_lk = PTHREAD_MUTEX_INITIALIZER;
 
 // Number of procs (libraries) that the lib_engine reserves address space for
 // up front. More can be created; each reserves its own space on demand.
@@ -50,6 +52,7 @@ static struct LFILinuxEngine *lib_engine;
 EXPORT bool
 lfi_linux_lib_init(struct LFIOptions opts, struct LFILinuxOptions linux_opts)
 {
+    LOCK_WITH_DEFER(&lib_engine_lk, lk);
     if (!lib_engine) {
         struct LFIEngine *engine = lfi_new(opts, PRERESERVED_LIBRARIES);
         if (!engine) {
@@ -59,6 +62,7 @@ lfi_linux_lib_init(struct LFIOptions opts, struct LFILinuxOptions linux_opts)
         lib_engine = lfi_linux_new(engine, linux_opts);
         if (!lib_engine) {
             ERROR("fatal error initializing LFI linux\n");
+            lfi_free(engine);
             return false;
         }
     }
@@ -69,12 +73,14 @@ lfi_linux_lib_init(struct LFIOptions opts, struct LFILinuxOptions linux_opts)
 EXPORT struct LFILinuxEngine *
 lfi_linux_lib_engine(void)
 {
+    LOCK_WITH_DEFER(&lib_engine_lk, lk);
     return lib_engine;
 }
 
 EXPORT void
 lfi_linux_lib_free(void)
 {
+    LOCK_WITH_DEFER(&lib_engine_lk, lk);
     if (lib_engine) {
         lfi_free(lib_engine->engine);
         free(lib_engine);
