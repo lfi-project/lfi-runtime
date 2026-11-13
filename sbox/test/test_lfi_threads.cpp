@@ -10,6 +10,7 @@
 
 #include <atomic>
 #include <cstdio>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -40,6 +41,11 @@ int main() {
     sbox::Sandbox<sbox::LFI>* sandbox = sb.get();
 
     std::atomic<int> failures{0};
+    // The sandbox allocator's own lock runs uninstrumented inside the
+    // sandbox, so allocation is serialized on the host as well to let
+    // ThreadSanitizer see that heap growth in one thread happens before
+    // another thread writes to the memory it receives.
+    std::mutex alloc_mutex;
     std::vector<std::thread> workers;
     for (int id = 0; id < NUM_THREADS; id++) {
         workers.emplace_back([&, id]() {
@@ -54,7 +60,11 @@ int main() {
             for (int i = 0; i < ITERATIONS; i++) {
                 if (sandbox->call<int(int, int)>("add", id, i) != id + i)
                     failures++;
-                auto p = sandbox->alloc<int>(4);
+                sbox::sbox_safe<int*> p;
+                {
+                    std::lock_guard<std::mutex> lock(alloc_mutex);
+                    p = sandbox->alloc<int>(4);
+                }
                 if (!p) {
                     failures++;
                     continue;
@@ -62,7 +72,10 @@ int main() {
                 p[0] = i;
                 if (sandbox->call<int(int*)>("read_int", p) != i)
                     failures++;
-                sandbox->free(p);
+                {
+                    std::lock_guard<std::mutex> lock(alloc_mutex);
+                    sandbox->free(p);
+                }
             }
             if (id % 2 == 0)
                 sandbox->detach_thread();
