@@ -22,12 +22,17 @@ detail::ThreadCleanup::~ThreadCleanup() {
 
     auto& live = live_sandboxes();
     for (auto& a : pending) {
+        bool alive;
         {
             std::lock_guard<std::mutex> lock(live.mutex);
             auto it = live.pins.find(a.sandbox_id);
-            if (it == live.pins.end())
-                continue;
-            it->second++;
+            alive = it != live.pins.end();
+            if (alive)
+                it->second++;
+        }
+        if (!alive) {
+            lfi_linux_detach_thread(a.proc);
+            continue;
         }
         a.sandbox->detach_exiting_thread(a.thread);
         {
@@ -218,7 +223,8 @@ LFIContext** Sandbox<LFI>::get_thread_ctx() {
             if (main_thread_token_ == id) {
                 it->second = *lfi_thread_ctxp(main_thread_);
             } else if (!detail::tls_cleanup_done) {
-                detail::tls_cleanup.attachments.push_back({this, id_, id});
+                detail::tls_cleanup.attachments.push_back(
+                    {this, id_, id, proc_});
             }
         }
         ctxp = &it->second;

@@ -217,6 +217,7 @@ struct ThreadAttachment {
     Sandbox<LFI>* sandbox;
     uint64_t sandbox_id;
     uint64_t thread;
+    LFILinuxProc* proc;
 };
 
 struct ThreadCleanup {
