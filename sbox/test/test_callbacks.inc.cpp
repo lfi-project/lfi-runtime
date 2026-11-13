@@ -59,9 +59,10 @@
     assert(cbr == 42);  // 3*4 + 5*6 = 12 + 30
     PASS();
 
-    // TODO: LFI callback trampoline doesn't forward stack args from sandbox
-    // to host, so callbacks with >6 int args (x86-64) or >8 (aarch64) fail.
-#ifndef SBOX_SKIP_STACK_ARG_CALLBACKS
+    // LFI callbacks cannot take stack arguments, so register_callback rejects
+    // callbacks with more integer arguments than the architecture passes in
+    // registers.
+#ifndef SBOX_SKIP_8_ARG_CALLBACK
     TEST("8-arg callback (int(int,int,int,int,int,int,int,int))");
     auto sum8_cb = sandbox.register_callback(my_sum8_callback);
     assert(sum8_cb != nullptr);
@@ -70,7 +71,9 @@
         "apply_callback8", sum8_cb, 1, 2, 3, 4, 5, 6, 7, 8);
     assert(cbr == 36);
     PASS();
+#endif
 
+#ifndef SBOX_SKIP_9_ARG_CALLBACK
     TEST("9-arg callback (int(int,...,int) x9)");
     auto sum9_cb = sandbox.register_callback(my_sum9_callback);
     assert(sum9_cb != nullptr);
@@ -80,6 +83,17 @@
     assert(cbr == 45);
     PASS();
 #endif
+
+    TEST("callback returning sbox<int*>");
+    {
+        auto buf = sandbox.template alloc<int>(1);
+        auto id_cb = sandbox.template register_callback<my_identity_callback>();
+        auto r = sandbox.call<int*(int* (*)(int*), int*)>(
+            "apply_ptr_return_callback", id_cb, buf);
+        assert(r.unsafe_unverified() == buf.data());
+        sandbox.free(buf);
+    }
+    PASS();
 
     TEST("pointer callback (sbox<int*> arg)");
     auto cb_arr = sandbox.template idmem_alloc<int>(4);

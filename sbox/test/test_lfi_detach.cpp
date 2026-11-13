@@ -1,10 +1,10 @@
-// Worker-thread detach with sandbox re-creation. A worker thread attaches
-// to one sandbox by calling into it, detaches, then the host destroys
-// that sandbox and creates a new one in its place. The worker then calls
-// into the new sandbox. LFIManager::init(1) makes the sandbox slot
-// recycle, so each Sandbox<LFI> must remain a distinct cache key for
-// per-thread contexts regardless of which underlying LFIBox address is
-// reused.
+// Sandbox re-creation with a recycled sandbox slot. With LFIManager::init(1)
+// a new sandbox reuses the previous one's address range once that sandbox's
+// memory is released. A worker thread attaches to one sandbox, detaches, and
+// then calls into its replacement, which must reuse the range. The main
+// thread calls into a sandbox, destroys it, and calls into its replacement
+// without detaching, so the per-thread context cache must treat each
+// Sandbox<LFI> as distinct even if the new object reuses the old address.
 
 #include "sbox/lfi.h"
 
@@ -48,15 +48,34 @@ int main() {
     while (phase.load() < 2) std::this_thread::yield();
 
     target.store(nullptr);
+    uintptr_t first_base = lfi_box_info(sb1->native_handle()).base;
     sb1.reset();
 
     auto sb2 = sbox::Sandbox<sbox::LFI>::create("./testlib.lfi");
     assert(sb2);
+    bool reused_range = lfi_box_info(sb2->native_handle()).base == first_base;
     target.store(sb2.get());
 
     phase.store(3);
     while (phase.load() < 4) std::this_thread::yield();
     worker.join();
+
+    TEST("detached worker released the first sandbox's memory");
+    assert(reused_range);
+    PASS();
+
+    TEST("main thread call into replacement sandbox");
+    {
+        sb2.reset();
+        auto sb3 = sbox::Sandbox<sbox::LFI>::create("./testlib.lfi");
+        assert(sb3);
+        assert(sb3->call<int(int, int)>("add", 2, 3) == 5);
+        sb3.reset();
+        auto sb4 = sbox::Sandbox<sbox::LFI>::create("./testlib.lfi");
+        assert(sb4);
+        assert(sb4->call<int(int, int)>("add", 4, 5) == 9);
+    }
+    PASS();
 
     TEST("worker call into first sandbox");
     assert(phase1_result == 3);

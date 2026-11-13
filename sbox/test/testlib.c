@@ -281,3 +281,62 @@ int get_tls(void) {
 int increment_tls(void) {
     return ++tls_value;
 }
+
+// Narrow integer and bool arguments and returns.
+
+int widen_char(signed char c) {
+    return c;
+}
+
+int widen_short(short s) {
+    return s;
+}
+
+int widen_uchar(unsigned char c) {
+    return c;
+}
+
+_Bool is_positive(int x) {
+    return x > 0;
+}
+
+int read_const_int(const int* p) {
+    return *p;
+}
+
+const char* version_string(void) {
+    return "testlib 1.0";
+}
+
+// Stores an arbitrary byte into a bool, as an untrusted library could.
+void write_bool_byte(_Bool* p, int value) {
+    *(unsigned char*) p = (unsigned char) value;
+}
+
+// Writes value only if it is non-negative.
+void maybe_write_int(int* p, int value) {
+    if (value >= 0)
+        *p = value;
+}
+
+// Stores a pointer to a sandbox string through an out parameter.
+void get_version_ptr(const char** out) {
+    *out = version_string();
+}
+
+int seven(void) {
+    return 7;
+}
+
+typedef int* (*ptr_return_callback_t)(int*);
+
+// Returns the pointer that the callback returns for p.
+int* apply_ptr_return_callback(ptr_return_callback_t cb, int* p) {
+    return cb(p);
+}
+
+static const int const_values[3] = {4, 5, 6};
+
+const int* get_const_values(void) {
+    return const_values;
+}

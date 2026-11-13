@@ -7,6 +7,32 @@
     assert(sandbox.call<int(int, int)>("add", 10, 32) == 42);
     PASS();
 
+    TEST("SBOX_FN with a const-qualified return type");
+    assert(sandbox.call(SBOX_FN(seven)) == 7);
+    PASS();
+
+    TEST("SBOX_FN with a noexcept declaration");
+    assert(sandbox.call(SBOX_FN(negate), 5) == -5);
+    assert(sandbox.fn(SBOX_FN(negate))(6) == -6);
+    PASS();
+
+    TEST("widen_char(-1) == -1");
+    assert(sandbox.call<int(signed char)>("widen_char", -1) == -1);
+    PASS();
+
+    TEST("widen_short(-2) == -2");
+    assert(sandbox.call<int(short)>("widen_short", -2) == -2);
+    PASS();
+
+    TEST("widen_uchar(255) == 255");
+    assert(sandbox.call<int(unsigned char)>("widen_uchar", 255) == 255);
+    PASS();
+
+    TEST("is_positive returns bool");
+    assert(sandbox.call<bool(int)>("is_positive", 5) == true);
+    assert(sandbox.call<bool(int)>("is_positive", -5) == false);
+    PASS();
+
     TEST("multiply(6, 7) == 42");
     assert(sandbox.call<int(int, int)>("multiply", 6, 7) == 42);
     PASS();

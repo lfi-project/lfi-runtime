@@ -28,7 +28,7 @@ int main() {
     // Example 1: Out parameter
     {
         auto ctx = sandbox.context();
-        int result;
+        int result = 0;
         sandbox.call<void(int*)>(ctx, "get_value", ctx.out(result));
         printf("Out parameter: get_value() returned %d (expected 42)\n",
                result);
@@ -60,7 +60,7 @@ int main() {
     // Example 4: Multiple parameters
     {
         auto ctx = sandbox.context();
-        int a = 10, b = 32, result;
+        int a = 10, b = 32, result = 0;
         sandbox.call<void(const int*, const int*, int*)>(
             ctx, "add_to_result", ctx.in(a), ctx.in(b), ctx.out(result));
         printf("Multiple params: add_to_result(%d, %d) = %d (expected 42)\n", a,
@@ -85,7 +85,7 @@ int main() {
     // Example 6: Struct with out
     {
         auto ctx = sandbox.context();
-        Point origin;
+        Point origin = {0, 0};
         sandbox.call<void(Point*)>(ctx, "get_origin", ctx.out(origin));
         printf("Struct out: get_origin() = (%d, %d) (expected 0, 0)\n",
                origin.x, origin.y);

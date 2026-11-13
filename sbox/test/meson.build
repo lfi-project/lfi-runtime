@@ -48,6 +48,18 @@ foreach t : ['multi', 'reentrant']
   )
 endforeach
 
+# Passthrough static mode, with the test library linked in directly.
+test_passthrough_static = executable('test_passthrough_static',
+  'test_passthrough_static.cpp', 'testlib.c',
+  include_directories: [test_inc],
+  dependencies: [sbox_passthrough_dep],
+  install: false,
+)
+test('passthrough_static', test_passthrough_static,
+  protocol: 'tap',
+  suite: ['sbox'],
+)
+
 # Multi-sandbox (passthrough)
 test_passthrough_multi_sandbox = executable('test_passthrough_multi_sandbox',
   'test_passthrough_multi_sandbox.cpp',
@@ -93,7 +105,7 @@ test('threads', test_threads,
 lficc_name = cpu + '_lfi-linux-musl-clang'
 lficc = find_program(lficc_name, required: false)
 
-if lficc.found()
+if lficc.found() and sbox_lfi_supported
   # The minimal runtime provides no mmap, so the sandboxed test libraries use
   # minialloc, a brk-based allocator, in place of the libc allocator. The full
   # configuration has mmap and uses the libc allocator.
@@ -144,6 +156,19 @@ if lficc.found()
     suite: ['sbox'],
   )
 
+  test_lfi_threads = executable('test_lfi_threads',
+    'test_lfi_threads.cpp',
+    include_directories: [test_inc],
+    dependencies: [sbox_lfi_dep, thread_dep],
+    install: false,
+  )
+  test('lfi_threads', test_lfi_threads,
+    workdir: meson.current_build_dir(),
+    depends: [testlib_lfi],
+    protocol: 'tap',
+    suite: ['sbox'],
+  )
+
   test_lfi_detach = executable('test_lfi_detach',
     'test_lfi_detach.cpp',
     include_directories: [test_inc],
@@ -162,20 +187,45 @@ endif
 compile_fail_script = find_program('test_compile_fail.sh')
 cxx_cmd = meson.get_compiler('cpp').cmd_array()
 
+ptr_arg_error = 'Pointer arguments must be sbox<T*> or sbox_safe<T*>'
+
 compile_fail_tests = [
-  'wrong_callback_type',
-  'wrong_data_ptr_type',
-  'raw_pointer_arg',
-  'raw_callback_arg',
+  ['wrong_callback_type', ptr_arg_error],
+  ['wrong_data_ptr_type', ptr_arg_error],
+  ['raw_pointer_arg', ptr_arg_error],
+  ['raw_callback_arg', ptr_arg_error],
+  ['lfi_struct_by_value', 'LFI call arguments must be scalars'],
+  ['lfi_narrow_callback_arg', 'LFI callback integer parameters'],
+  ['raw_pointer_callback_param', 'Callback pointer and reference parameters must be'],
+  ['static_raw_pointer_arg', ptr_arg_error],
+  ['sig_with_sbox_fn', 'no matching'],
+  ['raw_pointer_fn_handle', ptr_arg_error],
+  ['lfi_callback_wrong_backend', 'Callback Sandbox parameter must match'],
+  ['ctx_out_raw_pointer', 'out requires a trivially-copyable type that is not'],
+  ['lfi_reference_param', 'parameters cannot be references'],
+  ['alloc_sbox_safe', 'sbox_safe cannot be stored in sandbox memory'],
+  ['alloc_raw_pointer', 'Pointers in sandbox memory must be held as sbox<T*>'],
+  ['verify_polymorphic', 'Polymorphic types cannot be stored in sandbox memory'],
+  ['copy_from_pointer_dest', 'copy_from destination must be a trivially-copyable'],
+  ['verify_bool', 'bool values in sandbox memory must be accessed as'],
+  ['verify_unscoped_enum', 'Enums in sandbox memory must be scoped'],
 ]
 
+fs = import('fs')
+
 foreach t : compile_fail_tests
-  test('compile_fail_' + t, compile_fail_script,
-    args: cxx_cmd + [
+  src = 'compile_fail' / (t[0] + '.cpp')
+  if not sbox_lfi_supported and fs.read(src).contains('sbox/lfi.h')
+    continue
+  endif
+  test('compile_fail_' + t[0], compile_fail_script,
+    args: [t[1]] + cxx_cmd + [
       '-std=c++17',
       '-I' + meson.current_source_dir() / '..' / 'include',
+      '-I' + meson.project_source_root() / 'core' / 'include',
+      '-I' + meson.project_source_root() / 'linux' / 'include',
       '-c',
-      meson.current_source_dir() / 'compile_fail' / (t + '.cpp'),
+      meson.current_source_dir() / src,
       '-o', '/dev/null',
     ],
     suite: ['sbox'],

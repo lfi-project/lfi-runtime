@@ -28,17 +28,24 @@ static int my_quad_callback(int a, int b, int c, int d) {
     return a * b + c * d;
 }
 
-#ifndef SBOX_SKIP_STACK_ARG_CALLBACKS
+#ifndef SBOX_SKIP_8_ARG_CALLBACK
 static int my_sum8_callback(int a, int b, int c, int d, int e, int f, int g,
                              int h) {
     return a + b + c + d + e + f + g + h;
 }
+#endif
 
+#ifndef SBOX_SKIP_9_ARG_CALLBACK
 static int my_sum9_callback(int a, int b, int c, int d, int e, int f, int g,
                              int h, int i) {
     return a + b + c + d + e + f + g + h + i;
 }
 #endif
+
+// Callback that returns the sandbox pointer it receives.
+static sbox::sbox<int*> my_identity_callback(sbox::sbox<int*> p) {
+    return p;
+}
 
 // Callback that receives a pointer from the sandbox.
 // Takes sandbox as first parameter to verify the pointer.

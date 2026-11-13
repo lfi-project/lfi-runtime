@@ -61,7 +61,7 @@ int main() {
 
     // Benchmark 2: Function call with callback
     {
-        auto call_with_cb = sandbox.fn<int(int, void*)>("call_with_callback");
+        auto call_with_cb = sandbox.fn<int(int, int (*)(int))>("call_with_callback");
         auto cb = sandbox.register_callback(double_value);
 
         // Warmup
@@ -115,7 +115,7 @@ int main() {
         for (int i = 0; i < 100; i++) {
             auto ctx = sandbox.context();
             int a = i, b = i + 1;
-            int sum, product;
+            int sum = 0, product = 0;
             sandbox.call<void(const int*, const int*, int*, int*)>(
                 ctx, "multi_inout", ctx.in(a), ctx.in(b), ctx.out(sum),
                 ctx.out(product));
@@ -125,7 +125,7 @@ int main() {
         for (int i = 0; i < CALL_ITERATIONS; i++) {
             auto ctx = sandbox.context();
             int a = i, b = i + 1;
-            int sum, product;
+            int sum = 0, product = 0;
             sandbox.call<void(const int*, const int*, int*, int*)>(
                 ctx, "multi_inout", ctx.in(a), ctx.in(b), ctx.out(sum),
                 ctx.out(product));

@@ -1,12 +1,20 @@
 #!/bin/bash
-# Run the given command and expect it to fail.
-# Used for compile-failure tests: passes all arguments as a compiler invocation,
-# returns 0 if compilation fails (expected), 1 if it succeeds (unexpected).
+# Run a compiler invocation and expect it to fail with a given message.
+# The first argument is the expected message and the remaining arguments are
+# the compiler invocation. Returns 0 if compilation fails with an error
+# containing the message, and 1 otherwise.
 
-"$@" 2>/dev/null
-if [ $? -ne 0 ]; then
-    exit 0
-else
+expected="$1"
+shift
+
+output=$("$@" 2>&1)
+if [ $? -eq 0 ]; then
     echo "FAIL: compilation succeeded but should have failed"
     exit 1
 fi
+if ! grep -qF -- "$expected" <<< "$output"; then
+    echo "FAIL: compilation failed without the expected error: $expected"
+    echo "$output"
+    exit 1
+fi
+exit 0

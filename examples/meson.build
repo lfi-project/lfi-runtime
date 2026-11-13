@@ -1,6 +1,6 @@
 lficc_name = cpu + '_lfi-linux-musl-clang'
 lficc = find_program(lficc_name, required: false)
-have_lficc = lficc.found()
+have_lficc = lficc.found() and sbox_lfi_supported
 
 thread_dep = dependency('threads')
 

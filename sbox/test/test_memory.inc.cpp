@@ -73,6 +73,35 @@
     }
     PASS();
 
+    TEST("empty null buffer verifies and copies");
+    {
+        sbox::sbox<int*> empty;
+        auto safe = sandbox.verify(empty, 0);
+        assert(safe == nullptr);
+        int host = 5;
+        sandbox.copy_from(&host, empty, 0);
+        sandbox.copy_to(empty, &host, 0);
+        assert(host == 5);
+    }
+    PASS();
+
+    TEST("read_buffer of a const pointer");
+    {
+        auto cv = sandbox.call<const int*()>("get_const_values");
+        std::vector<int> host = sandbox.read_buffer(cv, 3);
+        assert(host.size() == 3 && host[0] == 4 && host[2] == 6);
+    }
+    PASS();
+
+    TEST("idmem_alloc larger than 64 KiB");
+    {
+        char* big = sandbox.template idmem_alloc<char>(100000);
+        assert(big != nullptr);
+        big[99999] = 1;
+        sandbox.idmem_reset();
+    }
+    PASS();
+
     TEST("read_buffer returns empty for null pointer");
     {
         std::vector<int> host =

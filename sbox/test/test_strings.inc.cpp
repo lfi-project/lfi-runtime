@@ -67,6 +67,14 @@
     }
     PASS();
 
+    TEST("read_string reads a const char* return");
+    {
+        auto vs = sandbox.call<const char*()>("version_string");
+        std::string host = sandbox.read_string(vs, 64);
+        assert(host == "testlib 1.0");
+    }
+    PASS();
+
     TEST("read_string respects scan limit");
     {
         auto rs = sandbox.copy_string("longer than the limit");

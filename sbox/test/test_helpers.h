@@ -1,5 +1,7 @@
 #pragma once
 
+// The tests make their sandbox calls inside assert, so it must stay enabled.
+#undef NDEBUG
 #include <cassert>
 #include <cfloat>
 #include <cmath>
@@ -31,6 +33,22 @@ struct NamedArray {
     int* values;
     int count;
 };
+
+// Declarations used with SBOX_FN; must match testlib.c.
+
+extern "C" {
+void write_int(int* p, int value);
+void swap_ints(int* a, int* b);
+int read_const_int(const int* p);
+int negate(int x) noexcept;
+void get_version_ptr(const char** out);
+int apply_binary_callback(int (*cb)(int, int), int a, int b);
+const int seven(void);
+}
+
+inline int context_add_cb(int a, int b) {
+    return a + b;
+}
 
 // Test runner macros (TAP output).
 
