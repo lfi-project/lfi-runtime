@@ -249,13 +249,20 @@ void* Sandbox<LFI>::stack_push(LFIContext* ctx, size_t size, size_t align) {
     return reinterpret_cast<void*>(sp);
 }
 
+// MAP_FIXED_NOREPLACE is Linux-specific.
+#ifdef MAP_FIXED_NOREPLACE
+static constexpr int map_fixed_noreplace = MAP_FIXED_NOREPLACE;
+#else
+static constexpr int map_fixed_noreplace = 0;
+#endif
+
 void* Sandbox<LFI>::mmap(void* addr, size_t length, int prot, int flags,
                           int fd, off_t offset) {
     // Executable mappings are refused because a file mapping can alias a
     // writable mapping of the same file, which would let code run without
     // verification. Flags without an LFI equivalent are refused as well.
     constexpr int supported = MAP_SHARED | MAP_PRIVATE | MAP_FIXED |
-                              MAP_FIXED_NOREPLACE | MAP_ANONYMOUS;
+                              map_fixed_noreplace | MAP_ANONYMOUS;
     if ((prot & PROT_EXEC) || (flags & ~supported)) {
         errno = EINVAL;
         return MAP_FAILED;
@@ -273,7 +280,7 @@ void* Sandbox<LFI>::mmap(void* addr, size_t length, int prot, int flags,
     // Fixed mappings cannot replace mappings the runtime owns.
     lfiptr result;
     lfiptr target = reinterpret_cast<lfiptr>(addr);
-    if (flags & MAP_FIXED_NOREPLACE) {
+    if (flags & map_fixed_noreplace) {
         result = lfi_box_mapat_noreplace(box_, target, length, lfi_prot,
                                          lfi_flags | LFI_MAP_FIXED, fd,
                                          offset);
@@ -284,7 +291,7 @@ void* Sandbox<LFI>::mmap(void* addr, size_t length, int prot, int flags,
         result = lfi_box_mapany(box_, length, lfi_prot, lfi_flags, fd, offset);
     }
     if (result == static_cast<lfiptr>(-1)) {
-        if (flags & MAP_FIXED_NOREPLACE)
+        if (flags & map_fixed_noreplace)
             errno = EEXIST;
         else
             errno = (flags & MAP_FIXED) ? EINVAL : ENOMEM;
